@@ -13,28 +13,28 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}']
       },
-      manifest: {
+       manifest: {
         name: '換裝紙娃娃遊戲',
         short_name: '紙娃娃',
         description: '一個可自訂圖包的換裝紙娃娃 PWA 遊戲',
         theme_color: '#6a6cff',
         background_color: '#ffffff',
         display: 'standalone',
-        scope: '/',
-        start_url: '/',
+        scope: '/dress-up-doll-pwa/',
+        start_url: '/dress-up-doll-pwa/',
         icons: [
           {
-            src: '/icons/icon-192x192.png',
+            src: 'icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: 'icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: 'icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
