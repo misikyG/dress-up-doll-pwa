@@ -45,8 +45,11 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
-  
+
   build: {
+    // Emit the production site into docs/ so GitHub Pages can serve it directly
+    outDir: 'docs',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html')
