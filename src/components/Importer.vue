@@ -153,8 +153,7 @@ const processFile = (file, bundledInfo = null) => {
   if (window.Worker) {
     if (worker) worker.terminate();
 
-    const workerUrl = `${import.meta.env.BASE_URL}zip.worker.js`;
-    worker = new Worker(workerUrl);
+    worker = new Worker('/zip.worker.js');
     
     worker.onmessage = (event) => {
       const { type, items, packInfo, progress, message, error } = event.data;
