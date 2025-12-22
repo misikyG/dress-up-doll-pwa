@@ -45,6 +45,11 @@ self.onmessage = async (event) => {
         packDisplayName: config.packDisplayName,
         imageData: `data:${mimeType};base64,${fileData}`,
       };
+      
+      // 處理自定義人物名稱
+      if (itemConfig.characterName) {
+        itemData.characterName = itemConfig.characterName;
+      }
 
       // 處理變體資料 (如果有)
       if (itemConfig.hasVariant && itemConfig.variants && itemConfig.variants.length > 0) {
