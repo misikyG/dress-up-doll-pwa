@@ -153,7 +153,9 @@ const processFile = (file, bundledInfo = null) => {
   if (window.Worker) {
     if (worker) worker.terminate();
 
-    worker = new Worker('/zip.worker.js');
+    // 使用 Vite 的 base path 來正確載入 Worker
+    const workerPath = `${import.meta.env.BASE_URL}zip.worker.js`;
+    worker = new Worker(workerPath);
     
     worker.onmessage = (event) => {
       const { type, items, packInfo, progress, message, error } = event.data;

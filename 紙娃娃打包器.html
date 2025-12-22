@@ -1631,7 +1631,18 @@
 
                     // 處理人物綁定（表情 / 服裝皆可）
                     if (item.characterId) {
-                        itemConfig.characterId = tempIdToFinalId[item.characterId] || null;
+                        // 如果是圖包內的人物，轉換為最終ID
+                        if (tempIdToFinalId[item.characterId]) {
+                            itemConfig.characterId = tempIdToFinalId[item.characterId];
+                        } else {
+                            // 自定義人物或歷史人物，保持原ID
+                            itemConfig.characterId = item.characterId;
+                        }
+                        
+                        // 如果有自定義人物名稱，也一併儲存
+                        if (item.characterName) {
+                            itemConfig.characterName = item.characterName;
+                        }
                     }
 
                     // 添加標籤 (如果有)
