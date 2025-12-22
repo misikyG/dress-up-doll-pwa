@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紙娃娃打包器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* CSS Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .packer-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .packer-header {
+            background-color: #fff;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .packer-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .packer-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .control-panel {
+            width: 350px;
+            padding: 2rem;
+            background-color: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .control-panel h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #6a6cff;
+        }
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .secondary-btn {
+            padding: 0.85rem 1rem;
+            background-color: #eef2f7;
+            color: #333;
+            border: 1px solid #d0d7e2;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .secondary-btn:hover:not(:disabled) {
+            background-color: #e2e8f0;
+            border-color: #b9c4d6;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+
+        .generate-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .packer-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+            color: #aaa;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .import-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .history-group {
+            margin-top: 1.25rem;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            max-height: 140px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .history-list li {
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #e0e6ef;
+            border-radius: 6px;
+            background: #f9fbfe;
+        }
+
+        .history-list .history-meta {
+            display: block;
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 0.2rem;
+        }
+
+        .items-panel {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover {
+            background-color: #f0f0f0;
+            border-color: #6a6cff;
+        }
+
+        .drop-zone.drag-over {
+            background-color: #e8f4fd;
+            border-color: #2196F3;
+            transform: scale(1.02);
+        }
+
+        .drop-zone p {
+            font-size: 1.1rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .item-card {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .item-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 6px;
+            background-color: #f0f0f0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .item-form {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .item-form input,
+        .item-form select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .display-name-input {
+            font-weight: bold;
+            font-size: 1rem !important;
+        }
+
+        .character-id-input {
+            margin-top: 0.5rem;
+        }
+
+        /* 批次綁定人物樣式 */
+        .batch-bind-group {
+            background: #f0f7ff;
+            padding: 0.5rem 0.65rem;
+            border-radius: 8px;
+            border: 1px solid #cce0ff;
+        }
+
+        .batch-bind-group > label {
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .batch-bind-row {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .batch-bind-row select {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            max-height: 32px;
+        }
+
+        .batch-bind-row button {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .batch-bind-hint {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.25rem;
+            margin-bottom: 0;
+        }
+
+        /* 歷史人物管理 */
+        .history-manage-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.35rem;
+            padding-top: 0.35rem;
+            border-top: 1px dashed #cce0ff;
+        }
+
+        .history-manage-row span {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .history-delete-btn {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            background: #fff;
+            border: 1px solid #f0a0a0;
+            color: #c44;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .history-delete-btn:hover {
+            background: #fef0f0;
+        }
+
+        /* Tag 選擇器樣式 */
+        .tag-selector {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .tag-label {
+            font-size: 0.8rem;
+            color: #666;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+
+        .tag-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .tag-input-row {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .tag-input-row input {
+            flex: 1;
+            padding: 0.4rem 0.6rem;
+            border: 1px dashed #bbb;
+            border-radius: 4px;
+        }
+
+        .tag-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.3rem 0.6rem;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tag-option:hover {
+            border-color: #6a6cff;
+            background-color: #f0f0ff;
+        }
+
+        .tag-option.selected {
+            background-color: #6a6cff;
+            border-color: #6a6cff;
+            color: white;
+        }
+
+        .current-tags {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .current-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.5rem;
+            background-color: #eef2ff;
+            border: 1px solid #cdd4ff;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .tag-remove {
+            border: none;
+            background: #6a6cff;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .tag-option input[type="checkbox"] {
+            display: none;
+        }
+
+        /* 變體配置樣式 */
+        .variant-section {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background-color: #fff8e6;
+            border-radius: 6px;
+            border: 1px solid #f5c842;
+        }
+
+        .variant-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .variant-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .variant-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .variant-toggle label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #f39c12;
+            cursor: pointer;
+        }
+
+        .variant-add-btn {
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .variant-add-btn:hover {
+            background-color: #e67e22;
+        }
+
+        .variant-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .variant-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .variant-item.default-variant {
+            border-color: #f39c12;
+            background-color: #fffef0;
+        }
+
+        .variant-preview {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+        }
+
+        .variant-preview-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .variant-preview-placeholder:hover {
+            border-color: #f39c12;
+            background-color: #fff8e6;
+        }
+
+        .variant-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .variant-name-input {
+            padding: 0.3rem 0.5rem !important;
+            font-size: 0.8rem !important;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .variant-default-label {
+            font-size: 0.7rem;
+            color: #f39c12;
+            font-weight: 500;
+        }
+
+        .variant-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .variant-set-default-btn, .variant-remove-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .variant-set-default-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .variant-set-default-btn:hover {
+            background-color: #e67e22;
+        }
+
+        .variant-set-default-btn.is-default {
+            background-color: #27ae60;
+        }
+
+        .variant-remove-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .variant-remove-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .variant-file-input {
+            display: none;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-self: flex-start;
+            transition: background-color 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 3rem 2rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px dashed #ddd;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 1024px) {
+            .packer-main {
+                flex-direction: column;
+            }
+            
+            .control-panel {
+                width: 100%;
+                max-height: 40vh;
+            }
+            
+            .items-panel {
+                flex: 1;
+                min-height: 60vh;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .packer-header {
+                padding: 1rem;
+            }
+            
+            .control-panel,
+            .items-panel {
+                padding: 1rem;
+            }
+            
+            .item-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+            }
+            
+            .item-preview {
+                width: 100px;
+                height: 100px;
+                align-self: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="packer-container">
+        <header class="packer-header">
+            <h1>紙娃娃打包器</h1>
+        </header>
+
+        <main class="packer-main">
+            <section class="control-panel">
+                <h2>圖包資訊</h2>
+                <div class="form-group">
+                    <label for="packDisplayName">圖包名稱</label>
+                    <input id="packDisplayName" placeholder="e.g., 2024夏日泳裝" />
+                </div>
+                <div class="form-group">
+                    <label for="packDescription">圖包描述</label>
+                    <textarea id="packDescription" placeholder="e.g., 清涼一夏！"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>匯入 / 編輯既有圖包</label>
+                    <div class="import-row">
+                        <button id="importZipBtn" class="secondary-btn">載入 ZIP</button>
+                        <input id="zipInput" type="file" accept=".zip" style="display: none;" />
+                    </div>
+                </div>
+                <!-- 批次綁定人物區域 -->
+                <div class="form-group batch-bind-group" id="batchBindGroup" style="display: none;">
+                    <label>批次綁定人物</label>
+                    <div class="batch-bind-row">
+                        <select id="batchBindSelect">
+                            <option value="">選擇人物</option>
+                        </select>
+                        <button id="batchBindBtn" class="secondary-btn" onclick="batchBindCharacter()">綁定</button>
+                    </div>
+                    <p class="batch-bind-hint">將所有未綁定的物件綁定到選定人物</p>
+                    <div class="history-manage-row" id="historyManageRow" style="display: none;">
+                        <span>歷史記錄：</span>
+                        <button class="history-delete-btn" onclick="openHistoryManager()">管理歷史人物</button>
+                    </div>
+                </div>
+                <button id="generateBtn" class="generate-btn" disabled>
+                    生成 ZIP 圖包
+                </button>
+                <div class="form-group history-group">
+                    <label>最近打包紀錄</label>
+                    <ul id="historyList" class="history-list"></ul>
+                </div>
+            </section>
+
+            <section class="items-panel">
+                <div class="drop-zone" id="dropZone">
+                    <p>📁 點擊或拖放圖片 / ZIP 至此</p>
+                    <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/webp, application/zip" style="display: none;" />
+                </div>
+
+                <div class="items-list" id="itemsList">
+                    <div class="empty-state">
+                        <div class="empty-icon">🎨</div>
+                        <p>尚未添加任何物件</p>
+                        <p>請上傳圖片開始製作圖包</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // 應用狀態
+        const STORAGE_KEYS = {
+            history: 'packer-history',
+            characterNames: 'packer-character-names'
+        };
+
+        const state = {
+            packDisplayName: '',
+            description: '',
+            items: [],
+            packId: '',
+            history: loadHistory(),
+            characterNameHistory: loadCharacterNames()
+        };
+
+        // 分類定義 (順序：背景→人物→表情→髮型→內衣→上衣→下身→外套→套裝→鞋子→配飾→攜帶品→其他)
+        const categories = [
+            { key: 'background', name: '背景' },
+            { key: 'filter', name: '濾鏡' },
+            { key: 'character', name: '人物' },
+            { key: 'expression', name: '表情' },
+            { key: 'hair', name: '髮型' },
+            { key: 'underwear', name: '內衣' },
+            { key: 'top', name: '上衣' },
+            { key: 'bottom', name: '下身' },
+            { key: 'outer', name: '外套' },
+            { key: 'dress', name: '套裝' },
+            { key: 'shoes', name: '鞋子' },
+            { key: 'accessory', name: '配飾' },
+            { key: 'carry', name: '攜帶品' },
+            { key: 'other', name: '其他' }
+        ];
+
+        // Tag 定義 - 各分類可用的標籤
+        const categoryTags = {
+            background: [
+                { key: 'indoor', name: '室內' },
+                { key: 'outdoor', name: '室外' },
+                { key: 'special', name: '特殊' }
+            ],
+            filter: [
+                { key: 'warm', name: '暖色' },
+                { key: 'cool', name: '冷色' },
+                { key: 'paper', name: '舊紙' },
+                { key: 'frosted', name: '磨砂' },
+                { key: 'stage', name: '舞台燈' }
+            ],
+            character: [
+                { key: 'male', name: '男性' },
+                { key: 'female', name: '女性' },
+                { key: 'special', name: '特殊' }
+            ],
+            expression: [
+                { key: 'calm', name: '平靜' },
+                { key: 'happy', name: '喜' },
+                { key: 'angry', name: '怒' },
+                { key: 'sad', name: '哀' },
+                { key: 'joy', name: '樂' },
+                { key: 'special', name: '特殊' }
+            ],
+            hair: [
+                { key: 'short', name: '短髮' },
+                { key: 'long', name: '長髮' },
+                { key: 'braided', name: '編髮' },
+                { key: 'special', name: '特殊' }
+            ],
+            underwear: [],
+            outer: [
+                { key: 'longHem', name: '長擺' },
+                { key: 'shortHem', name: '短擺' },
+                { key: 'shortSleeve', name: '短袖' },
+                { key: 'longSleeve', name: '長袖' }
+            ],
+            top: [
+                { key: 'longSleeve', name: '長袖' },
+                { key: 'shortSleeve', name: '短袖' },
+                { key: 'vest', name: '背心' }
+            ],
+            bottom: [
+                { key: 'shorts', name: '短褲' },
+                { key: 'pants', name: '長褲' },
+                { key: 'shortSkirt', name: '短裙' },
+                { key: 'longSkirt', name: '長裙' }
+            ],
+            dress: [
+                { key: 'skirtStyle', name: '裙裝' },
+                { key: 'pantsStyle', name: '褲裝' },
+                { key: 'special', name: '特殊' }
+            ],
+            shoes: [
+                { key: 'boots', name: '長靴' },
+                { key: 'ankleBoots', name: '短靴' },
+                { key: 'sandals', name: '涼鞋' },
+                { key: 'leather', name: '皮鞋' },
+                { key: 'casual', name: '休閒鞋' },
+                { key: 'slippers', name: '拖鞋' }
+            ],
+            accessory: [
+                { key: 'hairAcc', name: '髮飾' },
+                { key: 'earring', name: '耳飾' },
+                { key: 'necklace', name: '首飾' },
+                { key: 'bracelet', name: '手飾' },
+                { key: 'socks', name: '襪子' },
+                { key: 'anklet', name: '腳飾' },
+                { key: 'special', name: '特殊' }
+            ],
+            carry: [
+                { key: 'handheld', name: '手持物' },
+                { key: 'bag', name: '包包' },
+                { key: 'special', name: '特殊' }
+            ],
+            other: []
+        };
+
+        // 獲取分類可用的 tags
+        function getTagsForCategory(categoryKey) {
+            return categoryTags[categoryKey] || [];
+        }
+
+        // 獲取標籤的顯示名稱（優先中文，否則顯示原始值）
+        function getTagDisplayName(tagKey, categoryKey) {
+            const tags = categoryTags[categoryKey] || [];
+            const found = tags.find(t => t.key === tagKey);
+            return found ? found.name : tagKey;  // 自訂標籤直接顯示原始值
+        }
+
+        function loadHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.history);
+                return raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                console.warn('載入打包紀錄失敗', err);
+                return [];
+            }
+        }
+
+        function saveHistory(history) {
+            state.history = history;
+            try {
+                localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history.slice(0, 8)));
+            } catch (err) {
+                console.warn('保存打包紀錄失敗', err);
+            }
+            renderHistory();
+        }
+
+        function recordHistoryEntry(packId, packName, characterNames) {
+            const entry = {
+                id: packId,
+                name: packName,
+                characters: characterNames,
+                time: new Date().toISOString()
+            };
+            const next = [entry, ...state.history.filter(h => h.id !== packId)].slice(0, 8);
+            saveHistory(next);
+        }
+
+        function loadCharacterNames() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.characterNames);
+                return raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                console.warn('載入人物名單失敗', err);
+                return [];
+            }
+        }
+
+        function recordCharacterNames(names) {
+            const merged = Array.from(new Set([...state.characterNameHistory, ...names.filter(Boolean)])).slice(-10);
+            state.characterNameHistory = merged;
+            try {
+                localStorage.setItem(STORAGE_KEYS.characterNames, JSON.stringify(merged));
+            } catch (err) {
+                console.warn('保存人物名單失敗', err);
+            }
+            renderHistory();
+        }
+
+        // DOM 元素引用
+        const elements = {
+            packDisplayName: document.getElementById('packDisplayName'),
+            packDescription: document.getElementById('packDescription'),
+            generateBtn: document.getElementById('generateBtn'),
+            dropZone: document.getElementById('dropZone'),
+            fileInput: document.getElementById('fileInput'),
+            itemsList: document.getElementById('itemsList'),
+            zipInput: document.getElementById('zipInput'),
+            importZipBtn: document.getElementById('importZipBtn'),
+            historyList: document.getElementById('historyList')
+        };
+
+        function renderHistory() {
+            if (!elements.historyList) return;
+            if (state.history.length === 0) {
+                elements.historyList.innerHTML = '<li>尚無紀錄</li>';
+                return;
+            }
+
+            elements.historyList.innerHTML = state.history.map(entry => {
+                const characterText = entry.characters && entry.characters.length
+                    ? `人物：${entry.characters.join(', ')}`
+                    : '人物：—';
+                const timeText = new Date(entry.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return `<li><strong>${entry.name || '未命名圖包'}</strong><span class="history-meta">${characterText} · ${timeText}</span></li>`;
+            }).join('');
+        }
+
+        // 初始化事件監聽器
+        function initEventListeners() {
+            // 表單輸入
+            elements.packDisplayName.addEventListener('input', (e) => {
+                state.packDisplayName = e.target.value;
+                updateGenerateButton();
+            });
+
+            elements.packDescription.addEventListener('input', (e) => {
+                state.description = e.target.value;
+            });
+
+            // 檔案選擇和拖放
+            elements.dropZone.addEventListener('click', () => elements.fileInput.click());
+            elements.fileInput.addEventListener('change', (e) => handleIncomingFiles(e.target.files));
+            elements.importZipBtn.addEventListener('click', () => elements.zipInput.click());
+            elements.zipInput.addEventListener('change', (e) => handleIncomingFiles(e.target.files));
+            
+            // 拖放事件
+            elements.dropZone.addEventListener('dragover', handleDragOver);
+            elements.dropZone.addEventListener('dragleave', handleDragLeave);
+            elements.dropZone.addEventListener('drop', handleDrop);
+
+            // 生成按鈕
+            elements.generateBtn.addEventListener('click', generateZip);
+        }
+
+        // 拖放處理
+        function handleDragOver(e) {
+            e.preventDefault();
+            elements.dropZone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            elements.dropZone.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            elements.dropZone.classList.remove('drag-over');
+            handleIncomingFiles(e.dataTransfer.files);
+        }
+
+        // 添加檔案
+        function addImageFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const originalName = file.name.split('.').slice(0, -1).join('.');
+                const item = {
+                    id: `temp_id_${Date.now()}_${Math.random()}`,
+                    file: file,
+                    previewUrl: e.target.result,
+                    displayName: originalName,
+                    category: 'other',
+                    characterId: '',
+                    tags: [],
+                    hasVariant: false,
+                    defaultVariant: null,
+                    variants: []
+                };
+                state.items.push(item);
+                renderItems();
+                updateGenerateButton();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleIncomingFiles(files) {
+            for (const file of files) {
+                const lower = file.name.toLowerCase();
+                if (file.type === 'application/zip' || lower.endsWith('.zip')) {
+                    importZip(file);
+                    continue;
+                }
+                if (!file.type.startsWith('image/')) continue;
+                addImageFile(file);
+            }
+            elements.fileInput.value = '';
+            elements.zipInput.value = '';
+        }
+
+        const getMimeTypeByName = (filename) => {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (ext === 'png') return 'image/png';
+            if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+            if (ext === 'webp') return 'image/webp';
+            return 'application/octet-stream';
+        };
+
+        const blobToDataUrl = (blob) => new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(blob);
+        });
+
+        const extractCharacterNames = () => {
+            return state.items
+                .filter(item => item.category === 'character' && item.displayName)
+                .map(item => item.displayName);
+        };
+
+        async function importZip(file) {
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const configEntry = zip.file('config.json');
+                if (!configEntry) {
+                    alert('❌ 此 ZIP 缺少 config.json，無法載入');
+                    return;
+                }
+
+                const config = JSON.parse(await configEntry.async('string'));
+                state.packId = config.packId || `pack_${Date.now()}`;
+                state.packDisplayName = config.packDisplayName || config.packName || file.name.replace(/\.zip$/i, '');
+                state.description = config.description || '';
+                elements.packDisplayName.value = state.packDisplayName;
+                elements.packDescription.value = state.description;
+
+                const importedItems = [];
+                for (const itemConfig of config.items || []) {
+                    const imageEntry = zip.file(itemConfig.file);
+                    if (!imageEntry) continue;
+
+                    const blob = await imageEntry.async('blob');
+                    const baseFile = new File([blob], itemConfig.file, { type: blob.type || getMimeTypeByName(itemConfig.file) });
+                    const previewUrl = await blobToDataUrl(blob);
+
+                    const newItem = {
+                        id: itemConfig.itemId || itemConfig.id || `item_${Date.now()}_${Math.random()}`,
+                        file: baseFile,
+                        previewUrl,
+                        displayName: itemConfig.displayName || itemConfig.name || itemConfig.file,
+                        category: itemConfig.category || 'other',
+                        characterId: itemConfig.characterId || '',
+                        tags: itemConfig.tags || [],
+                        hasVariant: Boolean(itemConfig.hasVariant && itemConfig.variants && itemConfig.variants.length),
+                        defaultVariant: itemConfig.defaultVariant || null,
+                        variants: []
+                    };
+
+                    if (newItem.hasVariant) {
+                        for (const variant of itemConfig.variants) {
+                            const variantFileName = itemConfig.variantFiles ? itemConfig.variantFiles[variant.key] : null;
+                            let variantFile = null;
+                            let variantPreview = null;
+                            if (variantFileName && zip.file(variantFileName)) {
+                                const variantBlob = await zip.file(variantFileName).async('blob');
+                                variantFile = new File([variantBlob], variantFileName, { type: variantBlob.type || getMimeTypeByName(variantFileName) });
+                                variantPreview = await blobToDataUrl(variantBlob);
+                            }
+                            newItem.variants.push({
+                                key: variant.key,
+                                name: variant.name,
+                                file: variantFile,
+                                previewUrl: variantPreview
+                            });
+                            if (variant.key === newItem.defaultVariant && variantPreview) {
+                                newItem.previewUrl = variantPreview;
+                            }
+                        }
+                    }
+
+                    importedItems.push(newItem);
+                }
+
+                state.items = importedItems;
+                renderItems();
+                updateGenerateButton();
+
+                const importedCharacters = config.characters ? config.characters.map(c => c.name).filter(Boolean) : extractCharacterNames();
+                recordCharacterNames(importedCharacters);
+                recordHistoryEntry(state.packId, state.packDisplayName, importedCharacters);
+                alert(`✅ 已載入圖包：${state.packDisplayName}`);
+            } catch (err) {
+                console.error('匯入圖包失敗', err);
+                alert('❌ 匯入圖包失敗: ' + err.message);
+            } finally {
+                elements.zipInput.value = '';
+            }
+        }
+
+        // 移除物件
+        function removeItem(index) {
+            if (confirm('確定要移除這個物件嗎？')) {
+                state.items.splice(index, 1);
+                renderItems();
+                updateGenerateButton();
+            }
+        }
+
+        // 更新物件資料
+        function updateItem(index, field, value) {
+            if (state.items[index]) {
+                state.items[index][field] = value;
+                // 當分類改變時，清空 tags
+                if (field === 'category') {
+                    state.items[index].tags = [];
+                }
+            }
+        }
+
+        // 切換 tag
+        function toggleTag(index, tagKey) {
+            if (!state.items[index]) return;
+            const tags = state.items[index].tags || [];
+            const tagIndex = tags.indexOf(tagKey);
+            if (tagIndex > -1) {
+                tags.splice(tagIndex, 1);
+            } else {
+                tags.push(tagKey);
+            }
+            state.items[index].tags = tags;
+            renderItems();
+        }
+
+        function removeTag(index, tagKey) {
+            if (!state.items[index]) return;
+            state.items[index].tags = (state.items[index].tags || []).filter(t => t !== tagKey);
+            renderItems();
+        }
+
+        // 新增自訂 tag
+        function addCustomTag(index, rawValue) {
+            const value = (rawValue || '').trim();
+            if (!value || !state.items[index]) return;
+            const tags = state.items[index].tags || [];
+            if (!tags.includes(value)) {
+                tags.push(value);
+                state.items[index].tags = tags;
+                renderItems();
+            }
+        }
+
+        // 切換物件的變體功能
+        function toggleItemVariant(index) {
+            if (!state.items[index]) return;
+            const item = state.items[index];
+            item.hasVariant = !item.hasVariant;
+            
+            if (item.hasVariant && item.variants.length === 0) {
+                // 預設添加第一個變體 (使用原始圖片)
+                const defaultKey = 'default';
+                item.variants.push({
+                    key: defaultKey,
+                    name: '預設',
+                    file: item.file,
+                    previewUrl: item.previewUrl
+                });
+                item.defaultVariant = defaultKey;
+            }
+            renderItems();
+        }
+
+        // 添加新變體
+        function addVariant(itemIndex) {
+            if (!state.items[itemIndex]) return;
+            const item = state.items[itemIndex];
+            const variantKey = `variant_${Date.now()}`;
+            item.variants.push({
+                key: variantKey,
+                name: `變體${item.variants.length}`,
+                file: null,
+                previewUrl: null
+            });
+            renderItems();
+        }
+
+        // 移除變體
+        function removeVariant(itemIndex, variantKey) {
+            if (!state.items[itemIndex]) return;
+            const item = state.items[itemIndex];
+            
+            if (item.variants.length <= 1) {
+                alert('至少需要保留一個變體');
+                return;
+            }
+            
+            const variantIndex = item.variants.findIndex(v => v.key === variantKey);
+            if (variantIndex > -1) {
+                item.variants.splice(variantIndex, 1);
+                // 如果刪除的是預設變體，設定第一個為預設
+                if (item.defaultVariant === variantKey) {
+                    item.defaultVariant = item.variants[0]?.key || null;
+                }
+            }
+            renderItems();
+        }
+
+        // 設定預設變體
+        function setDefaultVariant(itemIndex, variantKey) {
+            if (!state.items[itemIndex]) return;
+            state.items[itemIndex].defaultVariant = variantKey;
+            renderItems();
+        }
+
+        // 更新變體名稱
+        function updateVariantName(itemIndex, variantKey, name) {
+            if (!state.items[itemIndex]) return;
+            const variant = state.items[itemIndex].variants.find(v => v.key === variantKey);
+            if (variant) {
+                variant.name = name;
+            }
+        }
+
+        // 為變體選擇圖片
+        function selectVariantImage(itemIndex, variantKey) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png, image/jpeg, image/webp';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const item = state.items[itemIndex];
+                    if (!item) return;
+                    const variant = item.variants.find(v => v.key === variantKey);
+                    if (variant) {
+                        variant.file = file;
+                        variant.previewUrl = ev.target.result;
+                        renderItems();
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        // 渲染物件列表
+        function renderItems() {
+            if (state.items.length === 0) {
+                elements.itemsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎨</div>
+                        <p>尚未添加任何物件</p>
+                        <p>請上傳圖片開始製作圖包</p>
+                    </div>
+                `;
+                return;
+            }
+
+                const characterItems = state.items.filter(item => item.category === 'character');
+            
+            elements.itemsList.innerHTML = state.items.map((item, index) => {
+                const availableTags = getTagsForCategory(item.category);
+                const itemTags = item.tags || [];
+                
+                // 構建人物選項（圖包內人物 + 歷史記錄）
+                const existingNames = characterItems.map(c => c.displayName);
+                const historyNames = state.characterNameHistory.filter(name => !existingNames.includes(name));
+                
+                return `
+                <div class="item-card">
+                    <img src="${item.previewUrl}" class="item-preview" alt="預覽" />
+                    <div class="item-form">
+                        <input 
+                            type="text" 
+                            class="display-name-input" 
+                            placeholder="物件顯示名稱" 
+                            value="${item.displayName}"
+                            onchange="updateItem(${index}, 'displayName', this.value)"
+                        />
+                        <select onchange="updateItem(${index}, 'category', this.value); renderItems();">
+                            ${categories.map(cat => 
+                                `<option value="${cat.key}" ${item.category === cat.key ? 'selected' : ''}>${cat.name}</option>`
+                            ).join('')}
+                        </select>
+                        ${item.category !== 'character' ? `
+                            <div class="character-id-input">
+                                <select onchange="handleItemCharacterChange(${index}, this.value)">
+                                    <option value="">綁定人物（可選）</option>
+                                    ${characterItems.length > 0 ? `
+                                        <optgroup label="圖包內人物">
+                                            ${characterItems.map(char => 
+                                                `<option value="${char.id}" ${item.characterId === char.id ? 'selected' : ''}>${char.displayName}</option>`
+                                            ).join('')}
+                                        </optgroup>
+                                    ` : ''}
+                                    ${historyNames.length > 0 ? `
+                                        <optgroup label="歷史記錄">
+                                            ${historyNames.map(name => 
+                                                `<option value="history:${name}" ${item.characterId === 'history:' + name || item.characterName === name ? 'selected' : ''}>${name}</option>`
+                                            ).join('')}
+                                        </optgroup>
+                                    ` : ''}
+                                    <option value="custom">➕ 輸入新人物...</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        <div class="tag-selector">
+                            <span class="tag-label">標籤 (可選):</span>
+                            <div class="tag-options">
+                                ${availableTags.map(tag => `
+                                    <label class="tag-option ${itemTags.includes(tag.name) ? 'selected' : ''}">
+                                        <input type="checkbox" 
+                                               ${itemTags.includes(tag.name) ? 'checked' : ''} 
+                                               onchange="toggleTag(${index}, '${tag.name}')" />
+                                        ${tag.name}
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <div class="current-tags" ${itemTags.length ? '' : 'style="display:none;"'}>
+                                ${itemTags.map(tag => `
+                                    <span class="current-tag">
+                                        ${tag}
+                                        <button class="tag-remove" onclick="removeTag(${index}, '${tag}')">×</button>
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <div class="tag-input-row">
+                                <input type="text" 
+                                       placeholder="輸入自訂標籤後 Enter"
+                                       onkeydown="if(event.key==='Enter'){ addCustomTag(${index}, this.value); this.value=''; }" />
+                            </div>
+                        </div>
+                        <!-- 變體配置區塊 -->
+                        <div class="variant-section">
+                            <div class="variant-header">
+                                <div class="variant-toggle">
+                                    <input type="checkbox" 
+                                           id="variant-toggle-${index}" 
+                                           ${item.hasVariant ? 'checked' : ''} 
+                                           onchange="toggleItemVariant(${index})" />
+                                    <label for="variant-toggle-${index}">◆ 啟用變體</label>
+                                </div>
+                                ${item.hasVariant ? `
+                                    <button class="variant-add-btn" onclick="addVariant(${index})">+ 添加變體</button>
+                                ` : ''}
+                            </div>
+                            ${item.hasVariant ? `
+                                <div class="variant-list">
+                                    ${item.variants.map(variant => `
+                                        <div class="variant-item ${item.defaultVariant === variant.key ? 'default-variant' : ''}">
+                                            ${variant.previewUrl ? `
+                                                <img src="${variant.previewUrl}" class="variant-preview" alt="變體預覽" onclick="selectVariantImage(${index}, '${variant.key}')" title="點擊更換圖片" style="cursor: pointer;" />
+                                            ` : `
+                                                <div class="variant-preview-placeholder" onclick="selectVariantImage(${index}, '${variant.key}')" title="點擊選擇圖片">📷</div>
+                                            `}
+                                            <div class="variant-info">
+                                                <input type="text" 
+                                                       class="variant-name-input" 
+                                                       placeholder="變體名稱" 
+                                                       value="${variant.name}" 
+                                                       onchange="updateVariantName(${index}, '${variant.key}', this.value)" />
+                                                ${item.defaultVariant === variant.key ? `
+                                                    <span class="variant-default-label">★ 預設變體</span>
+                                                ` : ''}
+                                            </div>
+                                            <div class="variant-actions">
+                                                <button class="variant-set-default-btn ${item.defaultVariant === variant.key ? 'is-default' : ''}" 
+                                                        onclick="setDefaultVariant(${index}, '${variant.key}')" 
+                                                        title="${item.defaultVariant === variant.key ? '已是預設' : '設為預設'}">★</button>
+                                                <button class="variant-remove-btn" 
+                                                        onclick="removeVariant(${index}, '${variant.key}')" 
+                                                        title="移除變體">×</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <button class="remove-btn" onclick="removeItem(${index})" title="移除物件">×</button>
+                </div>
+            `;
+            }).join('');
+
+            // 更新批次綁定區域
+            updateBatchBindUI();
+        }
+
+        // 更新批次綁定人物區域
+        function updateBatchBindUI() {
+            const batchBindGroup = document.getElementById('batchBindGroup');
+            const batchBindSelect = document.getElementById('batchBindSelect');
+            const historyManageRow = document.getElementById('historyManageRow');
+            if (!batchBindGroup || !batchBindSelect) return;
+
+            const characterItems = state.items.filter(item => item.category === 'character');
+            const hasItems = state.items.length > 0;
+            
+            // 只要有物件就顯示批次綁定區域
+            if (hasItems) {
+                batchBindGroup.style.display = 'block';
+                
+                // 組合選項：圖包內人物 + 歷史記錄人物
+                let options = '<option value="">選擇人物</option>';
+                
+                // 圖包內的人物
+                if (characterItems.length > 0) {
+                    options += '<optgroup label="圖包內人物">';
+                    characterItems.forEach(char => {
+                        options += `<option value="${char.id}">${char.displayName}</option>`;
+                    });
+                    options += '</optgroup>';
+                }
+                
+                // 歷史記錄人物（排除已存在於圖包內的）
+                const existingNames = characterItems.map(c => c.displayName);
+                const historyNames = state.characterNameHistory.filter(name => !existingNames.includes(name));
+                if (historyNames.length > 0) {
+                    options += '<optgroup label="歷史記錄">';
+                    historyNames.forEach(name => {
+                        options += `<option value="history:${name}">${name}</option>`;
+                    });
+                    options += '</optgroup>';
+                }
+                
+                // 自訂選項
+                options += '<option value="custom">➕ 輸入新人物名稱...</option>';
+                
+                batchBindSelect.innerHTML = options;
+                
+                // 顯示歷史管理按鈕（如果有歷史記錄）
+                if (historyManageRow) {
+                    historyManageRow.style.display = state.characterNameHistory.length > 0 ? 'flex' : 'none';
+                }
+            } else {
+                batchBindGroup.style.display = 'none';
+            }
+        }
+
+        // 開啟歷史人物管理
+        function openHistoryManager() {
+            if (state.characterNameHistory.length === 0) {
+                alert('目前沒有歷史記錄');
+                return;
+            }
+            
+            const list = state.characterNameHistory.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
+            const input = prompt(`請輸入要刪除的人物編號（多個用逗號分隔）：\n\n${list}`);
+            
+            if (!input || !input.trim()) return;
+            
+            const indices = input.split(',')
+                .map(s => parseInt(s.trim()) - 1)
+                .filter(i => !isNaN(i) && i >= 0 && i < state.characterNameHistory.length)
+                .sort((a, b) => b - a); // 從後往前刪除
+            
+            if (indices.length === 0) {
+                alert('未輸入有效的編號');
+                return;
+            }
+            
+            indices.forEach(idx => {
+                state.characterNameHistory.splice(idx, 1);
+            });
+            
+            // 保存更新
+            saveCharacterNames();
+            updateBatchBindUI();
+            alert(`已刪除 ${indices.length} 個人物記錄`);
+        }
+
+        // 批次綁定人物
+        function batchBindCharacter() {
+            const batchBindSelect = document.getElementById('batchBindSelect');
+            let selectedValue = batchBindSelect?.value;
+            
+            if (!selectedValue) {
+                alert('請先選擇一個人物');
+                return;
+            }
+
+            let characterIdToUse = selectedValue;
+            let characterNameToRecord = null;
+
+            // 處理自訂人物名稱
+            if (selectedValue === 'custom') {
+                const customName = prompt('請輸入人物名稱：');
+                if (!customName || !customName.trim()) {
+                    return;
+                }
+                characterIdToUse = `custom_${Date.now()}`;
+                characterNameToRecord = customName.trim();
+                // 記錄到歷史
+                recordCharacterNames([characterNameToRecord]);
+            } else if (selectedValue.startsWith('history:')) {
+                // 使用歷史記錄的人物名稱
+                characterNameToRecord = selectedValue.replace('history:', '');
+                characterIdToUse = `history_${Date.now()}`;
+            }
+
+            let boundCount = 0;
+            state.items.forEach((item, index) => {
+                // 跳過人物本身，只綁定未綁定的物件
+                if (item.category !== 'character' && !item.characterId) {
+                    state.items[index].characterId = characterIdToUse;
+                    // 如果是自訂或歷史人物，記錄名稱供顯示
+                    if (characterNameToRecord) {
+                        state.items[index].characterName = characterNameToRecord;
+                    }
+                    boundCount++;
+                }
+            });
+
+            if (boundCount > 0) {
+                renderItems();
+                alert(`✅ 已將 ${boundCount} 個物件綁定到選定人物`);
+            } else {
+                alert('沒有可綁定的物件（所有物件已有綁定或為人物類別）');
+            }
+        }
+
+        // 處理個別物件的人物選擇
+        function handleItemCharacterChange(itemIndex, value) {
+            if (value === 'custom') {
+                const customName = prompt('請輸入人物名稱：');
+                if (!customName || !customName.trim()) {
+                    renderItems(); // 重新渲染以重置選擇
+                    return;
+                }
+                const name = customName.trim();
+                state.items[itemIndex].characterId = `custom_${Date.now()}`;
+                state.items[itemIndex].characterName = name;
+                recordCharacterNames([name]);
+                renderItems();
+            } else if (value.startsWith('history:')) {
+                const name = value.replace('history:', '');
+                state.items[itemIndex].characterId = value;
+                state.items[itemIndex].characterName = name;
+                renderItems();
+            } else {
+                state.items[itemIndex].characterId = value;
+                delete state.items[itemIndex].characterName;
+                renderItems();
+            }
+        }
+
+        // 更新生成按鈕狀態
+        function updateGenerateButton() {
+            elements.generateBtn.disabled = state.items.length === 0 || !state.packDisplayName.trim();
+        }
+
+        // 生成 ZIP 檔案
+        async function generateZip() {
+            if (state.items.length === 0 || !state.packDisplayName.trim()) {
+                alert('請確保已添加物件且填寫了圖包名稱');
+                return;
+            }
+
+            try {
+                elements.generateBtn.disabled = true;
+                elements.generateBtn.textContent = '生成中...';
+
+                const zip = new JSZip();
+                const packId = state.packId || `pack_${Date.now()}`;
+                state.packId = packId;
+
+                // 建立臨時ID到最終ID的映射
+                const tempIdToFinalId = {};
+                state.items.forEach((item, index) => {
+                    const finalId = `item_${packId}_${index}`;
+                    tempIdToFinalId[item.id] = finalId;
+                });
+
+                // 建立配置檔案
+                const config = {
+                    packId: packId,
+                    packDisplayName: state.packDisplayName,
+                    description: state.description,
+                    createdAt: new Date().toISOString(),
+                    items: [],
+                    characters: []
+                };
+
+                // 記錄人物名單（提供給綁定與預設篩選）
+                const characterItems = state.items.filter(item => item.category === 'character');
+                config.characters = characterItems.map(char => ({
+                    id: tempIdToFinalId[char.id],
+                    name: char.displayName
+                }));
+
+                // 處理每個物件
+                for (const item of state.items) {
+                    // 添加圖片檔案到 ZIP
+                    zip.file(item.file.name, item.file);
+
+                    // 建立物件配置
+                    const finalItemId = tempIdToFinalId[item.id];
+                    const itemConfig = {
+                        itemId: finalItemId,
+                        displayName: item.displayName,
+                        file: item.file.name,
+                        category: item.category
+                    };
+
+                    // 處理人物綁定（表情 / 服裝皆可）
+                    if (item.characterId) {
+                        itemConfig.characterId = tempIdToFinalId[item.characterId] || null;
+                    }
+
+                    // 添加標籤 (如果有)
+                    if (item.tags && item.tags.length > 0) {
+                        itemConfig.tags = item.tags;
+                    }
+
+                    // 添加變體資料 (如果啟用)
+                    if (item.hasVariant && item.variants.length > 0) {
+                        itemConfig.hasVariant = true;
+                        itemConfig.defaultVariant = item.defaultVariant;
+                        itemConfig.variants = [];
+                        itemConfig.variantFiles = {};
+
+                        for (const variant of item.variants) {
+                            itemConfig.variants.push({
+                                key: variant.key,
+                                name: variant.name
+                            });
+
+                            // 添加變體圖片到 ZIP
+                            if (variant.file) {
+                                const variantFileName = `${finalItemId}_${variant.key}_${variant.file.name}`;
+                                zip.file(variantFileName, variant.file);
+                                itemConfig.variantFiles[variant.key] = variantFileName;
+                            }
+                        }
+                    }
+
+                    config.items.push(itemConfig);
+                }
+
+                // 添加配置檔案
+                zip.file('config.json', JSON.stringify(config, null, 2));
+
+                // 生成並下載 ZIP
+                const content = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                // 創建下載連結
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                const safeFileName = state.packDisplayName.replace(/[/\\?%*:|"<>]/g, '-') || 'package';
+                link.download = `${safeFileName}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+
+                const characterNames = extractCharacterNames();
+                recordCharacterNames(characterNames);
+                recordHistoryEntry(packId, state.packDisplayName, characterNames);
+
+                alert(`✅ 圖包「${state.packDisplayName}」生成成功！\n包含 ${state.items.length} 個物件`);
+
+            } catch (error) {
+                console.error('生成 ZIP 時發生錯誤:', error);
+                alert('❌ 生成失敗: ' + error.message);
+            } finally {
+                elements.generateBtn.disabled = false;
+                elements.generateBtn.textContent = '生成 ZIP 圖包';
+                updateGenerateButton();
+            }
+        }
+
+        // 初始化應用
+        function init() {
+            initEventListeners();
+            renderItems();
+            updateGenerateButton();
+            renderHistory();
+            
+            // 檢查 JSZip 是否載入
+            if (typeof JSZip === 'undefined') {
+                alert('❌ JSZip 庫載入失敗，請檢查網路連接或使用最新版瀏覽器');
+                elements.generateBtn.textContent = 'JSZip 未載入';
+                elements.generateBtn.disabled = true;
+            }
+        }
+
+        // 當 DOM 載入完成後初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
