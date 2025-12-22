@@ -1,24 +1,219 @@
 <template>
   <div class="settings-modal" @click.stop>
     <div class="settings-header">
-      <h3>⚙️ 設定</h3>
+      <h3><span class="title-icon" v-html="icons.settings"></span> 設定</h3>
       <button @click="$emit('close')" class="close-btn" title="關閉">×</button>
     </div>
     
     <div class="settings-content">
+      <!-- 主題管理區塊 -->
       <div class="settings-section">
-        <h4>📦 圖包管理</h4>
-        <div class="pack-list">
-          <div v-if="gameStore.availablePacks.length === 0" class="empty-list">
-            尚未匯入任何圖包
+        <h4><span class="section-icon" v-html="icons.settings"></span> 主題管理</h4>
+        
+        <!-- 預設主題選擇 -->
+        <div class="theme-selector">
+          <label>選擇主題</label>
+          <div class="theme-options">
+            <button 
+              :class="['theme-option', { active: gameStore.theme.currentTheme === 'default' }]"
+              @click="applyTheme('default')">
+              <div class="theme-preview" :style="getDefaultThemePreviewStyle()"></div>
+              <span>預設</span>
+            </button>
+            <div 
+              v-for="theme in gameStore.theme.customThemes" 
+              :key="theme.id"
+              :class="['theme-option', { active: gameStore.theme.currentTheme === theme.id }]"
+              @click="applyTheme(theme.id)">
+              <div class="theme-preview" :style="getThemePreviewStyle(theme)"></div>
+              <span>{{ theme.name }}</span>
+              <button class="delete-theme-btn" @click.stop="deleteTheme(theme.id)" title="刪除">×</button>
+            </div>
           </div>
-          <div v-for="pack in gameStore.availablePacks" :key="pack.name" class="pack-item">
-            <span>{{ pack.displayName || pack.name }}</span>
-            <button @click="deletePack(pack.name)" class="delete-btn">刪除</button>
+        </div>
+
+        <!-- 自定義顏色編輯器 -->
+        <div class="subsection">
+          <button class="subsection-toggle" @click="showColorEditor = !showColorEditor">
+            <span class="toggle-icon">{{ showColorEditor ? '▼' : '▶' }}</span>
+            自定義顏色
+          </button>
+          
+          <div v-if="showColorEditor" class="subsection-content">
+            <div class="color-swatches">
+              <div class="color-swatch-item" v-for="(label, key) in colorLabels" :key="key">
+                <div 
+                  class="color-swatch" 
+                  :style="{ backgroundColor: editingColors[key] }"
+                  @click="openColorPicker(key)"
+                  :title="label"
+                  :class="{ active: activeColorKey === key }"
+                ></div>
+                <span class="swatch-label">{{ label }}</span>
+              </div>
+            </div>
+
+            <!-- iro.js 顏色編輯彈窗 -->
+            <div v-if="activeColorKey" class="color-picker-popup">
+              <div class="color-picker-header">
+                <span>{{ colorLabels[activeColorKey] }}</span>
+                <button class="color-picker-close" @click="closeColorPicker">×</button>
+              </div>
+              <div class="color-picker-body">
+                <div ref="iroPickerContainer" class="iro-picker-container"></div>
+                <div class="color-input-section">
+                  <div class="color-input-row">
+                    <label class="color-input-label">HEX</label>
+                    <input 
+                      type="text" 
+                      class="color-input hex-input"
+                      :value="editingColors[activeColorKey]"
+                      @input="handleHexInput($event)"
+                      @blur="validateHexInput"
+                      placeholder="#000000"
+                      maxlength="7"
+                    />
+                  </div>
+                  <div class="color-input-row rgb-row">
+                    <label class="color-input-label">RGB</label>
+                    <div class="rgb-inputs">
+                      <input 
+                        type="number" 
+                        class="color-input rgb-input"
+                        :value="getCurrentRgbValues().r"
+                        @input="handleRgbInput('r', $event)"
+                        min="0" max="255"
+                        placeholder="R"
+                      />
+                      <input 
+                        type="number" 
+                        class="color-input rgb-input"
+                        :value="getCurrentRgbValues().g"
+                        @input="handleRgbInput('g', $event)"
+                        min="0" max="255"
+                        placeholder="G"
+                      />
+                      <input 
+                        type="number" 
+                        class="color-input rgb-input"
+                        :value="getCurrentRgbValues().b"
+                        @input="handleRgbInput('b', $event)"
+                        min="0" max="255"
+                        placeholder="B"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="subsection-actions">
+              <input 
+                type="text" 
+                v-model="newThemeName" 
+                placeholder="主題名稱"
+                class="theme-name-input">
+              <button class="primary-btn small" @click="saveCurrentTheme">儲存</button>
+              <button class="secondary-btn small" @click="previewColors">預覽</button>
+              <button class="secondary-btn small" @click="resetColors">重置</button>
+            </div>
+
+            <div class="subsection-footer">
+              <button class="icon-btn-action" @click="exportColors">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                匯出顏色
+              </button>
+              <button class="icon-btn-action" @click="triggerColorImport">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                匯入顏色
+              </button>
+              <input 
+                ref="colorFileInput" 
+                type="file" 
+                accept=".json"
+                @change="handleColorImport"
+                style="display: none;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 自定義 CSS -->
+        <div class="subsection">
+          <button class="subsection-toggle" @click="showCustomCSS = !showCustomCSS">
+            <span class="toggle-icon">{{ showCustomCSS ? '▼' : '▶' }}</span>
+            自定義 CSS
+          </button>
+          
+          <div v-if="showCustomCSS" class="subsection-content">
+            <textarea 
+              v-model="customCSS"
+              class="css-editor"
+              placeholder="/* 在此輸入自定義 CSS */"></textarea>
+            
+            <div class="subsection-actions">
+              <button class="primary-btn small" @click="applyCustomCSS">套用</button>
+              <button class="secondary-btn small" @click="clearCustomCSS">清除</button>
+            </div>
+
+            <div class="subsection-footer">
+              <button class="icon-btn-action" @click="exportCSS">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                匯出CSS
+              </button>
+              <button class="icon-btn-action" @click="triggerCSSImport">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                匯入CSS
+              </button>
+              <input 
+                ref="cssFileInput" 
+                type="file" 
+                accept=".json,.css"
+                @change="handleCSSImport"
+                style="display: none;">
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- 圖包管理區塊 -->
+      <div class="settings-section">
+        <h4><span class="section-icon" v-html="icons.import"></span> 圖包管理</h4>
+        <div class="pack-actions">
+          <button class="primary-btn" @click="showImporter = true">匯入圖包</button>
+          <button class="secondary-btn" @click="exportAllData" :disabled="isExportingAll">
+            {{ isExportingAll ? '匯出中...' : '匯出全部資料' }}
+          </button>
+        </div>
+        <div class="pack-delete">
+          <label for="packSelect">匯出 / 刪除單一圖包</label>
+          <div class="delete-row">
+            <select id="packSelect" v-model="selectedPackId">
+              <option disabled value="">選擇圖包</option>
+              <option v-for="pack in gameStore.availablePacks" :key="pack.id" :value="pack.id">
+                {{ pack.displayName || pack.name }}
+              </option>
+            </select>
+            <button class="secondary-btn" @click="exportSelectedPack" :disabled="!selectedPackId">匯出</button>
+            <button class="delete-btn" @click="deleteSelectedPack" :disabled="!selectedPackId">刪除</button>
+          </div>
+          <div v-if="gameStore.availablePacks.length === 0" class="empty-list">
+            尚未匯入任何圖包
+          </div>
+        </div>
+      </div>
+
+      <!-- 雲端同步區塊 -->
+      <div class="settings-section">
+        <h4>☁️ 雲端同步（Google Drive）</h4>
+        <p class="hint">需先配置 Google OAuth Client ID，以下按鈕目前為占位實作。</p>
+        <div class="cloud-actions">
+          <button class="primary-btn" @click="connectGoogle">登入 Google</button>
+          <button class="secondary-btn" @click="uploadToDrive" :disabled="!isGoogleReady">上傳本機資料</button>
+          <button class="secondary-btn" @click="syncFromDrive" :disabled="!isGoogleReady">從雲端同步</button>
+        </div>
+      </div>
       
+      <!-- 危險區域 -->
       <div class="settings-section">
         <h4>⚠️ 危險區域</h4>
         <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
@@ -26,18 +221,522 @@
       </div>
     </div>
   </div>
+
+  <teleport to="body">
+    <div v-if="showImporter" class="modal-overlay" @click="showImporter = false">
+      <Importer @close="showImporter = false" @click.stop />
+    </div>
+  </teleport>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, reactive, watch, nextTick, onUnmounted } from 'vue';
 import { useGameStore } from '../store/index.js';
+import { icons } from '../icons.js';
+import Importer from './Importer.vue';
+import { ensureGoogleClient, ensureAccessToken, uploadJsonFile, downloadLatestJson } from '../core/googleDrive.js';
+import iro from '@jaames/iro';
 
 defineEmits(['close']);
 const gameStore = useGameStore();
+const showImporter = ref(false);
+const selectedPackId = ref('');
+const isExportingAll = ref(false);
+const isGoogleReady = ref(false);
+const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
 
-const deletePack = async (packName) => {
-  const pack = gameStore.availablePacks.find(p => p.name === packName);
+// 顏色管理相關
+const showColorEditor = ref(false);
+const showCustomCSS = ref(false);
+const newThemeName = ref('');
+const colorFileInput = ref(null);
+const cssFileInput = ref(null);
+const customCSS = ref('');
+const activeColorKey = ref(null);
+
+// 從 CSS 變數動態讀取預設顏色，確保與 index.html 同步
+const getCSSVariable = (name) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+};
+
+// 顏色變數名稱列表
+const colorKeys = [
+  'color-primary',
+  'color-primary-light',
+  'color-bg-main',
+  'color-bg-panel',
+  'color-bg-card',
+  'color-bg-canvas',
+  'color-text-primary',
+  'color-text-secondary',
+  'color-border',
+  'color-border-light',
+  'color-success',
+  'color-error',
+  'color-warning',
+  'color-info',
+];
+
+// 從 CSS 變數動態生成 defaultColors
+const getDefaultColors = () => {
+  const colors = {};
+  colorKeys.forEach(key => {
+    colors[key] = getCSSVariable(key) || '#000000';
+  });
+  return colors;
+};
+
+const defaultColors = getDefaultColors();
+
+const colorLabels = {
+  'color-primary': '主題色',
+  'color-primary-light': '主題色（淺）',
+  'color-bg-main': '主背景色',
+  'color-bg-panel': '面板背景色',
+  'color-bg-card': '主卡片顏色',
+  'color-bg-canvas': '畫布顏色',
+  'color-text-primary': '主要文字色',
+  'color-text-secondary': '次要文字色',
+  'color-border': '邊框色',
+  'color-border-light': '淺邊框色',
+  'color-success': '成功色',
+  'color-error': '錯誤色',
+  'color-warning': '警告色',
+  'color-info': '資訊色',
+};
+
+const editingColors = reactive({ ...defaultColors });
+
+// iro.js 色彩選取器相關
+const iroPickerContainer = ref(null);
+let iroColorPicker = null;
+
+const openColorPicker = async (key) => {
+  activeColorKey.value = key;
+  await nextTick();
+  initIroColorPicker();
+};
+
+const closeColorPicker = () => {
+  if (iroColorPicker) {
+    iroColorPicker.off('color:change', handleIroColorChange);
+    iroColorPicker = null;
+  }
+  activeColorKey.value = null;
+};
+
+const initIroColorPicker = () => {
+  if (!iroPickerContainer.value || !activeColorKey.value) return;
+  
+  // 清空容器
+  iroPickerContainer.value.innerHTML = '';
+  
+  // 創建 iro.js 色彩選取器
+  iroColorPicker = new iro.ColorPicker(iroPickerContainer.value, {
+    width: 200,
+    color: editingColors[activeColorKey.value],
+    borderWidth: 1,
+    borderColor: "#ddd",
+    layout: [
+      {
+        component: iro.ui.Box,
+      },
+      {
+        component: iro.ui.Slider,
+        options: { sliderType: 'hue' }
+      }
+    ]
+  });
+  
+  iroColorPicker.on('color:change', handleIroColorChange);
+};
+
+const handleIroColorChange = (color) => {
+  if (activeColorKey.value) {
+    editingColors[activeColorKey.value] = color.hexString;
+  }
+};
+
+const getCurrentRgbValues = () => {
+  if (!activeColorKey.value) return { r: 0, g: 0, b: 0 };
+  const hex = editingColors[activeColorKey.value] || '#000000';
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  return { r, g, b };
+};
+
+const getCurrentRgb = () => {
+  const { r, g, b } = getCurrentRgbValues();
+  return `${r}, ${g}, ${b}`;
+};
+
+// 處理 HEX 輸入
+const handleHexInput = (event) => {
+  let value = event.target.value;
+  // 確保以 # 開頭
+  if (!value.startsWith('#')) {
+    value = '#' + value;
+  }
+  // 只允許有效的 hex 字符
+  value = value.replace(/[^#0-9A-Fa-f]/g, '').slice(0, 7);
+  
+  if (activeColorKey.value && value.length === 7) {
+    editingColors[activeColorKey.value] = value;
+    // 更新 iro picker
+    if (iroColorPicker) {
+      iroColorPicker.color.hexString = value;
+    }
+  }
+};
+
+const validateHexInput = (event) => {
+  let value = event.target.value;
+  if (!value.startsWith('#')) {
+    value = '#' + value;
+  }
+  // 如果不是完整的 hex，補全
+  if (value.length < 7) {
+    value = value.padEnd(7, '0');
+  }
+  if (activeColorKey.value) {
+    editingColors[activeColorKey.value] = value.slice(0, 7);
+    if (iroColorPicker) {
+      iroColorPicker.color.hexString = value.slice(0, 7);
+    }
+  }
+};
+
+// 處理 RGB 輸入
+const handleRgbInput = (channel, event) => {
+  if (!activeColorKey.value) return;
+  
+  let value = parseInt(event.target.value) || 0;
+  value = Math.max(0, Math.min(255, value));
+  
+  const { r, g, b } = getCurrentRgbValues();
+  let newR = r, newG = g, newB = b;
+  
+  if (channel === 'r') newR = value;
+  if (channel === 'g') newG = value;
+  if (channel === 'b') newB = value;
+  
+  const hex = '#' + 
+    newR.toString(16).padStart(2, '0') +
+    newG.toString(16).padStart(2, '0') +
+    newB.toString(16).padStart(2, '0');
+  
+  editingColors[activeColorKey.value] = hex;
+  
+  // 更新 iro picker
+  if (iroColorPicker) {
+    iroColorPicker.color.hexString = hex;
+  }
+};
+
+onMounted(() => {
+  customCSS.value = gameStore.theme.customCSS || '';
+  
+  // 載入當前主題的顏色或預覽顏色
+  if (gameStore.theme.previewColors) {
+    Object.assign(editingColors, gameStore.theme.previewColors);
+  } else if (gameStore.theme.currentTheme !== 'default') {
+    const currentTheme = gameStore.theme.customThemes.find(
+      t => t.id === gameStore.theme.currentTheme
+    );
+    if (currentTheme && currentTheme.colors) {
+      Object.assign(editingColors, currentTheme.colors);
+    }
+  }
+});
+
+onUnmounted(() => {
+  if (iroColorPicker) {
+    iroColorPicker.off('color:change', handleIroColorChange);
+    iroColorPicker = null;
+  }
+  
+  // 關閉設定時，清除預覽顏色並恢復到當前儲存的主題
+  if (gameStore.theme.previewColors) {
+    gameStore.clearPreviewColors();
+    // 恢復到當前儲存的主題顏色
+    gameStore.applyTheme(gameStore.theme.currentTheme);
+  }
+});
+
+// 主題相關函數
+const applyTheme = async (themeId) => {
+  await gameStore.setCurrentTheme(themeId);
+  
+  // 更新編輯器中的顏色以反映當前主題
+  if (themeId === 'default') {
+    Object.assign(editingColors, defaultColors);
+  } else {
+    const theme = gameStore.theme.customThemes.find(t => t.id === themeId);
+    if (theme && theme.colors) {
+      Object.assign(editingColors, theme.colors);
+    }
+  }
+  
+  gameStore.showNotification('✅ 已套用主題', 'success');
+};
+
+const deleteTheme = async (themeId) => {
+  if (confirm('確定要刪除此主題嗎？')) {
+    await gameStore.deleteCustomTheme(themeId);
+    gameStore.showNotification('🗑️ 已刪除主題', 'success');
+  }
+};
+
+const getThemePreviewStyle = (theme) => {
+  const primary = theme.colors?.['color-primary'] || '#618b6a';
+  const primaryLight = theme.colors?.['color-primary-light'] || '#7da585';
+  return {
+    background: `linear-gradient(135deg, ${primary} 0%, ${primaryLight} 100%)`,
+  };
+};
+
+const getDefaultThemePreviewStyle = () => {
+  const primary = getCSSVariable('color-primary');
+  const primaryLight = getCSSVariable('color-primary-light');
+  return {
+    background: `linear-gradient(135deg, ${primary} 0%, ${primaryLight} 100%)`,
+  };
+};
+
+const previewColors = async () => {
+  const root = document.documentElement;
+  Object.entries(editingColors).forEach(([key, value]) => {
+    root.style.setProperty(`--${key}`, value);
+  });
+  // 保存預覽顏色到 store 以便持久化
+  await gameStore.savePreviewColors({ ...editingColors });
+  gameStore.showNotification('👁️ 預覽中（已臨時保存）', 'info');
+};
+
+const resetColors = () => {
+  Object.assign(editingColors, defaultColors);
+  gameStore.applyTheme('default');
+  // 清除預覽顏色
+  gameStore.clearPreviewColors();
+  gameStore.showNotification('🔄 已重置為預設色', 'info');
+};
+
+const saveCurrentTheme = async () => {
+  if (!newThemeName.value.trim()) {
+    gameStore.showNotification('❌ 請輸入主題名稱', 'error');
+    return;
+  }
+
+  const theme = await gameStore.addCustomTheme({
+    name: newThemeName.value,
+    colors: { ...editingColors },
+  });
+
+  await gameStore.setCurrentTheme(theme.id);
+  newThemeName.value = '';
+  gameStore.showNotification('✅ 已儲存並套用主題', 'success');
+};
+
+// 顏色匯出/匯入
+const exportColors = () => {
+  const config = {
+    type: 'colors-only',
+    colors: { ...editingColors },
+    exportedAt: new Date().toISOString(),
+  };
+  downloadJson(config, `colors-${Date.now()}.json`);
+  gameStore.showNotification('📤 已匯出顏色設定', 'success');
+};
+
+const triggerColorImport = () => {
+  colorFileInput.value?.click();
+};
+
+const handleColorImport = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const config = JSON.parse(text);
+    if (config.colors) {
+      Object.assign(editingColors, config.colors);
+      // 立即套用到 UI
+      const root = document.documentElement;
+      Object.entries(editingColors).forEach(([key, value]) => {
+        root.style.setProperty(`--${key}`, value);
+      });
+      
+      // 自動創建新主題並保存
+      const themeName = config.name || `匯入主題 ${new Date().toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+      const theme = await gameStore.addCustomTheme({
+        name: themeName,
+        colors: { ...editingColors },
+      });
+      await gameStore.setCurrentTheme(theme.id);
+      // 清除預覽顏色，因為已經保存為正式主題了
+      await gameStore.clearPreviewColors();
+      gameStore.showNotification(`✅ 已匯入並儲存為主題「${themeName}」`, 'success');
+    }
+  } catch (error) {
+    console.error(error);
+    gameStore.showNotification('❌ 匯入失敗，請檢查檔案格式', 'error');
+  }
+
+  event.target.value = '';
+};
+
+// CSS 匯出/匯入
+const exportCSS = () => {
+  const config = {
+    type: 'css-only',
+    customCSS: customCSS.value,
+    exportedAt: new Date().toISOString(),
+  };
+  downloadJson(config, `custom-css-${Date.now()}.json`);
+  gameStore.showNotification('📤 已匯出 CSS 設定', 'success');
+};
+
+const triggerCSSImport = () => {
+  cssFileInput.value?.click();
+};
+
+const handleCSSImport = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    // 支援 JSON 或純 CSS 檔案
+    if (file.name.endsWith('.json')) {
+      const config = JSON.parse(text);
+      if (config.customCSS !== undefined) {
+        customCSS.value = config.customCSS;
+      }
+    } else {
+      customCSS.value = text;
+    }
+    gameStore.showNotification('✅ 已匯入 CSS 設定', 'success');
+  } catch (error) {
+    console.error(error);
+    gameStore.showNotification('❌ 匯入失敗，請檢查檔案格式', 'error');
+  }
+
+  event.target.value = '';
+};
+
+// 自定義 CSS 相關
+const applyCustomCSS = async () => {
+  await gameStore.setCustomCSS(customCSS.value);
+  gameStore.showNotification('✅ 已套用自定義 CSS', 'success');
+};
+
+const clearCustomCSS = async () => {
+  customCSS.value = '';
+  await gameStore.setCustomCSS('');
+  gameStore.showNotification('🗑️ 已清除自定義 CSS', 'success');
+};
+
+// 圖包管理相關函數
+const deleteSelectedPack = async () => {
+  const pack = gameStore.availablePacks.find(p => p.id === selectedPackId.value);
+  if (!pack) return;
   if (confirm(`確定要刪除圖包「${pack.displayName || pack.name}」及其所有物件嗎？`)) {
-    await gameStore.deletePack(packName);
+    await gameStore.deletePack(selectedPackId.value);
+    selectedPackId.value = '';
+  }
+};
+
+const exportSelectedPack = () => {
+  const pack = gameStore.availablePacks.find(p => p.id === selectedPackId.value);
+  if (!pack) return;
+  const items = gameStore.wardrobeItems.filter(item => item.packId === pack.id);
+  const payload = {
+    type: 'pack',
+    pack,
+    items,
+    exportedAt: new Date().toISOString(),
+  };
+  downloadJson(payload, `pack-${pack.id}.json`);
+  gameStore.showNotification(`📦 已匯出圖包：${pack.displayName || pack.name}`, 'success');
+};
+
+const exportAllData = () => {
+  isExportingAll.value = true;
+  const payload = {
+    type: 'full-backup',
+    exportedAt: new Date().toISOString(),
+    packs: gameStore.availablePacks,
+    items: gameStore.wardrobeItems,
+    outfits: gameStore.savedOutfits,
+    schemaVersion: 1,
+  };
+  downloadJson(payload, `doll-backup-${Date.now()}.json`);
+  gameStore.showNotification('💾 全部資料已匯出', 'success');
+  isExportingAll.value = false;
+};
+
+const downloadJson = (data, filename) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Google Drive 同步
+const connectGoogle = async () => {
+  try {
+    await ensureGoogleClient(GOOGLE_CLIENT_ID);
+    await ensureAccessToken();
+    isGoogleReady.value = true;
+    gameStore.showNotification('✅ 已登入 Google', 'success');
+  } catch (err) {
+    console.error(err);
+    gameStore.showNotification('❌ Google 登入失敗，請稍後再試', 'error');
+  }
+};
+
+const uploadToDrive = async () => {
+  try {
+    if (!isGoogleReady.value) await connectGoogle();
+    await ensureAccessToken();
+    const payload = {
+      type: 'full-backup',
+      exportedAt: new Date().toISOString(),
+      packs: gameStore.availablePacks,
+      items: gameStore.wardrobeItems,
+      outfits: gameStore.savedOutfits,
+      schemaVersion: 1,
+    };
+    await uploadJsonFile({ name: 'doll-backup.json', json: payload });
+    gameStore.showNotification('☁️ 已上傳備份到 Google Drive', 'success');
+  } catch (err) {
+    console.error(err);
+    gameStore.showNotification('❌ 上傳失敗，請檢查網路或權限', 'error');
+  }
+};
+
+const syncFromDrive = async () => {
+  try {
+    if (!isGoogleReady.value) await connectGoogle();
+    await ensureAccessToken();
+    const data = await downloadLatestJson({ name: 'doll-backup.json' });
+    if (!data) {
+      gameStore.showNotification('ℹ️ 雲端沒有備份檔', 'info');
+      return;
+    }
+    await gameStore.clearAllData();
+    for (const pack of data.packs || []) await gameStore.addPack(pack);
+    for (const item of data.items || []) await gameStore.addNewItem(item);
+    for (const outfit of data.outfits || []) await gameStore.importOutfit(outfit);
+    gameStore.showNotification('☁️ 已從雲端同步完成', 'success');
+  } catch (err) {
+    console.error(err);
+    gameStore.showNotification('❌ 同步失敗，請檢查網路或權限', 'error');
   }
 };
 
@@ -49,17 +748,889 @@ const clearAllData = () => {
 </script>
 
 <style scoped>
-/* 樣式與 Search.vue 類似 */
-.settings-modal { width: 500px; max-width: 90vw; background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
-.settings-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e0e0e0; }
-.close-btn { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #888; }
-.settings-content { padding: 1.5rem; }
-.settings-section { margin-bottom: 2rem; }
-.settings-section h4 { margin-top: 0; margin-bottom: 1rem; }
-.pack-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.pack-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background-color: #f7f7f7; border-radius: 6px; }
-.delete-btn { background-color: #F44336; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; }
-.danger-btn { width: 100%; padding: 0.75rem; background-color: #c0392b; color: white; border: none; border-radius: 6px; cursor: pointer; }
-.hint { font-size: 0.8rem; color: #666; margin-top: 0.5rem; }
-.empty-list { color: #888; text-align: center; padding: 1rem; }
+/* ========================================
+   Settings.vue 樣式
+   ----------------------------------------
+   目錄：
+   1. 基礎結構
+   2. 主題選擇器
+   3. 子區塊樣式
+   4. 顏色編輯器
+   5. 顏色選擇彈窗
+   6. 自定義 CSS
+   7. 按鈕樣式
+   8. 圖包管理
+   9. 雲端同步
+   10. 表單元素
+   11. 響應式設計
+   ======================================== */
+
+/* ========================================
+   1. 基礎結構
+   ======================================== */
+.settings-modal {
+  width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-panel);
+}
+
+.settings-header h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+
+.close-btn:hover {
+  background-color: rgb(from var(--color-border) r g b / 0.2);
+  color: var(--color-text-primary);
+}
+
+.settings-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.settings-section h4 {
+  margin: 0 0 1rem 0;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========================================
+   2. 主題選擇器
+   ======================================== */
+.theme-selector {
+  margin-bottom: 1rem;
+}
+
+.theme-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  position: relative;
+}
+
+.theme-option:hover {
+  border-color: var(--color-primary-light);
+  transform: translateY(-2px);
+}
+
+.theme-option.active {
+  border-color: var(--color-primary);
+  background: rgb(from var(--color-primary) r g b / 0.1);
+}
+
+.theme-preview {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.theme-option span {
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.delete-theme-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: var(--color-error);
+  color: var(--color-bg-main);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition-fast);
+}
+
+.theme-option:hover .delete-theme-btn {
+  opacity: 1;
+}
+
+/* ========================================
+   3. 子區塊樣式
+   ======================================== */
+.subsection {
+  margin-top: 1rem;
+}
+
+.subsection-toggle {
+  background: none;
+  border: none;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: var(--transition-fast);
+}
+
+.subsection-toggle:hover {
+  color: var(--color-primary);
+}
+
+.toggle-icon {
+  font-size: 0.75rem;
+  display: inline-block;
+  width: 1rem;
+}
+
+.subsection-content {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--color-bg-panel);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ========================================
+   4. 顏色編輯器
+   ======================================== */
+/* 顏色網格 */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* 色塊顯示樣式 */
+.color-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.color-swatch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.color-swatch.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.swatch-label {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 60px;
+  word-break: keep-all;
+}
+
+/* ========================================
+   5. 顏色選擇彈窗
+   ======================================== */
+.color-picker-popup {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.color-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.color-picker-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.color-picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* iro.js 色彩選取器容器 */
+.iro-picker-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+/* 顏色輸入區塊 */
+.color-input-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-input-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 35px;
+}
+
+.color-input {
+  font-family: monospace;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s;
+}
+
+.color-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.hex-input {
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.rgb-row {
+  flex-wrap: wrap;
+}
+
+.rgb-inputs {
+  display: flex;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.rgb-input {
+  width: 55px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.rgb-input::-webkit-outer-spin-button,
+.rgb-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.color-info-display {
+  width: 100%;
+  background: var(--color-bg-panel);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+.color-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+}
+
+.color-info-label {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.color-info-value {
+  font-family: monospace;
+  color: var(--color-text-primary);
+}
+
+.color-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.color-item label {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.color-control {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.color-control input[type="color"] {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 1px;
+  flex-shrink: 0;
+}
+
+.color-hex {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-family: monospace;
+}
+
+.subsection-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.subsection-actions .theme-name-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.subsection-actions button {
+  white-space: nowrap;
+}
+
+.theme-name-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-main);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.subsection-footer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border-light);
+  flex-wrap: wrap;
+}
+
+.icon-btn-action {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--color-text-primary);
+  transition: var(--transition-fast);
+}
+
+.icon-btn-action:hover {
+  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.icon-btn-action svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   6. 自定義 CSS
+   ======================================== */
+.css-editor {
+  width: 100%;
+  min-height: 150px;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* ========================================
+   7. 按鈕樣式
+   ======================================== */
+.primary-btn {
+  background-color: var(--color-primary);
+  color: var(--color-bg-main);
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition-fast);
+}
+
+.primary-btn.small {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.primary-btn:hover {
+  background-color: rgb(from var(--color-primary) r g b / 0.85);
+}
+
+.secondary-btn {
+  background-color: rgb(from var(--color-border) r g b / 0.2);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition-fast);
+}
+
+.secondary-btn.small {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.secondary-btn:hover {
+  background-color: rgb(from var(--color-border) r g b / 0.35);
+}
+
+.secondary-btn:disabled,
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  background-color: var(--color-error);
+  color: var(--color-bg-main);
+  border: none;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition-fast);
+}
+
+.delete-btn:hover {
+  background-color: rgb(from var(--color-error) r g b / 0.85);
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.danger-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--color-error);
+  color: var(--color-bg-main);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: var(--transition-fast);
+}
+
+.danger-btn:hover {
+  background-color: rgb(from var(--color-error) r g b / 0.85);
+}
+
+/* ========================================
+   8. 圖包管理
+   ======================================== */
+.pack-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.pack-delete {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pack-delete label {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.delete-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ========================================
+   9. 雲端同步
+   ======================================== */
+.cloud-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* ========================================
+   10. 表單元素
+   ======================================== */
+select {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.empty-list {
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+/* ========================================
+   11. 響應式設計
+   ======================================== */
+/* 手機版響應式 */
+@media (max-width: 767px) {
+  .settings-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .settings-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .settings-header h3 {
+    font-size: 1rem;
+  }
+
+  .settings-content {
+    padding: 1rem;
+  }
+
+  .settings-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .settings-section h4 {
+    font-size: 1rem;
+    gap: 0.35rem;
+  }
+
+  .theme-options {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 0.4rem;
+  }
+
+  .theme-option {
+    padding: 0.4rem;
+  }
+
+  .theme-preview {
+    width: 42px;
+    height: 42px;
+  }
+
+  .theme-option span {
+    font-size: 0.7rem;
+  }
+
+  .delete-theme-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+    opacity: 1;
+  }
+
+  .subsection-toggle {
+    font-size: 0.85rem;
+  }
+
+  .color-grid {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .color-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .color-item label {
+    font-size: 0.72rem;
+    min-width: 80px;
+  }
+
+  .color-control {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .color-control input[type="color"] {
+    width: 32px;
+    height: 32px;
+  }
+
+  .color-hex {
+    width: 80px;
+    flex: none;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.4rem;
+  }
+
+  .subsection-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+
+  .theme-name-input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-main);
+    color: var(--color-text-primary);
+    display: block;
+    font-size: 0.8rem;
+  }
+
+  .subsection-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .subsection-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .css-editor {
+    min-height: 120px;
+    font-size: 0.8rem;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .delete-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .primary-btn.small,
+  .secondary-btn.small {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .pack-actions {
+    flex-direction: column;
+  }
+
+  .pack-actions button {
+    width: 100%;
+  }
+
+  .cloud-actions {
+    flex-direction: column;
+  }
+
+  .cloud-actions button {
+    width: 100%;
+  }
+
+  .delete-row {
+    flex-wrap: wrap;
+  }
+
+  .delete-row select {
+    width: 100%;
+    flex: none;
+  }
+
+  .delete-row button {
+    flex: 1;
+  }
+
+  .danger-btn {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .hint {
+    font-size: 0.8rem;
+  }
+}
+
+/* 平板版響應式 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .settings-modal {
+    width: 90vw;
+    max-width: 600px;
+    max-height: 85vh;
+  }
+
+  .settings-content {
+    padding: 1.25rem;
+  }
+
+  .color-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .theme-options {
+    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+  }
+
+  .pack-actions {
+    flex-wrap: nowrap;
+  }
+}
 </style>

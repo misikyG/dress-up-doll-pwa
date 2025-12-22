@@ -2,20 +2,86 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <!-- 移除開頭的 / -->
-  <link rel="icon" type="image/png" href="icons/icon-192x192.png" />
+  <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <meta name="theme-color" content="#6a6cff">
-  
-  <!-- 移除開頭的 / -->
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png" sizes="192x192">
-  <link rel="mask-icon" href="icons/icon-512x512.png" color="#6a6cff">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="紙娃娃">
-
-  <title>換裝紙娃娃遊戲</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <title>換裝紙娃娃</title>
+  <style id="theme-variables">
+    :root {    
+      /* 1. 主題色 */
+      --color-primary: #a595d1;
+      
+      /* 2. 主題色(淺) */
+      --color-primary-light: #7da585;
+      
+      /* 3. 主背景色 */
+      --color-bg-main: #f8f5ea;
+      
+      /* 4. 面板背景色 */
+      --color-bg-panel: #c6d3ac;
+      
+      /* 5. 主卡片顏色 */
+      --color-bg-card: #ffffff;
+      
+      /* 6. 畫布顏色 */
+      --color-bg-canvas: #f0f2f5;
+      
+      /* 7. 主要文字色 */
+      --color-text-primary: #766258;
+      
+      /* 8. 次要文字色 */
+      --color-text-secondary: #666666;
+      
+      /* 9. 邊框色 */
+      --color-border: #c6b99b;
+      
+      /* 10. 淺邊框色 */
+      --color-border-light: #e8e8e8;
+      
+      /* 11. 成功色 */
+      --color-success: #709172;
+      
+      /* 12. 錯誤色 */
+      --color-error: #ad4b44;
+      
+      /* 13. 警告色 */
+      --color-warning: #f5bb64;
+      
+      /* 14. 資訊色 */
+      --color-info: #71a2ca;
+      
+      /* ========================================
+         陰影 (使用主題色的半透明)
+         ======================================== */
+      --shadow-sm: 0 1px 3px rgb(from var(--color-text-primary) r g b / 0.05);
+      --shadow-md: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.08);
+      --shadow-lg: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.12);
+      --shadow-xl: 0 8px 24px rgb(from var(--color-text-primary) r g b / 0.15);
+      
+      /* ========================================
+         尺寸變數
+         ======================================== */
+      --panel-width: 320px;
+      --wardrobe-width: clamp(320px, 28vw, 500px);
+      --controls-width: clamp(300px, 26vw, 420px);
+      --wardrobe-sidebar-width: clamp(150px, 15vw, 210px);
+      --collapsed-width: 50px;
+      --handle-width: 20px;
+      
+      /* 圓角 */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 50%;
+      
+      /* 轉場動畫 */
+      --transition-fast: 0.15s ease;
+      --transition-normal: 0.3s ease;
+      --transition-slow: 0.5s ease;
+    }
+  </style>
+  <style id="custom-css"></style>
 </head>
 <body>
   <div id="app"></div>

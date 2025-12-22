@@ -1,15 +1,15 @@
+// core/index.js
 class DressingCore {
   constructor() {
     this.db = null
     this.dbName = 'DressingGameDB'
-    this.version = 2 // **重要：版本號必須增加！** 這樣 onupgradeneeded 才會觸發
+    this.version = 5
   }
 
   async init() {
     if (this.db) return;
     try {
       this.db = await this.openDB()
-      console.log('✅ IndexedDB 初始化完成')
     } catch (error) {
       console.error('❌ IndexedDB 初始化失敗:', error)
       throw error;
@@ -24,35 +24,37 @@ class DressingCore {
       request.onsuccess = (event) => resolve(event.target.result);
       
       request.onupgradeneeded = (event) => {
-        console.log(`🔄 IndexedDB 升級至版本 ${this.version}...`)
         const db = event.target.result
         const transaction = event.target.transaction;
 
-        // **升級 Items 表**
         if (db.objectStoreNames.contains('items')) {
           db.deleteObjectStore('items');
         }
-        const itemStore = db.createObjectStore('items', { keyPath: 'id' }) // 主鍵改為 id
+        const itemStore = db.createObjectStore('items', { keyPath: 'id' })
         itemStore.createIndex('category', 'category', { unique: false })
         itemStore.createIndex('packId', 'packId', { unique: false })
-        console.log('✅ objectStore "items" 已更新');
         
-        // **升級 Outfits 表**
-        // Outfits 原本就是 autoIncrement，但我們改成手動管理ID以保持一致
         if (db.objectStoreNames.contains('outfits')) {
             db.deleteObjectStore('outfits');
         }
         const outfitStore = db.createObjectStore('outfits', { keyPath: 'id' })
         outfitStore.createIndex('createdAt', 'createdAt', { unique: false })
-        console.log('✅ objectStore "outfits" 已更新');
 
-        // **升級 Packs 表**
         if (db.objectStoreNames.contains('packs')) {
             db.deleteObjectStore('packs');
         }
-        const packStore = db.createObjectStore('packs', { keyPath: 'id' }) // 主鍵改為 id
+        const packStore = db.createObjectStore('packs', { keyPath: 'id' })
         packStore.createIndex('importedAt', 'importedAt', { unique: false })
-        console.log('✅ objectStore "packs" 已更新');
+
+        if (db.objectStoreNames.contains('theme')) {
+            db.deleteObjectStore('theme');
+        }
+        const themeStore = db.createObjectStore('theme', { keyPath: 'id' })
+
+        // 添加 settings store 用於應用程式狀態緩存
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'id' })
+        }
       }
     })
   }
@@ -66,7 +68,7 @@ class DressingCore {
   async saveData(storeName, data) {
     return new Promise((resolve, reject) => {
       const store = this._createTransaction(storeName, 'readwrite');
-      const request = store.put({ ...data, updatedAt: new Date().toISOString() }); // 使用 put 進行新增或更新
+      const request = store.put({ ...data, updatedAt: new Date().toISOString() });
       request.onsuccess = () => resolve(request.result);
       request.onerror = (event) => reject(event.target.error);
     });
@@ -90,7 +92,21 @@ class DressingCore {
     });
   }
 
-  // --- 刪除圖包的特殊邏輯 ---
+  async getData(storeName, id) {
+    return new Promise((resolve, reject) => {
+      const store = this._createTransaction(storeName);
+      const request = store.get(id);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = (event) => reject(event.target.error);
+    });
+  }
+
+  // setData 別名，用於更明確的語義
+  async setData(storeName, id, data) {
+    return this.saveData(storeName, { ...data, id });
+  }
+
+  // --- 刪除圖包邏輯 ---
   async deletePackAndItems(packId) {
     await this.deleteData('packs', packId);
 
@@ -103,11 +119,22 @@ class DressingCore {
       itemStore.delete(item.id);
     }
     
-    console.log(`🗑️ 已刪除圖包 "${packId}" 及其 ${itemsToDelete.length} 個物件`);
     return true;
   }
   
-  async clearAllData() { /* ... 此函式保持不變 ... */ }
+  async clearAllData() {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['items', 'outfits', 'packs'], 'readwrite');
+      const stores = ['items', 'outfits', 'packs'];
+      
+      transaction.oncomplete = () => resolve(true);
+      transaction.onerror = (event) => reject(event.target.error);
+      
+      stores.forEach(storeName => {
+        transaction.objectStore(storeName).clear();
+      });
+    });
+  }
 }
 
 export default new DressingCore();

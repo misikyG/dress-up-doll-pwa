@@ -9,4 +9,4 @@ const pinia = createPinia()
 app.use(pinia)
 app.mount('#app')
 
-console.log('🎮 換裝紙娃娃遊戲啟動中...')
+console.log('換裝紙娃娃啟動中...')

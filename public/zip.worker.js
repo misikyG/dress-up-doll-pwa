@@ -34,15 +34,46 @@ self.onmessage = async (event) => {
       const fileData = await imageFile.async('base64');
       const mimeType = getMimeType(itemConfig.file);
       
-      items.push({
+      // 建立基本物件資料
+      const itemData = {
         id: itemConfig.itemId, // **修改**: 使用 itemId 作為唯一 ID
         displayName: itemConfig.displayName,
         category: itemConfig.category,
         characterId: itemConfig.characterId || null,
+        tags: itemConfig.tags || [],  // 處理標籤
         packId: config.packId, // **修改**: 使用 packId
         packDisplayName: config.packDisplayName,
         imageData: `data:${mimeType};base64,${fileData}`,
-      });
+      };
+
+      // 處理變體資料 (如果有)
+      if (itemConfig.hasVariant && itemConfig.variants && itemConfig.variants.length > 0) {
+        itemData.hasVariant = true;
+        itemData.defaultVariant = itemConfig.defaultVariant;
+        itemData.variants = itemConfig.variants;
+        itemData.variantImages = {};
+
+        // 載入各變體圖片
+        if (itemConfig.variantFiles) {
+          for (const [variantKey, variantFileName] of Object.entries(itemConfig.variantFiles)) {
+            const variantImageFile = zip.file(variantFileName);
+            if (variantImageFile) {
+              const variantFileData = await variantImageFile.async('base64');
+              const variantMimeType = getMimeType(variantFileName);
+              itemData.variantImages[variantKey] = `data:${variantMimeType};base64,${variantFileData}`;
+            } else {
+              console.warn(`Variant image file not found: ${variantFileName}`);
+            }
+          }
+        }
+
+        // 如果有預設變體且有對應圖片，使用預設變體的圖片
+        if (itemData.defaultVariant && itemData.variantImages[itemData.defaultVariant]) {
+          itemData.imageData = itemData.variantImages[itemData.defaultVariant];
+        }
+      }
+
+      items.push(itemData);
       
       processedCount++;
       self.postMessage({ 
@@ -55,7 +86,8 @@ self.onmessage = async (event) => {
     self.postMessage({ type: 'success', items, packInfo: {
       id: config.packId, // **修改**: 使用 packId 作為主鍵
       displayName: config.packDisplayName,
-      description: config.description
+      description: config.description,
+      characters: config.characters || []
     }});
     // **結束修改**
 

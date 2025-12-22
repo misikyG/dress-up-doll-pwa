@@ -1,156 +1,522 @@
 <template>
-  <div class="wardrobe-container">
-    <!-- 摺疊按鈕 -->
-    <button 
-      @click="gameStore.toggleWardrobe()" 
-      class="collapse-handle"
-      :title="gameStore.ui.wardrobeCollapsed ? '展開衣櫃' : '收合衣櫃'"
-    >
-      <span class="icon">{{ gameStore.ui.wardrobeCollapsed ? '▶' : '◀' }}</span>
-    </button>
-    
-    <!-- 衣櫃內容 (未摺疊時顯示) -->
-    <div v-if="!gameStore.ui.wardrobeCollapsed" class="wardrobe-content">
-      <div class="wardrobe-header">
-        <h2>👗 衣櫃</h2>
-      </div>
-      
-      <!-- 分類標籤 -->
-      <div class="category-tabs">
-        <button
-          v-for="category in gameStore.categories"
-          :key="category.key"
-          :class="['category-tab', { active: activeCategory === category.key }]"
-          @click="setActiveCategory(category.key)"
-          :title="category.name"
-        >
-          <span class="category-icon">{{ category.icon }}</span>
-          <span class="category-name">{{ category.name }}</span>
-          <span v-if="getCategoryCount(category.key) > 0" class="category-count">
-            {{ getCategoryCount(category.key) }}
-          </span>
-        </button>
-      </div>
-      
-      <!-- 篩選與排序控制 -->
-      <div class="controls-panel">
-        <select v-model="selectedPack" class="filter-select" title="按圖包篩選">
-          <option value="">所有圖包</option>
-          <option v-for="pack in availablePacks" :key="pack.name" :value="pack.name">
-            {{ pack.displayName || pack.name }}
-          </option>
-        </select>
-        <select v-model="sortBy" class="filter-select" title="排序方式">
-          <option value="name">按名稱</option>
-          <option value="pack">按圖包</option>
-          <option value="recent">最近加入</option>
-        </select>
-      </div>
-      
-      <!-- 物件列表容器 (虛擬滾動的核心) -->
-      <div class="items-list-container" ref="scrollContainer" @scroll="handleScroll">
-        <div class="items-list-sizer" :style="{ height: `${totalContentHeight}px` }">
-          <div 
-            v-if="activeCategory === 'starred'" 
-            class="items-grid"
-            :style="{ transform: `translateY(${visibleItems.offsetY}px)` }"
-          >
-            <div
-              v-for="outfit in visibleItems.items"
-              :key="`outfit-${outfit.id}`"
-              class="grid-item outfit-card"
-              @click="loadOutfit(outfit)"
-            >
-              <div class="item-thumbnail">
-                <!-- 簡易預覽 -->
-                <span class="preview-icon">⭐</span>
+  <aside
+    class="panel left-panel wardrobe"
+    :class="{ collapsed: gameStore.ui.wardrobeCollapsed, 'mobile-bottom-sheet': gameStore.ui.isMobile, 'tablet-style': gameStore.ui.isTablet }"
+  >
+    <template v-if="!gameStore.ui.isMobile">
+      <!-- 桌面版和平板版摺疊按鈕 -->
+      <button
+        @click="gameStore.toggleWardrobe()"
+        class="panel-toggle-handle panel-toggle-handle--right"
+        :title="gameStore.ui.wardrobeCollapsed ? '展開衣櫥' : '收合衣櫥'"
+      >
+        <span class="icon">{{ gameStore.ui.wardrobeCollapsed ? '▶' : '◀' }}</span>
+      </button>
+    </template>
+
+    <!-- 衣櫥內容 -->
+    <div class="wardrobe-content" :class="{ 'mobile-style': gameStore.ui.isMobile }">
+      <!-- 桌面版和平板版：垂直佈局 -->
+      <div v-if="!gameStore.ui.isMobile" class="desktop-wardrobe">
+        <!-- 分類佈局 (垂直) -->
+        <div class="category-sidebar" :class="{ collapsed: gameStore.ui.wardrobeCollapsed }">
+          <button v-for="category in gameStore.categories" :key="category.key"
+            :class="['category-tab', { active: activeCategory === category.key }]"
+            @click="setActiveCategory(category.key)" :title="category.name">
+            <div class="tab-icon" v-html="category.svg"></div>
+            <span class="tab-label">{{ category.name }}</span>
+          </button>
+        </div>
+
+        <!-- 物件顯示區域 -->
+        <div v-if="!gameStore.ui.wardrobeCollapsed" class="items-display">
+          <!-- 控制面板 -->
+          <div class="items-controls">
+            <!-- 篩選器按鈕 -->
+            <button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel" 
+                    :class="{ active: showFilterPanel || hasActiveFilters }">
+              <span class="filter-icon" v-html="filterIcon"></span>
+              <span v-if="hasActiveFilters" class="filter-badge">{{ activeFilterCount }}</span>
+            </button>
+            
+            <!-- 排序方式 (單選) -->
+            <select v-model="sortBy" class="filter-select sort-select" title="排序方式">
+              <option value="name">按名稱</option>
+              <option value="pack">按圖包</option>
+              <option value="recent">最近加入</option>
+            </select>
+          </div>
+
+          <!-- 篩選面板 (可展開) -->
+          <transition name="slide-down">
+            <div v-if="showFilterPanel" class="filter-panel">
+              <!-- 圖包多選 -->
+              <div class="filter-section">
+                <div class="filter-section-header">
+                  <span class="filter-section-title">圖包篩選</span>
+                  <button class="filter-clear-btn" @click="clearPackFilters" v-if="selectedPacks.length > 0">
+                    清除
+                  </button>
+                </div>
+                <div class="filter-checkboxes">
+                  <label v-for="pack in availablePacks" :key="pack.id" class="filter-checkbox-item">
+                    <input type="checkbox" :value="pack.id" v-model="selectedPacks" />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">{{ pack.displayName || pack.name }}</span>
+                  </label>
+                </div>
               </div>
-              <div class="item-info">
-                <span class="item-name">{{ outfit.name }}</span>
+
+              <!-- Tag 篩選 (根據當前分類顯示) -->
+              <div class="filter-section" v-if="characterOptions.length > 0 && activeCategory !== 'starred'">
+                <div class="filter-section-header">
+                  <span class="filter-section-title">人物篩選</span>
+                  <button class="filter-clear-btn" @click="clearCharacterFilters" v-if="selectedCharacters.length > 0">
+                    清除
+                  </button>
+                </div>
+                <div class="filter-checkboxes">
+                  <label v-for="char in characterOptions" :key="char.id" class="filter-checkbox-item">
+                    <input type="checkbox" :value="char.id" v-model="selectedCharacters" />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">{{ char.name }}<span v-if="char.pack"> · {{ char.pack }}</span></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tag 篩選 (根據當前分類顯示) -->
+              <div class="filter-section" v-if="currentCategoryTags.length > 0">
+                <div class="filter-section-header">
+                  <span class="filter-section-title">屬性標籤</span>
+                  <button class="filter-clear-btn" @click="clearTagFilters" v-if="selectedTags.length > 0">
+                    清除
+                  </button>
+                </div>
+                <div class="filter-checkboxes tag-checkboxes">
+                  <label v-for="tag in currentCategoryTags" :key="tag.key" class="filter-checkbox-item tag-item">
+                    <input type="checkbox" :value="tag.key" v-model="selectedTags" />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">{{ tag.key }}<span v-if="tag.count"> ({{ tag.count }})</span></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 隱藏物件開關 -->
+              <div class="filter-section">
+                <label class="filter-checkbox-item hide-toggle">
+                  <input type="checkbox" v-model="showHidden" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-label">顯示隱藏的物件</span>
+                  <span v-if="gameStore.hiddenItems.length > 0" class="hidden-count">
+                    ({{ gameStore.hiddenItems.length }})
+                  </span>
+                </label>
               </div>
             </div>
-          </div>
-          <div 
-            v-else 
-            class="items-grid"
-            :style="{ transform: `translateY(${visibleItems.offsetY}px)` }"
-          >
-            <div
-              v-for="item in visibleItems.items"
-              :key="item.id"
-              :class="['grid-item', 'item-card', { 
-                'equipped': gameStore.isItemInCurrentOutfit(item),
-                'expression-available': isExpressionAvailable(item)
-              }]"
-              @click="handleItemClick(item)"
-            >
-              <div class="item-thumbnail">
-                <img :src="item.imageData" :alt="item.displayName" loading="lazy" />
-                <div v-if="gameStore.isItemInCurrentOutfit(item)" class="equipped-badge">✓</div>
+          </transition>
+
+          <!-- 物件網格 -->
+          <div class="items-grid-container" ref="scrollContainer" @scroll="handleScroll">
+            <div class="items-grid-sizer" :style="{ height: `${totalContentHeight}px` }">
+              <div v-if="activeCategory === 'starred'" class="items-grid"
+                :style="{ transform: `translateY(${visibleItems.offsetY}px)` }">
+                <div v-for="outfit in visibleItems.items" :key="`outfit-${outfit.id}`" class="grid-item outfit-card"
+                  @click="loadOutfit(outfit)"
+                  @contextmenu="handleOutfitContextMenu(outfit, $event)"
+                  @touchstart="handleOutfitTouchStart(outfit, $event)"
+                  @touchend="handleOutfitTouchEnd"
+                  @touchcancel="handleOutfitTouchEnd">
+                  <div class="item-thumbnail outfit-preview">
+                    <img v-if="outfit.previewImage" :src="outfit.previewImage" :alt="outfit.name" loading="lazy" />
+                    <span v-else class="preview-icon">⭐</span>
+                  </div>
+                  <div class="item-info">
+                    <span class="item-name" :title="outfit.name">{{ outfit.name }}</span>
+                    <span class="outfit-date">{{ formatDate(outfit.createdAt) }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="item-info">
-                <span class="item-name" :title="item.displayName">{{ item.displayName }}</span>
-                <span class="item-pack-name">{{ item.packName }}</span>
+              <div v-else class="items-grid" :style="{ transform: `translateY(${visibleItems.offsetY}px)` }">
+                <div v-for="item in visibleItems.items" :key="item.id" :class="['grid-item', 'item-card', {
+                  'equipped': gameStore.isItemInCurrentOutfit(item),
+                  'expression-available': isExpressionAvailable(item),
+                  'has-variant': item.hasVariant,
+                  'highlighted': gameStore.ui.highlightedItemId === item.id
+                }]" 
+                  @click="handleItemClick(item)"
+                  @contextmenu="handleItemContextMenu(item, $event)"
+                  @touchstart="handleItemTouchStart(item, $event)"
+                  @touchend="handleItemTouchEnd"
+                  @touchcancel="handleItemTouchEnd">
+                  <div class="item-thumbnail">
+                    <img :src="item.imageData" :alt="item.displayName" loading="lazy" />
+                    <div v-if="gameStore.isItemInCurrentOutfit(item)" class="equipped-badge"></div>
+                    <div v-if="item.hasVariant" class="variant-indicator" title="右鍵或長按選擇變體">◆</div>
+                  </div>
+                  <div class="item-info">
+                    <span class="item-name" :title="item.displayName">{{ item.displayName }}</span>
+                    <div class="item-meta-row">
+                      <span class="item-pack-name">{{ getPackName(item) }}</span>
+                      <!-- Tag 標籤顯示 -->
+                      <div v-if="item.tags && item.tags.length > 0" class="item-tags">
+                        <span v-for="tag in item.tags" :key="tag" class="item-tag" :title="getTagDisplayName(item.category, tag)">
+                          {{ getTagDisplayName(item.category, tag) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <!-- 空狀態提示 -->
+            <div v-if="filteredAndSortedItems.length === 0" class="empty-state">
+              <div class="empty-icon" v-html="currentCategoryIcon"></div>
+              <p>此分類暫無物件</p>
             </div>
           </div>
         </div>
-        
-        <!-- 空狀態提示 -->
-        <div v-if="filteredAndSortedItems.length === 0" class="empty-state">
-           <div class="empty-icon">{{ currentCategoryIcon }}</div>
-           <p>此分類暫無物件</p>
+      </div>
+
+      <!-- 手機版：底部抽屜式佈局 -->
+      <div v-else class="mobile-wardrobe" :class="{ collapsed: gameStore.ui.wardrobeCollapsed }">
+        <button
+          class="mobile-drawer-toggle"
+          @click="gameStore.toggleWardrobe()"
+          :title="gameStore.ui.wardrobeCollapsed ? '展開衣櫥' : '收合衣櫥'"
+        >
+          <span class="drawer-handle"></span>
+          <span class="drawer-label">{{ gameStore.ui.wardrobeCollapsed ? '展開衣櫥' : '收合衣櫥' }}</span>
+          <span class="drawer-icon">{{ gameStore.ui.wardrobeCollapsed ? '▲' : '▼' }}</span>
+        </button>
+
+        <div class="mobile-wardrobe-body">
+          <!-- 分類 TAB -->
+          <div class="mobile-categories">
+            <div class="categories-scroll">
+              <button
+                v-for="category in gameStore.categories"
+                :key="category.key"
+                :class="['mobile-category-tab', { active: activeCategory === category.key }]"
+                @click="setActiveCategory(category.key)"
+              >
+                <div class="mobile-tab-icon" v-html="category.svg"></div>
+                <span class="mobile-tab-label" :class="{ visible: activeCategory === category.key }">
+                  {{ category.name }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 物件水平滾動列表 -->
+          <div class="mobile-items-scroll">
+            <!-- 儲存搭配顯示 (starred 分類) -->
+            <template v-if="activeCategory === 'starred'">
+              <div
+                v-for="outfit in gameStore.savedOutfits"
+                :key="`mobile-outfit-${outfit.id}`"
+                class="mobile-item mobile-outfit-item"
+                @click="loadOutfit(outfit)"
+                @touchstart="handleOutfitTouchStart(outfit, $event)"
+                @touchend="handleOutfitTouchEnd"
+                @touchcancel="handleOutfitTouchEnd"
+              >
+                <img v-if="outfit.previewImage" :src="outfit.previewImage" :alt="outfit.name" loading="lazy" />
+                <span v-else class="mobile-outfit-icon">⭐</span>
+                <span class="mobile-outfit-name">{{ outfit.name }}</span>
+              </div>
+            </template>
+            <!-- 普通物件顯示 -->
+            <template v-else>
+              <div
+                v-for="item in filteredAndSortedItems"
+                :key="item.id"
+                :class="['mobile-item', { 'equipped': gameStore.isItemInCurrentOutfit(item) }]"
+                @click="handleItemClick(item)"
+                @touchstart="handleItemTouchStart(item, $event)"
+                @touchend="handleItemTouchEnd"
+                @touchcancel="handleItemTouchEnd"
+                @contextmenu="handleItemContextMenu(item, $event)"
+              >
+                <img :src="item.imageData" :alt="item.displayName" loading="lazy" />
+                <div v-if="gameStore.isItemInCurrentOutfit(item)" class="mobile-equipped-badge">✓</div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- 上下文選單 (右鍵/長按選單) -->
+    <Teleport to="body">
+      <div v-if="contextMenu.visible" class="context-menu-overlay" @click="hideContextMenu">
+        <div 
+          class="context-menu" 
+          :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+          @click.stop>
+          <div class="context-menu-header">
+            <span class="context-menu-title">{{ contextMenu.item?.displayName }}</span>
+            <button class="context-menu-close" @click="hideContextMenu">✕</button>
+          </div>
+          <div class="context-menu-content">
+            <!-- 變體選項 -->
+            <template v-if="contextMenu.item?.hasVariant">
+              <div class="context-menu-section">
+                <span class="context-menu-section-title">選擇變體</span>
+                <button 
+                  v-for="variant in contextMenu.item?.variants || []" 
+                  :key="getVariantKey(variant)"
+                  :class="['context-menu-option variant-option', { 
+                    'active': getCurrentVariant(contextMenu.item) === getVariantKey(variant) 
+                  }]"
+                  @click="selectVariant(getVariantKey(variant))">
+                  <span class="option-icon">{{ getCurrentVariant(contextMenu.item) === getVariantKey(variant) ? '◆' : '◇' }}</span>
+                  <span class="option-name">{{ getVariantDisplayName(variant) }}</span>
+                </button>
+              </div>
+              <div class="context-menu-divider"></div>
+            </template>
+            
+            <!-- 手機版物件詳細資訊 -->
+            <template v-if="gameStore.ui.isMobile && contextMenu.item">
+              <div class="context-menu-section mobile-item-details">
+                <span class="context-menu-section-title">物件資訊</span>
+                <div class="detail-row">
+                  <span class="detail-label">名稱：</span>
+                  <span class="detail-value">{{ contextMenu.item.displayName }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">圖包：</span>
+                  <span class="detail-value">{{ getPackName(contextMenu.item) }}</span>
+                </div>
+                <div v-if="contextMenu.item.tags && contextMenu.item.tags.length > 0" class="detail-row">
+                  <span class="detail-label">標籤：</span>
+                  <span class="detail-value detail-tags">
+                    <span v-for="tag in contextMenu.item.tags" :key="tag" class="detail-tag">
+                      {{ getTagDisplayName(contextMenu.item.category, tag) }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div class="context-menu-divider"></div>
+            </template>
+            
+            <!-- 物件操作 -->
+            <div class="context-menu-section">
+              <button class="context-menu-option" @click="toggleHideItem(contextMenu.item)">
+                <span class="option-icon">
+                  <svg v-if="isItemHidden(contextMenu.item)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </span>
+                <span class="option-name">{{ isItemHidden(contextMenu.item) ? '取消隱藏' : '隱藏' }}</span>
+              </button>
+              <button class="context-menu-option" @click="renameItem(contextMenu.item)">
+                <span class="option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </span>
+                <span class="option-name">重新命名</span>
+              </button>
+              <button class="context-menu-option danger" @click="deleteItem(contextMenu.item)">
+                <span class="option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </span>
+                <span class="option-name">刪除</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搭配上下文選單 -->
+      <div v-if="outfitContextMenu.visible" class="context-menu-overlay" @click="hideOutfitContextMenu">
+        <div 
+          class="context-menu" 
+          :style="{ left: outfitContextMenu.x + 'px', top: outfitContextMenu.y + 'px' }"
+          @click.stop>
+          <div class="context-menu-header">
+            <span class="context-menu-title">{{ outfitContextMenu.outfit?.name }}</span>
+            <button class="context-menu-close" @click="hideOutfitContextMenu">✕</button>
+          </div>
+          <div class="context-menu-content">
+            <div class="context-menu-section">
+              <button class="context-menu-option" @click="loadOutfit(outfitContextMenu.outfit); hideOutfitContextMenu();">
+                <span class="option-icon">📷</span>
+                <span class="option-name">載入搭配</span>
+              </button>
+              <button class="context-menu-option" @click="renameOutfit(outfitContextMenu.outfit)">
+                <span class="option-icon" v-html="icons.rename"></span>
+                <span class="option-name">重新命名</span>
+              </button>
+              <button class="context-menu-option danger" @click="deleteOutfit(outfitContextMenu.outfit)">
+                <span class="option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </span>
+                <span class="option-name">刪除搭配</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </aside>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useGameStore } from '../store/index.js';
+import { icons } from '../icons.js';
 
 const gameStore = useGameStore();
 
 // 響應式狀態
 const activeCategory = ref('character');
-const selectedPack = ref('');
+const selectedPacks = ref([]);  // 改為多選陣列
+const selectedTags = ref([]);   // Tag 多選陣列
+const selectedCharacters = ref([]); // 人物篩選
 const sortBy = ref('name');
 const scrollContainer = ref(null);
 const scrollTop = ref(0);
-const containerHeight = ref(600); // 預設值
+const containerHeight = ref(600);
+const showFilterPanel = ref(false);
+const showHidden = ref(false);  // 顯示隱藏物件的開關
+
+// 上下文選單狀態 (整合變體選單)
+const contextMenu = ref({
+  visible: false,
+  item: null,
+  x: 0,
+  y: 0
+});
+
+// 搭配上下文選單狀態
+const outfitContextMenu = ref({
+  visible: false,
+  outfit: null,
+  x: 0,
+  y: 0
+});
+
+let longPressTimer = null;
+
+// 圖示
+const filterIcon = icons.filter;
 
 // --- 虛擬滾動設定 ---
-const ITEM_WIDTH = 100; // 物件卡片寬度
-const ITEM_HEIGHT = 130; // 物件卡片高度
-const GAP = 10; // 間距
+const ITEM_WIDTH = 120;
+const ITEM_HEIGHT = 130;
+const INFO_HEIGHT = 58;
+const GAP = 12;
+let resizeObserver = null;
 
-// --- Computed: 數據處理 ---
+// --- Computed: 資料處理 ---
 const availablePacks = computed(() => gameStore.availablePacks);
 
-const filteredAndSortedItems = computed(() => {
-  let items;
-  if (activeCategory.value === 'starred') {
-    items = [...gameStore.savedOutfits];
+const characterOptions = computed(() => {
+  const chars = gameStore.wardrobeItems.filter(item => item.category === 'character');
+  return chars.map(item => ({
+    id: item.id,
+    name: item.displayName,
+    pack: gameStore.getPackName(item)
+  }));
+});
+
+const effectiveCharacterFilters = computed(() => {
+  if (selectedCharacters.value.length > 0) return selectedCharacters.value;
+  return gameStore.selectedCharacterId ? [gameStore.selectedCharacterId] : [];
+});
+
+// 切換分類前的基礎物件池（尚未套用 Tag 篩選）
+const baseItemsForCategory = computed(() => {
+  if (activeCategory.value === 'starred') return [...gameStore.savedOutfits];
+
+  let items = gameStore.getItemsByCategory(activeCategory.value);
+
+  // 隱藏物件過濾
+  if (showHidden.value) {
+    items = items.filter(item => gameStore.hiddenItems.includes(item.id));
   } else {
-    items = gameStore.getItemsByCategory(activeCategory.value);
+    items = items.filter(item => !gameStore.hiddenItems.includes(item.id));
   }
 
-  // 篩選
-  if (selectedPack.value && activeCategory.value !== 'starred') {
-    items = items.filter(item => item.packName === selectedPack.value);
+  // 圖包篩選
+  if (selectedPacks.value.length > 0) {
+    items = items.filter(item => selectedPacks.value.includes(item.packId));
   }
 
-  // 排序
+  // 人物篩選：僅當 item 有綁定時才受影響
+  if (effectiveCharacterFilters.value.length > 0) {
+    const allowIds = new Set(effectiveCharacterFilters.value);
+    items = items.filter(item => {
+      if (!item.characterId || item.category === 'character') return true;
+      return allowIds.has(item.characterId);
+    });
+  }
+
+  return items;
+});
+
+// 當前分類可用的 tags（依照目前物件池動態產生）
+const currentCategoryTags = computed(() => {
+  if (activeCategory.value === 'starred') return [];
+  const tagCounts = new Map();
+  baseItemsForCategory.value.forEach((item) => {
+    (item.tags || []).forEach((tag) => {
+      const trimmed = String(tag || '').trim();
+      if (!trimmed) return;
+      tagCounts.set(trimmed, (tagCounts.get(trimmed) || 0) + 1);
+    });
+  });
+  return Array.from(tagCounts.entries()).map(([key, count]) => ({ key, count }));
+});
+
+// 是否有啟用的篩選
+const hasActiveFilters = computed(() => {
+  return selectedPacks.value.length > 0 || selectedTags.value.length > 0 || selectedCharacters.value.length > 0;
+});
+
+// 啟用的篩選數量
+const activeFilterCount = computed(() => {
+  return selectedPacks.value.length + selectedTags.value.length + selectedCharacters.value.length;
+});
+
+// 獲取 tag 的顯示名稱
+const getTagDisplayName = (_category, tagKey) => tagKey;
+
+// 清除圖包篩選
+const clearPackFilters = () => {
+  selectedPacks.value = [];
+};
+
+// 清除人物篩選
+const clearCharacterFilters = () => {
+  selectedCharacters.value = [];
+};
+
+// 清除 tag 篩選
+const clearTagFilters = () => {
+  selectedTags.value = [];
+};
+
+const filteredAndSortedItems = computed(() => {
+  let items = [...baseItemsForCategory.value];
+
+  // Tag 篩選 (如果有選擇 tag，物件必須包含至少一個選中的 tag)
+  if (selectedTags.value.length > 0 && activeCategory.value !== 'starred') {
+    items = items.filter(item => {
+      if (!item.tags || item.tags.length === 0) return false;
+      return item.tags.some(tag => selectedTags.value.includes(tag));
+    });
+  }
+
   items.sort((a, b) => {
     switch (sortBy.value) {
       case 'pack':
-        return (a.packName || '').localeCompare(b.packName || '');
+        return (getPackName(a) || '').localeCompare(getPackName(b) || '');
       case 'recent':
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       case 'name':
       default:
-        return (a.displayName || a.name).localeCompare(b.displayName || b.name);
+        return (a.displayName || a.name || '').localeCompare(b.displayName || b.name || '');
     }
   });
 
@@ -159,280 +525,1662 @@ const filteredAndSortedItems = computed(() => {
 
 // --- Computed: 虛擬滾動計算 ---
 const itemsPerRow = computed(() => {
-  if (!scrollContainer.value) return 3;
+  if (!scrollContainer.value || gameStore.ui.wardrobeCollapsed) return 1;
   return Math.max(1, Math.floor(scrollContainer.value.clientWidth / (ITEM_WIDTH + GAP)));
+});
+
+const computedRowHeight = computed(() => {
+  if (!scrollContainer.value || !itemsPerRow.value) return ITEM_HEIGHT;
+  const cols = Math.max(1, itemsPerRow.value);
+  const totalGap = Math.max(0, (cols - 1) * GAP);
+  const columnWidth = Math.floor((scrollContainer.value.clientWidth - totalGap) / cols);
+  return columnWidth + INFO_HEIGHT;
 });
 
 const totalContentHeight = computed(() => {
   const rowCount = Math.ceil(filteredAndSortedItems.value.length / itemsPerRow.value);
-  return rowCount * (ITEM_HEIGHT + GAP);
+  return rowCount * (computedRowHeight.value + GAP);
 });
 
 const visibleItems = computed(() => {
-  const rowHeight = ITEM_HEIGHT + GAP;
+  const rowHeightWithGap = computedRowHeight.value + GAP;
   const totalRows = Math.ceil(filteredAndSortedItems.value.length / itemsPerRow.value);
-  
-  // 計算可見範圍
-  const visibleStartRow = Math.floor(scrollTop.value / rowHeight);
-  const visibleEndRow = Math.min(totalRows, visibleStartRow + Math.ceil(containerHeight.value / rowHeight) + 1); // +1 buffer
-  
+
+  const visibleStartRow = Math.floor(scrollTop.value / rowHeightWithGap);
+  const visibleEndRow = Math.min(totalRows, visibleStartRow + Math.ceil(containerHeight.value / rowHeightWithGap) + 1);
+
   const startIndex = visibleStartRow * itemsPerRow.value;
   const endIndex = Math.min(filteredAndSortedItems.value.length, visibleEndRow * itemsPerRow.value);
 
   return {
     items: filteredAndSortedItems.value.slice(startIndex, endIndex),
-    offsetY: visibleStartRow * rowHeight
+    offsetY: visibleStartRow * rowHeightWithGap
   };
 });
 
-// --- Computed: 其他輔助 ---
 const currentCategoryIcon = computed(() => {
-  return gameStore.categories.find(c => c.key === activeCategory.value)?.icon || '📦';
+  return gameStore.categories.find(c => c.key === activeCategory.value)?.svg || icons.other;
 });
 
 // --- 方法 ---
 const setActiveCategory = (categoryKey) => {
   activeCategory.value = categoryKey;
-  // 切換分類時滾動到頂部
+  // 切換分類時重置 tag 篩選
+  selectedTags.value = [];
   if (scrollContainer.value) scrollContainer.value.scrollTop = 0;
 };
 
-const getCategoryCount = (categoryKey) => {
-  if (categoryKey === 'starred') return gameStore.savedOutfits.length;
-  return gameStore.wardrobeItems.filter(item => item.category === categoryKey).length;
-};
+// 使用 store 中的共用方法
+const getPackName = (item) => gameStore.getPackName(item);
 
 const handleItemClick = (item) => {
-  if (gameStore.isItemInCurrentOutfit(item)) {
-    gameStore.removeItem(item);
+  if (activeCategory.value === 'starred') {
+    loadOutfit(item);
   } else {
-    gameStore.wearItem(item);
+    if (gameStore.isItemInCurrentOutfit(item)) {
+      gameStore.removeItem(item);
+    } else {
+      gameStore.wearItem(item);
+    }
   }
 };
 
 const loadOutfit = (outfit) => {
   gameStore.loadOutfit(outfit);
+  gameStore.setCurrentPage('dressing');
 };
 
 const isExpressionAvailable = (item) => {
-  return item.category === 'expression' && 
-         gameStore.selectedCharacterId && 
-         item.characterId === gameStore.selectedCharacterId;
+  if (item.category !== 'character') return false;
+  return gameStore.wardrobeItems.some(i => 
+    i.category === 'expression' && i.characterId === item.id
+  );
 };
 
-const handleScroll = (event) => {
-  scrollTop.value = event.target.scrollTop;
+// 使用 store 中的共用方法
+const formatDate = (dateString) => gameStore.formatDate(dateString);
+
+// --- 上下文選單處理 ---
+const showContextMenu = (item, event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  // 計算選單位置，確保不超出視窗
+  const menuWidth = 200;
+  const menuHeight = 280;
+  let x = event.clientX || event.touches?.[0]?.clientX || 0;
+  let y = event.clientY || event.touches?.[0]?.clientY || 0;
+  
+  // 確保選單不會超出右邊界
+  if (x + menuWidth > window.innerWidth) {
+    x = window.innerWidth - menuWidth - 10;
+  }
+  // 確保選單不會超出下邊界
+  if (y + menuHeight > window.innerHeight) {
+    y = window.innerHeight - menuHeight - 10;
+  }
+  
+  contextMenu.value = {
+    visible: true,
+    item: item,
+    x: x,
+    y: y
+  };
+};
+
+const hideContextMenu = () => {
+  contextMenu.value.visible = false;
+  contextMenu.value.item = null;
+};
+
+const selectVariant = (variantKey) => {
+  const item = contextMenu.value.item;
+  if (!item) return;
+  
+  // 如果物品已穿戴，切換變體
+  if (gameStore.isItemInCurrentOutfit(item)) {
+    gameStore.switchItemVariant(item.id, variantKey);
+  } else {
+    // 如果物品未穿戴，穿戴並選擇變體
+    gameStore.wearItem(item, variantKey);
+  }
+  
+  hideContextMenu();
+};
+
+// 隱藏物件功能
+const isItemHidden = (item) => {
+  return gameStore.hiddenItems?.includes(item.id) || false;
+};
+
+const toggleHideItem = async (item) => {
+  await gameStore.toggleHideItem(item.id);
+  hideContextMenu();
+};
+
+// 重新命名物件
+const renameItem = async (item) => {
+  const newName = prompt('請輸入新的名稱：', item.displayName);
+  if (newName && newName.trim() && newName !== item.displayName) {
+    await gameStore.renameItem(item.id, newName.trim());
+    gameStore.showNotification(`✏️ 已重新命名為「${newName.trim()}」`, 'success');
+  }
+  hideContextMenu();
+};
+
+// 刪除物件
+const deleteItem = async (item) => {
+  if (confirm(`確定要刪除「${item.displayName}」嗎？此操作無法復原！`)) {
+    await gameStore.deleteItem(item.id);
+    gameStore.showNotification(`🗑️ 已刪除「${item.displayName}」`, 'info');
+  }
+  hideContextMenu();
+};
+
+// 獲取變體的顯示名稱
+const getVariantDisplayName = (variant) => {
+  if (typeof variant === 'object') {
+    return variant.name || variant.key;
+  }
+  return variant;
+};
+
+// 獲取變體的 key
+const getVariantKey = (variant) => {
+  if (typeof variant === 'object') {
+    return variant.key;
+  }
+  return variant;
+};
+
+// 獲取物品當前選擇的變體
+const getCurrentVariant = (item) => {
+  // 檢查是否在穿戴中並有當前變體
+  const slots = gameStore.currentOutfit?.slots;
+  if (slots && item.category) {
+    const equippedItem = slots[item.category]?.find(i => i.id === item.id);
+    if (equippedItem?.currentVariant) {
+      return equippedItem.currentVariant;
+    }
+  }
+  return item.defaultVariant || null;
+};
+
+// 長按事件處理
+const handleItemTouchStart = (item, event) => {
+  longPressTimer = setTimeout(() => {
+    showContextMenu(item, event);
+  }, 500); // 500ms 長按
+};
+
+const handleItemTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
+const handleItemContextMenu = (item, event) => {
+  showContextMenu(item, event);
+};
+
+// 已儲存搭配的右鍵菜單處理
+const handleOutfitContextMenu = (outfit, event) => {
+  showOutfitContextMenu(outfit, event);
+};
+
+const handleOutfitTouchStart = (outfit, event) => {
+  longPressTimer = setTimeout(() => {
+    showOutfitContextMenu(outfit, event);
+  }, 500);
+};
+
+const handleOutfitTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
+const showOutfitContextMenu = (outfit, event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  const menuWidth = 180;
+  const menuHeight = 120;
+  let x = event.clientX || event.touches?.[0]?.clientX || 0;
+  let y = event.clientY || event.touches?.[0]?.clientY || 0;
+  
+  if (x + menuWidth > window.innerWidth) {
+    x = window.innerWidth - menuWidth - 10;
+  }
+  if (y + menuHeight > window.innerHeight) {
+    y = window.innerHeight - menuHeight - 10;
+  }
+  
+  outfitContextMenu.value = {
+    visible: true,
+    outfit: outfit,
+    x: x,
+    y: y
+  };
+};
+
+const hideOutfitContextMenu = () => {
+  outfitContextMenu.value.visible = false;
+  outfitContextMenu.value.outfit = null;
+};
+
+const deleteOutfit = async (outfit) => {
+  if (confirm(`確定要刪除搭配「${outfit.name}」嗎？`)) {
+    await gameStore.deleteOutfit(outfit.id);
+  }
+  hideOutfitContextMenu();
+};
+
+const renameOutfit = async (outfit) => {
+  if (!outfit || !outfit.id) {
+    gameStore.showNotification('❌ 無法取得搭配資訊', 'error');
+    hideOutfitContextMenu();
+    return;
+  }
+  
+  // 先保存 outfit 資訊，再關閉選單
+  const outfitId = outfit.id;
+  const currentName = outfit.name || '';
+  
+  // 關閉選單
+  hideOutfitContextMenu();
+  
+  // 使用 setTimeout 確保 DOM 更新後再顯示 prompt
+  setTimeout(async () => {
+    const newName = prompt('請輸入新的搭配名稱：', currentName);
+    if (newName && newName.trim() && newName !== currentName) {
+      try {
+        await gameStore.renameOutfit(outfitId, newName.trim());
+      } catch (error) {
+        console.error('重新命名失敗:', error);
+      }
+    }
+  }, 100);
+};
+
+// --- 虛擬滾動處理 ---
+const handleScroll = () => {
+  if (scrollContainer.value) {
+    scrollTop.value = scrollContainer.value.scrollTop;
+  }
+};
+
+const updateContainerHeight = () => {
+  if (scrollContainer.value) {
+    containerHeight.value = scrollContainer.value.clientHeight;
+  }
 };
 
 // --- 生命週期 ---
 onMounted(() => {
-  // 監聽容器尺寸變化
-  const resizeObserver = new ResizeObserver(entries => {
-    containerHeight.value = entries[0].contentRect.height;
-  });
+  updateContainerHeight();
   if (scrollContainer.value) {
+    resizeObserver = new ResizeObserver(() => updateContainerHeight());
     resizeObserver.observe(scrollContainer.value);
+  }
+  window.addEventListener('resize', updateContainerHeight);
+});
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  window.removeEventListener('resize', updateContainerHeight);
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
   }
 });
 
-watch(activeCategory, () => {
-    scrollTop.value = 0;
-    if (scrollContainer.value) scrollContainer.value.scrollTop = 0;
+watch(() => gameStore.ui.wardrobeCollapsed, async () => {
+  await nextTick();
+  updateContainerHeight();
+  setTimeout(updateContainerHeight, 320);
+});
+
+watch(showFilterPanel, async () => {
+  await nextTick();
+  updateContainerHeight();
+});
+
+// 監聽衣櫃分類切換
+watch(() => gameStore.ui.wardrobeCategory, (newCategory) => {
+  if (newCategory) {
+    setActiveCategory(newCategory);
+    // 清除設定，避免重複跳轉
+    gameStore.ui.wardrobeCategory = null;
+  }
+});
+
+// 監聽人物切換，預設勾選當前人物
+watch(() => gameStore.selectedCharacterId, (id) => {
+  if (id) {
+    selectedCharacters.value = [id];
+  } else {
+    selectedCharacters.value = [];
+  }
+}, { immediate: true });
+
+// 清理不存在的 tag / character 篩選值
+watch(currentCategoryTags, (tags) => {
+  const tagKeys = new Set(tags.map(t => t.key));
+  selectedTags.value = selectedTags.value.filter(tag => tagKeys.has(tag));
+});
+
+watch(characterOptions, (options) => {
+  const optionIds = new Set(options.map(opt => opt.id));
+  selectedCharacters.value = selectedCharacters.value.filter(id => optionIds.has(id));
 });
 </script>
 
-
 <style scoped>
-.wardrobe-container {
+/* ========================================
+   Wardrobe.vue 樣式
+   ----------------------------------------
+   目錄：
+   1. 基礎結構
+   2. 桌面版佈局
+   3. 分類側邊欄
+   4. 物件顯示區域
+   5. 篩選與排序面板
+   6. 物件格線
+   7. 右鍵選單
+   8. 手機版佈局：底部抽屜
+   9. 響應式設計 - 手機版
+   10. 響應式設計 - 平板版
+   11. 平板版特定樣式
+   ======================================== */
+
+/* ========================================
+   1. 基礎結構
+   ======================================== */
+.wardrobe { 
   position: relative;
+  background-color: rgb(from var(--color-bg-card) r g b / 0.95); 
+  backdrop-filter: blur(5px); 
+  overflow: hidden; 
+  display: flex; 
+  flex-direction: column; 
+  transition: width 0.25s ease-out; 
   height: 100%;
-  display: flex;
+  max-height: 100%;
 }
 
-.collapse-handle {
+.mobile-bottom-sheet {
+  height: auto;
+  max-height: none;
+}
+
+.wardrobe-content { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  min-height: 0; 
+}
+
+/* ========================================
+   2. 桌面版佈局
+   ======================================== */
+.desktop-wardrobe { 
+  height: 100%; 
+  width: 100%;
+  display: flex; 
+  flex-direction: row; 
+  min-height: 0;
+}
+
+/* 衣櫃收合把手 */
+.panel-toggle-handle {
   position: absolute;
   top: 50%;
-  right: -15px;
   transform: translateY(-50%);
-  width: 30px;
-  height: 60px;
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-left: none;
-  border-radius: 0 8px 8px 0;
+  width: 20px;
+  height: 50px;
+  background: rgb(from var(--color-primary) r g b / 0.3);
+  backdrop-filter: blur(8px);
+  border: none;
   cursor: pointer;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  color: var(--primary-color);
-}
-
-.wardrobe-content {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.wardrobe-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-.wardrobe-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.category-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-}
-.category-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.8rem;
-  border: none;
-  border-radius: 20px;
-  background-color: #f0f2f5;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-.category-tab:hover { background-color: #e0e4e8; }
-.category-tab.active { background-color: var(--primary-color); color: white; }
-.category-icon { font-size: 1rem; }
-.category-count {
   font-size: 0.7rem;
-  background-color: rgba(0,0,0,0.1);
-  border-radius: 10px;
-  padding: 2px 6px;
-  min-width: 18px;
-  text-align: center;
-}
-.category-tab.active .category-count { background-color: rgba(255,255,255,0.2); }
-
-.controls-panel {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-}
-.filter-select {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background-color: #fff;
-}
-
-.items-list-container {
-  flex: 1;
-  overflow-y: auto;
-  position: relative;
-}
-.items-list-sizer {
-  position: relative;
-  width: 100%;
-}
-
-.items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  padding: 10px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.grid-item {
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
+  color: var(--color-bg-main);
   transition: all 0.2s ease;
-  border: 2px solid transparent;
-}
-.grid-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  border-radius: 50px 0 0 50px;
+  padding-left: 2px;
 }
 
-.item-card.equipped {
-  border-color: var(--primary-color);
-  background-color: #e9e9ff;
-}
-.item-card.expression-available {
-  box-shadow: 0 0 0 2px #4CAF50; /* 綠色高亮顯示可用表情 */
+.panel-toggle-handle:hover {
+  background: var(--color-primary);
+  width: 24px;
 }
 
-.item-thumbnail {
-  position: relative;
+.panel-toggle-handle .icon {
+  transition: transform 0.2s ease;
+}
+
+.panel-toggle-handle--right {
+  right: -5px;
+}
+
+.left-panel.collapsed {
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+}
+
+/* 桌面版衣櫃收起時 */
+.wardrobe.collapsed .items-display {
+  opacity: 0;
+  visibility: hidden;
+  width: 0;
+  overflow: hidden;
+  flex: 0;
+  pointer-events: none;
+}
+
+.wardrobe.collapsed .category-sidebar {
   width: 100%;
-  aspect-ratio: 1;
-  background-color: #f0f2f5;
+  max-width: none;
+}
+
+/* ========================================
+   3. 分類側邊欄
+   ======================================== */
+.category-sidebar { 
+  background-color: var(--color-bg-panel); 
+  display: flex; 
+  flex-direction: column; 
+  padding: 0.5rem 0; 
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  transition: none; 
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.category-sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.category-sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.category-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-sidebar.collapsed { 
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+}
+
+.category-tab { 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  gap: 0.25rem; 
+  padding: 0.5rem 0.25rem; 
+  border: none; 
+  background: none; 
+  cursor: pointer; 
+  transition: all 0.2s ease; 
+  color: var(--color-text-secondary); 
+  min-height: 52px;
+  border-radius: 8px;
+  margin: 2px;
+}
+
+.category-tab:hover { 
+  background-color: rgb(from var(--color-primary) r g b / 0.1); 
+  color: var(--color-primary); 
+}
+
+.category-tab.active { 
+  background-color: var(--color-primary); 
+  color: var(--color-bg-main); 
+}
+
+.tab-icon { 
+  width: 20px; 
+  height: 20px; 
+  flex-shrink: 0; 
+}
+
+.tab-label { 
+  font-size: 0.75rem;
+  text-align: center; 
+  white-space: nowrap; 
+  transition: opacity 0.3s ease;
+  line-height: 1.1;
+  word-break: keep-all;
+}
+
+.category-sidebar.collapsed .tab-label { 
+  display: block;
+}
+
+/* ========================================
+   4. 物件顯示區域
+   ======================================== */
+.items-display { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  min-height: 0; 
+  min-width: 0;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s ease-out, width 0.2s ease-out;
+}
+
+.items-controls { 
+  display: flex; 
+  gap: 0.5rem; 
+  padding: 0.75rem 1rem; 
+  background-color: var(--color-bg-panel); 
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ========================================
+   5. 篩選與排序面板
+   ======================================== */
+
+/* 篩選器按鈕 */
+.filter-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-card);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
 }
-.item-thumbnail img {
+
+.filter-toggle-btn:hover {
+  border-color: var(--color-primary);
+  background-color: rgb(from var(--color-primary) r g b / 0.1);
+}
+
+.filter-toggle-btn.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-bg-main);
+}
+
+.filter-toggle-btn .filter-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-toggle-btn .filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--color-error);
+  color: var(--color-bg-main);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.sort-select {
+  flex: 1;
+  max-width: 80px;
+}
+
+/* 篩選面板 */
+.filter-panel {
+  background-color: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.filter-clear-btn {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.filter-clear-btn:hover {
+  background-color: rgb(from var(--color-primary) r g b / 0.1);
+}
+
+.filter-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.filter-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  background-color: var(--color-bg-canvas);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.filter-checkbox-item:hover {
+  background-color: rgb(from var(--color-border) r g b / 0.3);
+}
+
+/* checkbox 樣式由 App.vue 全局管理 */
+
+.tag-item {
+  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+}
+
+.tag-item:hover {
+  background-color: rgb(from var(--color-primary-light) r g b / 0.3);
+}
+
+/* 篩選面板動畫 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-main);
+  font-size: 0.8rem;
+}
+
+.items-grid-container { 
+  flex: 1; 
+  overflow-y: auto; 
+  position: relative; 
+  padding-inline: clamp(0.75rem, 1vw, 1.25rem);
+  padding-top: 0.5rem;
+  padding-bottom: 1.6rem;
+  min-height: 0;
+}
+
+.items-grid-sizer { 
+  position: relative; 
+  width: 100%; 
+}
+
+/* ========================================
+   6. 物件格線
+   ======================================== */
+.items-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+  gap: 12px; 
+  padding: 0; 
+  position: absolute; 
+  width: 100%;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+.grid-item { 
+  cursor: pointer; 
+  border-radius: 8px; 
+  overflow: hidden; 
+  transition: all 0.2s ease; 
+  border: 2px solid transparent; 
+  min-height: 0;
+}
+
+.grid-item:hover { 
+  transform: scale(1.05); 
+  box-shadow: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.15); 
+}
+
+.item-card { 
+  background-color: var(--color-bg-canvas); 
+}
+
+.item-card.equipped { 
+  border-color: var(--color-primary); 
+  background-color: rgb(from var(--color-border) r g b / 0.3); 
+}
+
+.outfit-card { 
+  background: linear-gradient(135deg, var(--color-info) 0%, rgb(from var(--color-info) r g b / 0.7) 100%); 
+  color: var(--color-bg-main); 
+}
+
+.item-thumbnail { 
+  aspect-ratio: 1; 
+  position: relative; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  overflow: hidden; 
+}
+
+.item-thumbnail img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+}
+
+.preview-icon { 
+  font-size: 2rem; 
+  opacity: 0.9; 
+}
+
+.equipped-badge { 
+  position: absolute; 
+  top: 4px; 
+  right: 4px; 
+  width: 20px; 
+  height: 20px; 
+  background-color: var(--color-primary); 
+  color: var(--color-bg-main); 
+  border-radius: 50%; 
+  font-size: 0.7rem; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: bold; 
+}
+
+/* 變體指示器 */
+.variant-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--color-warning);
+  color: var(--color-bg-main);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: help;
+}
+
+.item-card.has-variant {
+  border-color: rgb(from var(--color-warning) r g b / 0.5);
+}
+
+/* 搜尋跳轉高亮閃爍效果 */
+.item-card.highlighted {
+  animation: highlight-flash 0.6s ease-in-out 5;
+  border-color: var(--color-success);
+  box-shadow: 0 0 12px rgb(from var(--color-success) r g b / 0.5);
+}
+
+@keyframes highlight-flash {
+  0%, 100% {
+    border-color: var(--color-success);
+    box-shadow: 0 0 12px rgb(from var(--color-success) r g b / 0.5);
+  }
+  50% {
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+
+/* ========================================
+   7. 右鍵選單
+   ======================================== */
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgb(from var(--color-text-primary) r g b / 0.3);
+  z-index: 10000;
+}
+
+.context-menu {
+  position: fixed;
+  min-width: 180px;
+  max-width: 250px;
+  background: var(--color-bg-card);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgb(from var(--color-text-primary) r g b / 0.25);
+  overflow: hidden;
+  z-index: 10001;
+}
+
+.context-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  background: var(--color-primary);
+  color: var(--color-bg-main);
+}
+
+.context-menu-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.context-menu-close {
+  background: none;
+  border: none;
+  color: var(--color-bg-main);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.context-menu-close:hover {
+  opacity: 1;
+}
+
+.context-menu-content {
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.context-menu-section {
+  margin-bottom: 0.5rem;
+}
+
+.context-menu-section-title {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0.5rem 0;
+}
+
+.context-menu-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.context-menu-option:hover {
+  background-color: rgb(from var(--color-border) r g b / 0.2);
+}
+
+.context-menu-option.variant-option:hover {
+  background-color: rgb(from var(--color-warning) r g b / 0.15);
+}
+
+.context-menu-option.variant-option.active {
+  background-color: rgb(from var(--color-warning) r g b / 0.15);
+}
+
+.context-menu-option.danger {
+  color: var(--color-error);
+}
+
+.context-menu-option.danger:hover {
+  background-color: rgb(from var(--color-error) r g b / 0.1);
+}
+
+.context-menu-option .option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.context-menu-option .option-name {
+  flex: 1;
+  color: var(--color-text-primary);
+}
+
+.hide-toggle {
+  background-color: rgb(from var(--color-warning) r g b / 0.1) !important;
+  border: 1px dashed var(--color-warning) !important;
+}
+
+.hidden-count {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  margin-left: 0.25rem;
+}
+
+.variant-option.active .variant-option-name {
+  font-weight: 600;
+  color: rgb(from var(--color-warning) r g b / 0.9);
+}
+
+/* 手機版物件詳細資訊 */
+.mobile-item-details {
+  background: rgb(from var(--color-bg-canvas) r g b / 0.5);
+  border-radius: 8px;
+  padding: 0.5rem !important;
+  margin: 0.25rem 0;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.detail-label {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  min-width: 50px;
+}
+
+.detail-value {
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.detail-tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  color: var(--color-primary);
+  border-radius: 8px;
+}
+
+
+.item-info { 
+  padding: 0.4rem 0.45rem; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.2rem; 
+  background-color: var(--color-bg-card); 
+  min-height: 58px;
+}
+
+/* 物件 meta 行 */
+.item-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* 物件標籤 */
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.16rem;
+}
+
+.item-tag {
+  font-size: 0.58rem;
+  padding: 0.1rem 0.28rem;
+  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  color: var(--color-primary);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.item-name { 
+  font-size: 0.78rem; 
+  font-weight: 500; 
+  color: var(--color-text-primary); 
+  line-height: 1.15; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden; 
+}
+
+.item-pack-name, .outfit-date { 
+  font-size: 0.68rem; 
+  color: var(--color-text-secondary); 
+  line-height: 1; 
+}
+
+/* 搭配預覽圖樣式 */
+.outfit-preview {
+  background: var(--color-bg-canvas);
+}
+
+.outfit-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px 6px 0 0;
+}
+
+.outfit-card .item-name, .outfit-card .outfit-date { 
+  color: var(--color-text-primary); 
+}
+
+.empty-state { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  height: 200px; 
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-card);
+}
+
+.empty-icon { 
+  font-size: 3rem; 
+  margin-bottom: 1rem; 
+  opacity: 0.5; 
+}
+
+/* ========================================
+   8. 手機版佈局：底部抽屜
+   ======================================== */
+.mobile-bottom-sheet {
+  position: sticky;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 30px rgb(from var(--color-text-primary) r g b / 0.18);
+  width: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
+  border-right: none;
+  background-color: rgb(from var(--color-bg-main) r g b / 0.98);
+}
+
+.mobile-wardrobe {
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(from var(--color-bg-main) r g b / 0.98);
+  backdrop-filter: blur(8px);
+  transition: max-height 0.25s ease-out;
+  max-height: 16vh;
+  min-height: 0;
+  border-top: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.mobile-wardrobe.collapsed {
+  max-height: 36px;
+  min-height: 36px;
+}
+
+.mobile-wardrobe.collapsed .mobile-wardrobe-body {
+  display: none;
+}
+
+.mobile-wardrobe.collapsed .mobile-drawer-toggle {
+  padding: 0.5rem 1rem;
+}
+
+.mobile-drawer-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.35rem 1rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  background: rgb(from var(--color-bg-main) r g b / 0.98);
+  z-index: 2;
+}
+
+.drawer-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 999px;
+  display: inline-block;
+  position: relative;
+}
+
+.drawer-label {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  display: none;
+}
+
+.drawer-icon {
+  font-size: 0.7rem;
+}
+
+.mobile-wardrobe-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.mobile-categories {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.categories-scroll {
+  display: flex;
+  flex-direction: row;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  width: 100%;
+}
+
+.mobile-category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-category-tab:hover {
+  border-color: var(--color-primary);
+  background-color: rgb(from var(--color-primary) r g b / 0.1);
+}
+
+.mobile-category-tab.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg-main);
+}
+
+.mobile-tab-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.mobile-tab-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-tab-label.visible {
+  max-width: 120px;
+  opacity: 1;
+}
+
+.mobile-items-scroll {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.25rem 0.1rem 0.1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: center;
+  overscroll-behavior: contain;
+  touch-action: pan-x;
+}
+
+.mobile-item {
+  width: 64px;
+  height: 64px;
+  background-color: var(--color-bg-canvas);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgb(from var(--color-text-primary) r g b / 0.12);
+}
+
+.mobile-item.equipped {
+  border-color: var(--color-primary);
+  background-color: rgb(from var(--color-border) r g b / 0.3);
+}
+
+.mobile-item img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-.preview-icon { font-size: 2rem; }
 
-.equipped-badge {
+.mobile-equipped-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 18px;
-  height: 18px;
-  background-color: var(--primary-color);
-  color: white;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--color-primary);
+  color: var(--color-bg-main);
   border-radius: 50%;
+  font-size: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
   font-weight: bold;
 }
 
-.item-info {
-  padding: 0.5rem;
-  text-align: center;
-  background-color: #fff;
-}
-.item-name {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.item-pack-name {
-  display: block;
-  font-size: 0.7rem;
-  color: #888;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 手機版搭配項目樣式 */
+.mobile-outfit-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 80px;
+  height: auto;
+  min-height: 80px;
+  padding: 0.35rem 0.25rem;
 }
 
-.empty-state {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: #999;
+.mobile-outfit-item img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
 }
-.empty-icon { font-size: 3rem; }
+
+.mobile-outfit-icon {
+  font-size: 1.5rem;
+}
+
+.mobile-outfit-name {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+.wardrobe-content:has(.category-sidebar.collapsed) .items-display {
+  display: none;
+}
+
+/* ========================================
+   9. 響應式設計 - 手機版
+   ======================================== */
+@media (max-width: 767px) {
+  .wardrobe {
+    min-width: unset;
+  }
+
+  .mobile-wardrobe {
+    max-height: clamp(180px, 35vh, 280px);
+    transition: max-height 0.3s ease;
+  }
+  
+  .mobile-wardrobe.collapsed {
+    max-height: 32px;
+    min-height: 32px;
+  }
+
+  .mobile-category-tab {
+    padding: 0.35rem 0.55rem;
+  }
+
+  .mobile-tab-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mobile-tab-label.visible {
+    max-width: 96px;
+  }
+
+  .mobile-items-scroll {
+    gap: 0.45rem;
+  }
+
+  .mobile-item {
+    width: 58px;
+    height: 58px;
+  }
+
+  .mobile-equipped-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+  }
+}
+
+/* ========================================
+   10. 響應式設計 - 平板版
+   ======================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .left-panel {
+    width: clamp(160px, 22vw, 220px);
+  }
+  
+  .left-panel.collapsed {
+    width: 44px;
+  }
+  
+  .category-sidebar {
+    width: 40px;
+  }
+  
+  .category-tab {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+  }
+  
+  .tab-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .tab-label {
+    font-size: 0.7rem;
+    width: 100%;
+    display: block;
+    text-align: center;
+  }
+  
+  .items-controls {
+    padding: 0.5rem;
+    gap: 0.35rem;
+  }
+  
+  .filter-toggle-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .filter-select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+    min-width: 100px;
+  }
+  
+  .filter-panel {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .filter-section-title {
+    font-size: 0.8rem;
+  }
+  
+  .filter-checkbox-item {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .checkbox-custom {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .items-grid { 
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+    gap: 12px; 
+  }
+
+  /* 平板版選取框縮小，避免被裁切感 */
+  .items-grid .grid-item {
+    border-width: 1.5px;
+    border-radius: 6px;
+  }
+  
+  .items-grid .item-info {
+    padding: 0.35rem;
+  }
+  
+  .item-name {
+    font-size: 0.72rem;
+  }
+  
+  .item-pack-name, .outfit-date {
+    font-size: 0.65rem;
+  }
+  
+  .equipped-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+  }
+  
+  .variant-indicator {
+    width: 16px;
+    height: 16px;
+    font-size: 0.55rem;
+  }
+  
+  .empty-state {
+    height: 150px;
+  }
+  
+  .empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .variant-menu {
+    min-width: 140px;
+    max-width: 200px;
+  }
+  
+  .variant-menu-header {
+    padding: 0.6rem 0.8rem;
+  }
+  
+  .variant-menu-title {
+    font-size: 0.85rem;
+  }
+  
+  .variant-option {
+    padding: 0.6rem;
+    gap: 0.5rem;
+  }
+  
+  .variant-option-name {
+    font-size: 0.8rem;
+  }
+}
+
+/* ========================================
+   11. 平板版特定樣式
+   ======================================== */
+.tablet-style {
+  height: 100%;
+  transition: width 0.2s ease-out, min-width 0.2s ease-out, max-width 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.tablet-style .category-sidebar {
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  align-items: center;
+  padding: 0.4rem 0.2rem;
+  transition: none;
+}
+
+.tablet-style .category-tab {
+  padding: 0.35rem 0.25rem;
+  min-height: 48px;
+  width: calc(100% - 8px);
+  border-radius: 8px;
+  margin: 3px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  gap: 0.15rem;
+}
+
+.tablet-style .category-tab.active {
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgb(from var(--color-bg-main) r g b / 0.7);
+}
+
+.tablet-style .tab-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.tablet-style .tab-label {
+  font-size: 0.7rem;
+  line-height: 1.15;
+  white-space: normal;
+  text-align: center;
+  width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  transform-origin: center;
+  transform: scale(1);
+  display: block;
+  margin-top: 1px;
+  word-break: keep-all;
+}
+
+.tablet-style.collapsed {
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+}
+
+.tablet-style.collapsed .items-display {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tablet-style.collapsed .category-sidebar {
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+}
+
+/* 平板版衣櫃內容貼合底部 */
+.tablet-style .wardrobe-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tablet-style .desktop-wardrobe {
+  flex: 1;
+  display: flex;
+}
+
+.tablet-style .items-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tablet-style .items-grid-container {
+  flex: 1;
+}
+
+/* 平板版收合把手修正 */
+.tablet-style .panel-toggle-handle--right {
+  display: flex;
+}
 </style>

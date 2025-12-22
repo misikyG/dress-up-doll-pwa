@@ -9,53 +9,47 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: '換裝紙娃娃遊戲',
+        name: '紙娃娃 PWA',
         short_name: '紙娃娃',
-        description: '一個可自訂圖包的換裝紙娃娃 PWA 遊戲',
-        theme_color: '#6a6cff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        scope: '/dress-up-doll-pwa/', // **重要**: scope 和 start_url 最好也明確設定
-        start_url: '/dress-up-doll-pwa/',
+        description: '紙娃娃換裝應用程式',
+        theme_color: '#ffffff',
         icons: [
           {
-            // 移除開頭的 /
             src: 'icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            // 移除開頭的 /
             src: 'icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
-          },
-          {
-            // 移除開頭的 /
-            src: 'icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
           }
         ]
       }
     })
   ],
+  
+  server: {
+    host: true,
+    port: 3000,
+    open: true
+  },
+  
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
     }
   },
+  
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        packer: resolve(__dirname, 'packer.html')
+        main: resolve(__dirname, 'index.html')
       }
     }
   }
