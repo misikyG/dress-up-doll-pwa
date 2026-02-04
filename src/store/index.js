@@ -45,6 +45,7 @@ const defaultZIndexMap = {
 const singleSlotCategories = new Set(['filter', 'background', 'character', 'expression']);
 
 // 儲存最初載入時的主題 CSS，確保預設主題與 index.html 同步
+// 注意：使用 rgba 而非 rgb(from ...) 確保 iOS Safari 相容性
 const hardcodedDefaultThemeCSS = `
 :root {
   --color-primary: #618b6a;
@@ -61,10 +62,11 @@ const hardcodedDefaultThemeCSS = `
   --color-error: #ad4b44;
   --color-warning: #f5bb64;
   --color-info: #71a2ca;
-  --shadow-sm: 0 1px 3px rgb(from var(--color-text-primary) r g b / 0.05);
-  --shadow-md: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.08);
-  --shadow-lg: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.12);
-  --shadow-xl: 0 8px 24px rgb(from var(--color-text-primary) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  --shadow-sm: 0 1px 3px rgba(71, 45, 37, 0.05);
+  --shadow-md: 0 2px 8px rgba(71, 45, 37, 0.08);
+  --shadow-lg: 0 4px 12px rgba(71, 45, 37, 0.12);
+  --shadow-xl: 0 8px 24px rgba(71, 45, 37, 0.15);
   --panel-width: 320px;
   --wardrobe-width: clamp(320px, 28vw, 500px);
   --controls-width: clamp(300px, 26vw, 420px);

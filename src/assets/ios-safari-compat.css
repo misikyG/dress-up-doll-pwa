@@ -1,0 +1,117 @@
+/**
+ * iOS Safari 相容性樣式表
+ * 此檔案提供 iOS Safari 不支援的 CSS 功能的回退樣式
+ * 主要修復：
+ * 1. rgb(from ...) 相對色彩語法不支援 -> 使用固定 rgba 值
+ * 2. 100vh 問題 -> 使用 -webkit-fill-available
+ * 3. backdrop-filter 需要 -webkit- 前綴
+ */
+
+/* ===========================================
+   1. 全域回退樣式
+   =========================================== */
+
+/* 100vh 修復 */
+html {
+  height: -webkit-fill-available;
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* 禁止彈性滾動 */
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 安全區域支援 */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* ===========================================
+   2. 觸控優化
+   =========================================== */
+
+/* 禁用點擊高亮 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 禁用長按選單 (在非輸入區域) */
+*:not(input):not(textarea):not([contenteditable="true"]) {
+  -webkit-touch-callout: none;
+}
+
+/* ===========================================
+   3. 滾動優化
+   =========================================== */
+
+/* 滾動容器添加慣性滾動 */
+.items-grid-container,
+.layer-list,
+.mobile-items-scroll,
+.modal-content,
+.settings-content,
+.room-content,
+.wardrobe-content,
+.filter-checkboxes {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===========================================
+   4. backdrop-filter 前綴支援
+   =========================================== */
+
+/* 確保 backdrop-filter 有 webkit 前綴 */
+[style*="backdrop-filter"] {
+  -webkit-backdrop-filter: inherit;
+}
+
+/* ===========================================
+   5. 固定定位優化 (iOS Safari)
+   =========================================== */
+
+/* iOS Safari 固定定位修復 */
+.modal-overlay,
+.notification,
+.context-menu-overlay,
+.floating-controls {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* ===========================================
+   6. 輸入框優化
+   =========================================== */
+
+/* 防止 iOS 自動縮放 */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* ===========================================
+   7. 動畫效能優化
+   =========================================== */
+
+/* 使用硬體加速的轉換 */
+.canvas,
+.canvas-item,
+.layer-item,
+.grid-item {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

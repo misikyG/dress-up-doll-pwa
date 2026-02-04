@@ -436,14 +436,16 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
-  background: rgb(from var(--color-border) r g b / 0.6);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(198, 185, 155, 0.6);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
   border: none;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -454,7 +456,7 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl:hover:not(:disabled) {
   background: var(--color-border);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.25);
+  box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
   opacity: 1;
 }
 
@@ -473,7 +475,9 @@ const flipSelected = (axis) => {
    3. 控制按鈕（badge-btn）
    ======================================== */
 .badge-btn {
-  background: rgb(from var(--color-border) r g b / 0.6);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(198, 185, 155, 0.6);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
   border: none;
@@ -482,7 +486,7 @@ const flipSelected = (axis) => {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   white-space: nowrap;
   flex: 1;
   min-width: 0;
@@ -492,7 +496,7 @@ const flipSelected = (axis) => {
 .badge-btn:hover:not(:disabled) {
   background: var(--color-border);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.25);
+  box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
   opacity: 1;
 }
 
@@ -503,7 +507,7 @@ const flipSelected = (axis) => {
 
 /* 模式切換按鈕 */
 .badge-btn.mode {
-  background: rgb(from var(--color-border) r g b / 0.25);
+  background: rgba(198, 185, 155, 0.25);
   font-size: 0.8rem;
 }
 
@@ -515,7 +519,7 @@ const flipSelected = (axis) => {
 
 /* 翻轉按鈕 */
 .badge-btn.flip {
-  background: rgb(from var(--color-border) r g b / 0.75);
+  background: rgba(198, 185, 155, 0.75);
   padding: 7px 12px;
   font-size: 0.8rem;
 }
@@ -533,7 +537,8 @@ const flipSelected = (axis) => {
 
 /* 儲存搭配按鈕 */
 .badge-btn.save {
-  background: linear-gradient(135deg, var(--color-warning), rgb(from var(--color-warning) r g b / 0.8));
+  /* iOS Safari 相容性：使用 rgba */
+  background: linear-gradient(135deg, var(--color-warning), rgba(245, 187, 100, 0.8));
   color: var(--color-text-primary);
   font-weight: 600;
   opacity: 0.9;
@@ -548,14 +553,16 @@ const flipSelected = (axis) => {
    4. 縮放控制
    ======================================== */
 .zoom-badge {
-  background: rgb(from var(--color-border) r g b / 0.85);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(198, 185, 155, 0.85);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 999px;
   padding: 4px 10px;
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
 }
 
 .zoom-icon {
@@ -574,7 +581,8 @@ const flipSelected = (axis) => {
 }
 
 .zoom-icon:hover:not(:disabled) {
-  background: rgb(from var(--color-bg-main) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(248, 245, 234, 0.15);
 }
 
 .zoom-icon:disabled {
@@ -601,7 +609,9 @@ const flipSelected = (axis) => {
 
 /* 勾選徽章（旋轉/縮放選項） */
 .check-badge {
-  background: rgb(from var(--color-border) r g b / 0.8);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(198, 185, 155, 0.8);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
   border-radius: 999px;
@@ -611,7 +621,7 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   transition: all 0.2s ease;
   flex: 1;
   justify-content: center;
@@ -630,7 +640,9 @@ const flipSelected = (axis) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgb(from var(--color-border) r g b / 0.85);
+  /* iOS Safari 相容性：使用 rgba */
+  background: rgba(198, 185, 155, 0.85);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
   color: var(--color-bg-main);
@@ -638,7 +650,7 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   transition: all 0.2s ease;
   font-size: 0.9rem;
 }

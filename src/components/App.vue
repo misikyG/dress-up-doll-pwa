@@ -238,11 +238,19 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
+  /* iOS Safari 防止溺出和彈性滾動 */
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 #app-container {
   width: 100vw;
+  /* iOS Safari 100vh 修復 - 使用 dvh 並提供 fallback */
   height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
   overflow: hidden;
 }
 
@@ -308,7 +316,8 @@ body {
 }
 
 .btn-close:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -342,7 +351,8 @@ body {
 
 /* 載入動畫 */
 .spinner {
-  border: 3px solid rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  border: 3px solid rgba(198, 185, 155, 0.3);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -373,11 +383,13 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 .btn-secondary {
-  background-color: rgb(from var(--color-border-light) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(232, 232, 232, 0.5);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 0.6rem 1.2rem;
@@ -394,7 +406,8 @@ body {
 }
 
 .btn-danger:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 .btn-sm {
@@ -550,7 +563,10 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* iOS Safari 100vh 修復 */
   height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
   background-color: var(--color-primary);
   color: var(--color-bg-main);
 }
@@ -558,7 +574,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgb(from var(--color-bg-main) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  border: 4px solid rgba(248, 245, 234, 0.3);
   border-top-color: var(--color-bg-main);
   border-radius: var(--radius-full);
   animation: spin 1s linear infinite;
@@ -571,7 +588,10 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .main-app {
   display: flex;
   flex-direction: column;
+  /* iOS Safari 100vh 修復 */
   height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
 }
 
 .app-header {
@@ -618,7 +638,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .main-nav button:not(.active):hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -644,7 +665,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .header-actions button:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -750,12 +772,15 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgb(from var(--color-text-primary) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(118, 98, 88, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  /* iOS Safari 安全區域支援 */
+  padding: env(safe-area-inset-top, 1rem) env(safe-area-inset-right, 1rem) env(safe-area-inset-bottom, 1rem) env(safe-area-inset-left, 1rem);
 }
 
 /* ========================================
@@ -922,8 +947,13 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   .modal-base {
     width: 100% !important;
     max-width: 100vw;
+    /* iOS Safari 100vh 修復 */
     max-height: 100vh;
+    max-height: 100dvh;
+    max-height: -webkit-fill-available;
     height: 100vh;
+    height: 100dvh;
+    height: -webkit-fill-available;
     border-radius: 0;
   }
   

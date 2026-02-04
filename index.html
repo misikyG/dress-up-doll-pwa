@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="./icons/icon-192x192.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- iOS Safari 必要的 viewport 設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <!-- iOS Safari PWA 支援 -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="紙娃娃" />
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+  <!-- iOS 安全區域顏色 -->
+  <meta name="theme-color" content="#f8f5ea" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
   <title>換裝紙娃娃</title>
@@ -52,12 +60,12 @@
       --color-info: #71a2ca;
       
       /* ========================================
-         陰影 (使用主題色的半透明)
+         陰影 (使用固定色值確保 iOS Safari 相容性)
          ======================================== */
-      --shadow-sm: 0 1px 3px rgb(from var(--color-text-primary) r g b / 0.05);
-      --shadow-md: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.08);
-      --shadow-lg: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.12);
-      --shadow-xl: 0 8px 24px rgb(from var(--color-text-primary) r g b / 0.15);
+      --shadow-sm: 0 1px 3px rgba(118, 98, 88, 0.05);
+      --shadow-md: 0 2px 8px rgba(118, 98, 88, 0.08);
+      --shadow-lg: 0 4px 12px rgba(118, 98, 88, 0.12);
+      --shadow-xl: 0 8px 24px rgba(118, 98, 88, 0.15);
       
       /* ========================================
          尺寸變數

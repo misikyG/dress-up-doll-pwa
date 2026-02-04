@@ -230,7 +230,8 @@ const formatDate = (dateString) => {
 .preview-overlay {
   position: absolute;
   inset: 0;
-  background: rgb(from var(--color-text-primary) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(118, 98, 88, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,7 +246,8 @@ const formatDate = (dateString) => {
 .load-hint {
   color: var(--color-bg-main);
   font-weight: 500;
-  background: rgb(from var(--color-text-primary) r g b / 0.6);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(118, 98, 88, 0.6);
   padding: 0.5rem 1rem;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
@@ -303,11 +305,13 @@ const formatDate = (dateString) => {
 }
 
 .duplicate-btn:hover {
-  background-color: rgb(from var(--color-info) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(113, 162, 202, 0.15);
 }
 
 .delete-btn:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(173, 75, 68, 0.15);
 }
 
 /* ========================================
