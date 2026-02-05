@@ -382,13 +382,15 @@ const cleanup = () => {
 
 .drop-zone.is-dragover { 
   border-color: var(--color-primary); 
-  background-color: rgb(from var(--color-primary-light) r g b / 0.3); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(125, 165, 133, 0.3); 
   transform: scale(1.02);
 }
 
 .drop-zone.is-processing {
   border-color: var(--color-primary);
-  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(125, 165, 133, 0.2);
 }
 
 .drop-zone-icon {
@@ -423,7 +425,8 @@ const cleanup = () => {
 }
 
 .select-file-btn:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 .hint { 
@@ -510,14 +513,16 @@ const cleanup = () => {
 
 .error-message {
   color: var(--color-error); 
-  background-color: rgb(from var(--color-error) r g b / 0.1); 
-  border: 1px solid rgb(from var(--color-error) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(173, 75, 68, 0.1); 
+  border: 1px solid rgba(173, 75, 68, 0.3);
 }
 
 .success-message {
   color: var(--color-success);
-  background-color: rgb(from var(--color-success) r g b / 0.1);
-  border: 1px solid rgb(from var(--color-success) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(112, 145, 114, 0.1);
+  border: 1px solid rgba(112, 145, 114, 0.3);
 }
 
 .error-icon,
@@ -567,7 +572,8 @@ const cleanup = () => {
 }
 
 .retry-btn:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 /* ========================================

@@ -157,6 +157,22 @@ const layerList = ref(null);
 const contextMenu = ref({ visible: false, layer: null, x: 0, y: 0 });
 let longPressTimer = null;
 
+// --- 共用工具函式 ---
+const calcMenuPosition = (event, menuWidth, menuHeight) => {
+  let x = event.clientX || event.touches?.[0]?.clientX || 0;
+  let y = event.clientY || event.touches?.[0]?.clientY || 0;
+  if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 12;
+  if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 12;
+  return { x, y };
+};
+
+const cancelLongPress = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
 // 滾輪橫向滾動
 const handleHorizontalScroll = (event) => {
   if (layerList.value) {
@@ -206,19 +222,7 @@ const resetOrder = () => {
 const onLayerContextMenu = (layer, event) => {
   event.preventDefault();
   event.stopPropagation();
-
-  const menuWidth = 180;
-  const menuHeight = 160;
-  let x = event.clientX || event.touches?.[0]?.clientX || 0;
-  let y = event.clientY || event.touches?.[0]?.clientY || 0;
-
-  if (x + menuWidth > window.innerWidth) {
-    x = window.innerWidth - menuWidth - 12;
-  }
-  if (y + menuHeight > window.innerHeight) {
-    y = window.innerHeight - menuHeight - 12;
-  }
-
+  const { x, y } = calcMenuPosition(event, 180, 160);
   contextMenu.value = { visible: true, layer, x, y };
 };
 
@@ -246,18 +250,9 @@ const onLayerTouchStart = (layer, event) => {
   longPressTimer = setTimeout(() => onLayerContextMenu(layer, event), 500);
 };
 
-const onLayerTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
-};
+const onLayerTouchEnd = () => cancelLongPress();
 
-onUnmounted(() => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-  }
-});
+onUnmounted(() => cancelLongPress());
 
 // Draggable 事件處理
 const onDragStart = () => {
@@ -269,12 +264,8 @@ const onDragEnd = () => {
 };
 
 // 拖曳把手觸控事件（手機/平板）
-const onDragHandleTouchStart = (event, layer, index) => {
-  // 取消長按選單
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
+const onDragHandleTouchStart = () => {
+  cancelLongPress();
   // vuedraggable 會自動處理觸控拖曳
 };
 
@@ -306,7 +297,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%) ;
   width: 47px;
   height: 16px;
-  background: rgb(from var(--color-primary) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(165, 149, 209, 0.3);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
   cursor: pointer;
@@ -317,7 +310,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   font-size: 0.75rem;
   color: var(--color-bg-main);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   border-radius: 0 0 50px 50px;
   padding: 0;
 }
@@ -350,7 +344,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 50px;
   height: 20px;
-  background: rgb(from var(--color-primary) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(165, 149, 209, 0.3);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
   cursor: pointer;
@@ -361,7 +357,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   font-size: 1.1rem;
   color: var(--color-bg-main);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   border-radius: 50px 50px 0 0;
   padding: 0;
 }
@@ -437,7 +434,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .action-btn:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.3);
 }
 
 .action-btn:disabled {
@@ -451,7 +449,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .delete-btn:hover:not(:disabled) {
-  background-color: rgb(from var(--color-danger, #e74c3c) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(231, 76, 60, 0.15);
 }
 
 /* ========================================
@@ -485,7 +484,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 47px;
   height: 16px;
-  background: rgb(from var(--color-primary) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(165, 149, 209, 0.3);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
   cursor: pointer;
@@ -496,7 +497,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   font-size: 0.75rem;
   color: var(--color-bg-main);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   border-radius: 0 0 50px 50px;
   padding: 0;
 }
@@ -526,7 +528,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-list {
-  background-color: rgb(from var(--color-bg-card) r g b / 0.95);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px); 
   display: flex;
   gap: 0.5rem;
@@ -538,6 +542,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   border-radius: 0;
   overscroll-behavior: contain;
   touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Draggable 容器 */
@@ -597,13 +602,15 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-item.selected {
   border-color: var(--color-primary);
-  background-color: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.3);
 }
 
 /* Vuedraggable 拖曳樣式 */
 .layer-item-ghost {
   opacity: 0.4;
-  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1);
   border: 2px dashed var(--color-primary);
 }
 
@@ -614,7 +621,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-item-drag {
   opacity: 0.8;
   transform: scale(1.05) rotate(3deg);
-  box-shadow: 0 8px 16px rgb(from var(--color-primary) r g b / 0.4);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 8px 16px rgba(165, 149, 209, 0.4);
   cursor: grabbing !important;
 }
 
@@ -667,7 +675,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgb(from var(--color-text-primary) r g b / 0.18);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 2px 6px rgba(118, 98, 88, 0.18);
 }
 
 /* ========================================
@@ -720,7 +729,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-btn {
   width: 16px;
   height: 16px;
-  background-color: rgb(from var(--color-bg-main) r g b / 0.9);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(248, 245, 234, 0.9);
   border: 1px solid var(--color-border);
   border-radius: 3px;
   cursor: pointer;
@@ -768,11 +778,13 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-item:hover .drag-handle {
   opacity: 1;
-  background-color: rgb(from var(--color-border) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.5);
 }
 
 .layer-item.selected .drag-handle {
-  background-color: rgb(from var(--color-primary) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.5);
 }
 
 /* ========================================
@@ -781,7 +793,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-context-overlay {
   position: fixed;
   inset: 0;
-  background: rgb(from var(--color-text-primary) r g b / 0.25);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(118, 98, 88, 0.25);
   z-index: 12000;
 }
 
@@ -790,7 +803,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   min-width: 170px;
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 12px 36px rgb(from var(--color-text-primary) r g b / 0.25);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 12px 36px rgba(118, 98, 88, 0.25);
   overflow: hidden;
 }
 
@@ -844,7 +858,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-context-option:hover {
-  background: rgb(from var(--color-border) r g b / 0.25);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(198, 185, 155, 0.25);
 }
 
 .layer-context-option .option-icon {
@@ -867,7 +882,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-context-option.danger:hover {
-  background: rgb(from var(--color-error) r g b / 0.12);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(173, 75, 68, 0.12);
 }
 
 .layer-item.hidden {

@@ -25,7 +25,6 @@ class DressingCore {
       
       request.onupgradeneeded = (event) => {
         const db = event.target.result
-        const transaction = event.target.transaction;
 
         if (db.objectStoreNames.contains('items')) {
           db.deleteObjectStore('items');
@@ -113,13 +112,19 @@ class DressingCore {
     const allItems = await this.getAllData('items');
     const itemsToDelete = allItems.filter(item => item.packId === packId);
     
-    const transaction = this.db.transaction('items', 'readwrite');
-    const itemStore = transaction.objectStore('items');
-    for (const item of itemsToDelete) {
-      itemStore.delete(item.id);
-    }
+    if (itemsToDelete.length === 0) return true;
     
-    return true;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('items', 'readwrite');
+      const itemStore = transaction.objectStore('items');
+      
+      transaction.oncomplete = () => resolve(true);
+      transaction.onerror = (event) => reject(event.target.error);
+      
+      for (const item of itemsToDelete) {
+        itemStore.delete(item.id);
+      }
+    });
   }
   
   async clearAllData() {

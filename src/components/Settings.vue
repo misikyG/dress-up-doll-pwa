@@ -810,7 +810,8 @@ const clearAllData = () => {
 }
 
 .close-btn:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -881,7 +882,8 @@ const clearAllData = () => {
 
 .theme-option.active {
   border-color: var(--color-primary);
-  background: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(165, 149, 209, 0.1);
 }
 
 .theme-preview {
@@ -1245,7 +1247,8 @@ const clearAllData = () => {
 }
 
 .icon-btn-action:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -1294,11 +1297,13 @@ const clearAllData = () => {
 }
 
 .primary-btn:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 .secondary-btn {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 0.6rem 1rem;
@@ -1314,7 +1319,8 @@ const clearAllData = () => {
 }
 
 .secondary-btn:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.35);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.35);
 }
 
 .secondary-btn:disabled,
@@ -1335,7 +1341,8 @@ const clearAllData = () => {
 }
 
 .delete-btn:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 .delete-btn:disabled {
@@ -1356,7 +1363,8 @@ const clearAllData = () => {
 }
 
 .danger-btn:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 /* ========================================

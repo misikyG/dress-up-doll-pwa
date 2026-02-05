@@ -600,32 +600,34 @@ const isExpressionAvailable = (item) => {
 // 使用 store 中的共用方法
 const formatDate = (dateString) => gameStore.formatDate(dateString);
 
+// --- 共用工具函式 ---
+// 計算選單安全位置，確保不超出視窗邊界
+const calcMenuPosition = (event, menuWidth, menuHeight) => {
+  let x = event.clientX || event.touches?.[0]?.clientX || 0;
+  let y = event.clientY || event.touches?.[0]?.clientY || 0;
+  if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+  if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+  return { x, y };
+};
+
+// 長按計時器處理
+const startLongPress = (callback, event) => {
+  longPressTimer = setTimeout(() => callback(event), 500);
+};
+
+const cancelLongPress = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
 // --- 上下文選單處理 ---
 const showContextMenu = (item, event) => {
   event.preventDefault();
   event.stopPropagation();
-  
-  // 計算選單位置，確保不超出視窗
-  const menuWidth = 200;
-  const menuHeight = 280;
-  let x = event.clientX || event.touches?.[0]?.clientX || 0;
-  let y = event.clientY || event.touches?.[0]?.clientY || 0;
-  
-  // 確保選單不會超出右邊界
-  if (x + menuWidth > window.innerWidth) {
-    x = window.innerWidth - menuWidth - 10;
-  }
-  // 確保選單不會超出下邊界
-  if (y + menuHeight > window.innerHeight) {
-    y = window.innerHeight - menuHeight - 10;
-  }
-  
-  contextMenu.value = {
-    visible: true,
-    item: item,
-    x: x,
-    y: y
-  };
+  const { x, y } = calcMenuPosition(event, 200, 280);
+  contextMenu.value = { visible: true, item, x, y };
 };
 
 const hideContextMenu = () => {
@@ -708,16 +710,10 @@ const getCurrentVariant = (item) => {
 
 // 長按事件處理
 const handleItemTouchStart = (item, event) => {
-  longPressTimer = setTimeout(() => {
-    showContextMenu(item, event);
-  }, 500); // 500ms 長按
+  startLongPress(() => showContextMenu(item, event), event);
 };
 
-const handleItemTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
+const handleItemTouchEnd = () => cancelLongPress();
 };
 
 const handleItemContextMenu = (item, event) => {
@@ -730,40 +726,16 @@ const handleOutfitContextMenu = (outfit, event) => {
 };
 
 const handleOutfitTouchStart = (outfit, event) => {
-  longPressTimer = setTimeout(() => {
-    showOutfitContextMenu(outfit, event);
-  }, 500);
+  startLongPress(() => showOutfitContextMenu(outfit, event), event);
 };
 
-const handleOutfitTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
-};
+const handleOutfitTouchEnd = () => cancelLongPress();
 
 const showOutfitContextMenu = (outfit, event) => {
   event.preventDefault();
   event.stopPropagation();
-  
-  const menuWidth = 180;
-  const menuHeight = 120;
-  let x = event.clientX || event.touches?.[0]?.clientX || 0;
-  let y = event.clientY || event.touches?.[0]?.clientY || 0;
-  
-  if (x + menuWidth > window.innerWidth) {
-    x = window.innerWidth - menuWidth - 10;
-  }
-  if (y + menuHeight > window.innerHeight) {
-    y = window.innerHeight - menuHeight - 10;
-  }
-  
-  outfitContextMenu.value = {
-    visible: true,
-    outfit: outfit,
-    x: x,
-    y: y
-  };
+  const { x, y } = calcMenuPosition(event, 180, 120);
+  outfitContextMenu.value = { visible: true, outfit, x, y };
 };
 
 const hideOutfitContextMenu = () => {
@@ -834,9 +806,7 @@ onUnmounted(() => {
     resizeObserver = null;
   }
   window.removeEventListener('resize', updateContainerHeight);
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-  }
+  cancelLongPress();
 });
 
 watch(() => gameStore.ui.wardrobeCollapsed, async () => {
@@ -903,7 +873,9 @@ watch(characterOptions, (options) => {
    ======================================== */
 .wardrobe { 
   position: relative;
-  background-color: rgb(from var(--color-bg-card) r g b / 0.95); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(255, 255, 255, 0.95); 
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px); 
   overflow: hidden; 
   display: flex; 
@@ -943,7 +915,9 @@ watch(characterOptions, (options) => {
   transform: translateY(-50%);
   width: 20px;
   height: 50px;
-  background: rgb(from var(--color-primary) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(165, 149, 209, 0.3);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
   cursor: pointer;
@@ -954,7 +928,8 @@ watch(characterOptions, (options) => {
   font-size: 0.7rem;
   color: var(--color-bg-main);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgb(from var(--color-text-primary) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
   border-radius: 50px 0 0 50px;
   padding-left: 2px;
 }
@@ -1046,7 +1021,8 @@ watch(characterOptions, (options) => {
 }
 
 .category-tab:hover { 
-  background-color: rgb(from var(--color-primary) r g b / 0.1); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1); 
   color: var(--color-primary); 
 }
 
@@ -1118,7 +1094,8 @@ watch(characterOptions, (options) => {
 
 .filter-toggle-btn:hover {
   border-color: var(--color-primary);
-  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1);
 }
 
 .filter-toggle-btn.active {
@@ -1192,7 +1169,8 @@ watch(characterOptions, (options) => {
 }
 
 .filter-clear-btn:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1);
 }
 
 .filter-checkboxes {
@@ -1214,17 +1192,20 @@ watch(characterOptions, (options) => {
 }
 
 .filter-checkbox-item:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.3);
 }
 
 /* checkbox 樣式由 App.vue 全局管理 */
 
 .tag-item {
-  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(125, 165, 133, 0.2);
 }
 
 .tag-item:hover {
-  background-color: rgb(from var(--color-primary-light) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(125, 165, 133, 0.3);
 }
 
 /* 篩選面板動畫 */
@@ -1289,7 +1270,8 @@ watch(characterOptions, (options) => {
 
 .grid-item:hover { 
   transform: scale(1.05); 
-  box-shadow: 0 4px 12px rgb(from var(--color-text-primary) r g b / 0.15); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 4px 12px rgba(118, 98, 88, 0.15); 
 }
 
 .item-card { 
@@ -1298,11 +1280,13 @@ watch(characterOptions, (options) => {
 
 .item-card.equipped { 
   border-color: var(--color-primary); 
-  background-color: rgb(from var(--color-border) r g b / 0.3); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.3); 
 }
 
 .outfit-card { 
-  background: linear-gradient(135deg, var(--color-info) 0%, rgb(from var(--color-info) r g b / 0.7) 100%); 
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: linear-gradient(135deg, var(--color-info) 0%, rgba(113, 162, 202, 0.7) 100%); 
   color: var(--color-bg-main); 
 }
 
@@ -1361,20 +1345,23 @@ watch(characterOptions, (options) => {
 }
 
 .item-card.has-variant {
-  border-color: rgb(from var(--color-warning) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  border-color: rgba(245, 187, 100, 0.5);
 }
 
 /* 搜尋跳轉高亮閃爍效果 */
 .item-card.highlighted {
   animation: highlight-flash 0.6s ease-in-out 5;
   border-color: var(--color-success);
-  box-shadow: 0 0 12px rgb(from var(--color-success) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 0 12px rgba(112, 145, 114, 0.5);
 }
 
 @keyframes highlight-flash {
   0%, 100% {
     border-color: var(--color-success);
-    box-shadow: 0 0 12px rgb(from var(--color-success) r g b / 0.5);
+    /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+    box-shadow: 0 0 12px rgba(112, 145, 114, 0.5);
   }
   50% {
     border-color: transparent;
@@ -1391,7 +1378,8 @@ watch(characterOptions, (options) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgb(from var(--color-text-primary) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(118, 98, 88, 0.3);
   z-index: 10000;
 }
 
@@ -1401,7 +1389,8 @@ watch(characterOptions, (options) => {
   max-width: 250px;
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgb(from var(--color-text-primary) r g b / 0.25);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 8px 32px rgba(118, 98, 88, 0.25);
   overflow: hidden;
   z-index: 10001;
 }
@@ -1480,15 +1469,18 @@ watch(characterOptions, (options) => {
 }
 
 .context-menu-option:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
 }
 
 .context-menu-option.variant-option:hover {
-  background-color: rgb(from var(--color-warning) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(245, 187, 100, 0.15);
 }
 
 .context-menu-option.variant-option.active {
-  background-color: rgb(from var(--color-warning) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(245, 187, 100, 0.15);
 }
 
 .context-menu-option.danger {
@@ -1496,7 +1488,8 @@ watch(characterOptions, (options) => {
 }
 
 .context-menu-option.danger:hover {
-  background-color: rgb(from var(--color-error) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(173, 75, 68, 0.1);
 }
 
 .context-menu-option .option-icon {
@@ -1513,7 +1506,8 @@ watch(characterOptions, (options) => {
 }
 
 .hide-toggle {
-  background-color: rgb(from var(--color-warning) r g b / 0.1) !important;
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(245, 187, 100, 0.1) !important;
   border: 1px dashed var(--color-warning) !important;
 }
 
@@ -1525,12 +1519,14 @@ watch(characterOptions, (options) => {
 
 .variant-option.active .variant-option-name {
   font-weight: 600;
-  color: rgb(from var(--color-warning) r g b / 0.9);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  color: rgba(245, 187, 100, 0.9);
 }
 
 /* 手機版物件詳細資訊 */
 .mobile-item-details {
-  background: rgb(from var(--color-bg-canvas) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(240, 242, 245, 0.5);
   border-radius: 8px;
   padding: 0.5rem !important;
   margin: 0.25rem 0;
@@ -1564,7 +1560,8 @@ watch(characterOptions, (options) => {
 .detail-tag {
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
-  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(125, 165, 133, 0.2);
   color: var(--color-primary);
   border-radius: 8px;
 }
@@ -1596,7 +1593,8 @@ watch(characterOptions, (options) => {
 .item-tag {
   font-size: 0.58rem;
   padding: 0.1rem 0.28rem;
-  background-color: rgb(from var(--color-primary-light) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(210, 198, 240, 0.2);
   color: var(--color-primary);
   border-radius: 8px;
   white-space: nowrap;
@@ -1661,18 +1659,22 @@ watch(characterOptions, (options) => {
   bottom: 0;
   z-index: 90;
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -12px 30px rgb(from var(--color-text-primary) r g b / 0.18);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 -12px 30px rgba(118, 98, 88, 0.18);
   width: 100%;
   max-width: 100vw;
   margin: 0 auto;
   border-right: none;
-  background-color: rgb(from var(--color-bg-main) r g b / 0.98);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(248, 245, 234, 0.98);
 }
 
 .mobile-wardrobe {
   display: flex;
   flex-direction: column;
-  background-color: rgb(from var(--color-bg-main) r g b / 0.98);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(248, 245, 234, 0.98);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transition: max-height 0.25s ease-out;
   max-height: 16vh;
@@ -1708,7 +1710,8 @@ watch(characterOptions, (options) => {
   cursor: pointer;
   position: sticky;
   top: 0;
-  background: rgb(from var(--color-bg-main) r g b / 0.98);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(248, 245, 234, 0.98);
   z-index: 2;
 }
 
@@ -1768,7 +1771,8 @@ watch(characterOptions, (options) => {
 
 .mobile-category-tab:hover {
   border-color: var(--color-primary);
-  background-color: rgb(from var(--color-primary) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(165, 149, 209, 0.1);
 }
 
 .mobile-category-tab.active {
@@ -1822,12 +1826,14 @@ watch(characterOptions, (options) => {
 
 .mobile-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgb(from var(--color-text-primary) r g b / 0.12);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 6px 16px rgba(118, 98, 88, 0.12);
 }
 
 .mobile-item.equipped {
   border-color: var(--color-primary);
-  background-color: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.3);
 }
 
 .mobile-item img {
@@ -2114,7 +2120,8 @@ watch(characterOptions, (options) => {
 
 .tablet-style .category-tab.active {
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgb(from var(--color-bg-main) r g b / 0.7);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: inset 0 0 0 1px rgba(248, 245, 234, 0.7);
 }
 
 .tablet-style .tab-icon {

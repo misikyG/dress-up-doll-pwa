@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
 
@@ -135,6 +135,11 @@ const keyword = ref('');
 const isSearching = ref(false);
 const results = reactive({ items: [], outfits: [], packs: [] });
 let debounceTimer = null;
+
+// 清理計時器
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 
 const totalResults = computed(() => 
   results.items.length + results.outfits.length + results.packs.length
@@ -327,7 +332,8 @@ onMounted(() => {
 }
 
 .clear-btn:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
 }
 
 /* ========================================
@@ -356,7 +362,8 @@ onMounted(() => {
 .searching-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  border: 2px solid rgba(198, 185, 155, 0.3);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -410,7 +417,8 @@ onMounted(() => {
 }
 
 .result-item:hover { 
-  background-color: rgb(from var(--color-border) r g b / 0.15);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.15);
   border-color: var(--color-border);
 }
 
@@ -434,7 +442,8 @@ onMounted(() => {
 }
 
 .outfit-thumbnail, .pack-thumbnail {
-  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, rgb(from var(--color-border) r g b / 0.3) 100%);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, rgba(198, 185, 155, 0.3) 100%);
 }
 
 .equipped-indicator {
@@ -497,7 +506,8 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  background-color: rgb(from var(--color-border) r g b / 0.2);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background-color: rgba(198, 185, 155, 0.2);
   border-color: var(--color-primary);
 }
 
@@ -527,7 +537,8 @@ onMounted(() => {
 }
 
 .pack-action:hover {
-  background-color: rgb(from var(--color-warning) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 /* ========================================

@@ -712,7 +712,8 @@ const flipSelected = (axis) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgb(from var(--color-text-primary) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(118, 98, 88, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -723,7 +724,8 @@ const flipSelected = (axis) => {
 .download-dialog {
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgb(from var(--color-text-primary) r g b / 0.25);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  box-shadow: 0 8px 32px rgba(118, 98, 88, 0.25);
   min-width: 280px;
   max-width: 90vw;
   overflow: hidden;
@@ -785,7 +787,8 @@ const flipSelected = (axis) => {
 }
 
 .size-option:hover {
-  background: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(198, 185, 155, 0.3);
 }
 
 .size-option input[type="radio"] {
@@ -821,7 +824,8 @@ const flipSelected = (axis) => {
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  background: rgb(from var(--color-warning) r g b / 0.1);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(245, 187, 100, 0.1);
   border: 1px dashed var(--color-warning);
   border-radius: 8px;
   cursor: pointer;
@@ -882,12 +886,14 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.cancel {
-  background: rgb(from var(--color-border) r g b / 0.3);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(198, 185, 155, 0.3);
   color: var(--color-text-primary);
 }
 
 .dialog-btn.cancel:hover {
-  background: rgb(from var(--color-border) r g b / 0.5);
+  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
+  background: rgba(198, 185, 155, 0.5);
 }
 
 .dialog-btn.confirm {
@@ -896,7 +902,8 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.confirm:hover {
-  background: rgb(from var(--color-primary) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 /* ========================================

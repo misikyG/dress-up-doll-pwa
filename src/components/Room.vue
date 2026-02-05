@@ -346,7 +346,8 @@ const formatDate = (dateString) => {
 }
 
 .go-dressing-btn:hover {
-  background-color: rgb(from var(--color-primary) r g b / 0.85);
+  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
+  opacity: 0.85;
 }
 
 /* ========================================

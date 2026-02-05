@@ -16,6 +16,13 @@ const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
   ? crypto.randomUUID()
   : `outfit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+// 共用的資料標準化函式
+const normalizeOutfitData = (outfit) => ({
+  ...outfit,
+  outfit: normalizeOutfit(outfit.outfit),
+  layerOrder: deepClone(outfit.layerOrder || [])
+});
+
 /* ========================================
    常數與映射表
    ======================================== */
@@ -331,11 +338,7 @@ export const useGameStore = defineStore('game', {
           }
         }
         this.wardrobeItems = items;
-        this.savedOutfits = outfits.map(outfit => ({
-          ...outfit,
-          outfit: normalizeOutfit(outfit.outfit),
-          layerOrder: deepClone(outfit.layerOrder || [])
-        }));
+        this.savedOutfits = outfits.map(normalizeOutfitData);
         this.availablePacks = packs;
 
         // 套用主題設定
@@ -734,12 +737,7 @@ export const useGameStore = defineStore('game', {
 
       try {
         await DressingCore.saveData('outfits', outfitData);
-        const outfits = await DressingCore.getAllData('outfits');
-        this.savedOutfits = outfits.map(o => ({
-          ...o,
-          outfit: normalizeOutfit(o.outfit),
-          layerOrder: deepClone(o.layerOrder || [])
-        }));
+        await this._refreshOutfits();
         this.showNotification(`💾 穿搭「${trimmedName}」已保存`, 'success');
       } catch (error) {
         console.error('保存穿搭失敗:', error);
@@ -757,12 +755,7 @@ export const useGameStore = defineStore('game', {
       };
       try {
         await DressingCore.saveData('outfits', normalized);
-        const outfits = await DressingCore.getAllData('outfits');
-        this.savedOutfits = outfits.map(o => ({
-          ...o,
-          outfit: normalizeOutfit(o.outfit),
-          layerOrder: deepClone(o.layerOrder || [])
-        }));
+        await this._refreshOutfits();
       } catch (error) {
         console.error('匯入穿搭失敗:', error);
         this.showNotification('❌ 匯入穿搭失敗', 'error');
@@ -772,12 +765,7 @@ export const useGameStore = defineStore('game', {
     async deleteOutfit(outfitId) {
       try {
         await DressingCore.deleteData('outfits', outfitId);
-        const outfits = await DressingCore.getAllData('outfits');
-        this.savedOutfits = outfits.map(o => ({
-          ...o,
-          outfit: normalizeOutfit(o.outfit),
-          layerOrder: deepClone(o.layerOrder || [])
-        }));
+        await this._refreshOutfits();
         this.showNotification('🗑️ 穿搭已刪除', 'info');
       } catch (error) {
         console.error('刪除穿搭失敗:', error);
@@ -800,14 +788,7 @@ export const useGameStore = defineStore('game', {
         
         const updatedOutfit = { ...originalOutfit, name: newName };
         await DressingCore.saveData('outfits', updatedOutfit);
-        
-        const outfits = await DressingCore.getAllData('outfits');
-        this.savedOutfits = outfits.map(o => ({
-          ...o,
-          outfit: normalizeOutfit(o.outfit),
-          layerOrder: deepClone(o.layerOrder || [])
-        }));
-        
+        await this._refreshOutfits();
         this.showNotification('✏️ 穿搭已重新命名', 'success');
         return true;
       } catch (error) {
@@ -1071,6 +1052,12 @@ export const useGameStore = defineStore('game', {
     /* ========================================
        工具函式
        ======================================== */
+
+    // 內部共用方法：重新載入穿搭資料
+    async _refreshOutfits() {
+      const outfits = await DressingCore.getAllData('outfits');
+      this.savedOutfits = outfits.map(normalizeOutfitData);
+    },
 
     formatDate(dateString, options = {}) {
       if (!dateString) return '未知時間';
