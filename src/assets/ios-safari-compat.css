@@ -3,36 +3,60 @@
  * 此檔案提供 iOS Safari 不支援的 CSS 功能的回退樣式
  * 主要修復：
  * 1. rgb(from ...) 相對色彩語法不支援 -> 使用固定 rgba 值
- * 2. 100vh 問題 -> 使用 -webkit-fill-available
+ * 2. 100vh 問題 -> 使用 -webkit-fill-available 或 dvh
  * 3. backdrop-filter 需要 -webkit- 前綴
+ * 4. 安全區域 (瀏海/Home Bar) 支援
+ * 5. 觸控和手勢優化
  */
 
 /* ===========================================
    1. 全域回退樣式
    =========================================== */
 
-/* 100vh 修復 */
+/* 100vh 修復 - 使用 dvh (動態視口高度) 作為首選 */
 html {
+  height: 100%;
   height: -webkit-fill-available;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   min-height: -webkit-fill-available;
+  /* 防止橡皮筋效果 */
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
 }
 
-/* 禁止彈性滾動 */
+#app {
+  height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 禁止彈性滾動 (橡皮筋效果) */
 body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
 
-/* 安全區域支援 */
+/* 安全區域支援 (瀏海和 Home Bar) */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* 應用安全區域到主要容器 */
+#app-container {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* ===========================================
@@ -49,6 +73,16 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* 改善觸控響應 */
+button, 
+.btn,
+.icon-btn,
+.grid-item,
+.layer-item,
+.category-tab {
+  touch-action: manipulation;
+}
+
 /* ===========================================
    3. 滾動優化
    =========================================== */
@@ -61,8 +95,11 @@ body {
 .settings-content,
 .room-content,
 .wardrobe-content,
-.filter-checkboxes {
+.filter-checkboxes,
+.mobile-wardrobe-body,
+.categories-scroll {
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* ===========================================
@@ -82,23 +119,39 @@ body {
 .modal-overlay,
 .notification,
 .context-menu-overlay,
-.floating-controls {
+.floating-controls,
+.layer-context-overlay {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  /* 確保在 iOS 上正確定位 */
+  position: fixed;
+}
+
+/* 通知位置考慮安全區域 */
+.notification {
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ===========================================
    6. 輸入框優化
    =========================================== */
 
-/* 防止 iOS 自動縮放 */
+/* 防止 iOS 自動縮放 - 最小 16px 字體 */
 input[type="text"],
 input[type="number"],
 input[type="email"],
 input[type="password"],
+input[type="search"],
 textarea,
 select {
-  font-size: 16px;
+  font-size: 16px !important;
+}
+
+/* 防止輸入時頁面縮放 */
+input:focus,
+textarea:focus,
+select:focus {
+  font-size: 16px !important;
 }
 
 /* ===========================================
@@ -109,9 +162,64 @@ select {
 .canvas,
 .canvas-item,
 .layer-item,
-.grid-item {
+.grid-item,
+.mobile-item {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* ===========================================
+   8. iOS Safari rgb(from ...) 語法回退
+   =========================================== */
+
+/* 這些樣式會在偵測到 iOS Safari 時由 JS 動態覆蓋 */
+.is-ios-safari {
+  --shadow-sm: 0 1px 3px rgba(119, 98, 88, 0.05);
+  --shadow-md: 0 2px 8px rgba(119, 98, 88, 0.08);
+  --shadow-lg: 0 4px 12px rgba(119, 98, 88, 0.12);
+  --shadow-xl: 0 8px 24px rgba(119, 98, 88, 0.15);
+}
+
+/* ===========================================
+   9. 手機版底部抽屜安全區域
+   =========================================== */
+
+.mobile-bottom-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-wardrobe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ===========================================
+   10. 畫布觸控優化
+   =========================================== */
+
+.canvas-viewport {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.canvas-viewport.pan-mode {
+  cursor: grab;
+}
+
+.canvas-viewport.pan-mode:active {
+  cursor: grabbing;
+}
+
+/* ===========================================
+   11. iOS 專用的彈出選單位置修正
+   =========================================== */
+
+.is-ios-safari .context-menu,
+.is-ios-safari .layer-context-menu {
+  /* 確保選單在可視範圍內 */
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
 }

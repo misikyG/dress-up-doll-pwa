@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
 
@@ -135,11 +135,6 @@ const keyword = ref('');
 const isSearching = ref(false);
 const results = reactive({ items: [], outfits: [], packs: [] });
 let debounceTimer = null;
-
-// 清理計時器
-onUnmounted(() => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-});
 
 const totalResults = computed(() => 
   results.items.length + results.outfits.length + results.packs.length
@@ -332,8 +327,7 @@ onMounted(() => {
 }
 
 .clear-btn:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
 }
 
 /* ========================================
@@ -362,8 +356,7 @@ onMounted(() => {
 .searching-spinner {
   width: 18px;
   height: 18px;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  border: 2px solid rgba(198, 185, 155, 0.3);
+  border: 2px solid rgba(192, 183, 163, 0.3);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -417,8 +410,7 @@ onMounted(() => {
 }
 
 .result-item:hover { 
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.15);
+  background-color: rgba(192, 183, 163, 0.15);
   border-color: var(--color-border);
 }
 
@@ -442,8 +434,7 @@ onMounted(() => {
 }
 
 .outfit-thumbnail, .pack-thumbnail {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, rgba(198, 185, 155, 0.3) 100%);
+  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, rgba(192, 183, 163, 0.3) 100%);
 }
 
 .equipped-indicator {
@@ -506,8 +497,7 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   border-color: var(--color-primary);
 }
 
@@ -537,8 +527,7 @@ onMounted(() => {
 }
 
 .pack-action:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(245, 187, 100, 0.85);
 }
 
 /* ========================================
@@ -595,17 +584,26 @@ onMounted(() => {
   .search-modal {
     width: 100vw;
     max-width: 100vw;
+    /* iOS Safari 100vh 修復 */
     height: 100vh;
+    height: 100dvh;
+    height: calc(var(--vh, 1vh) * 100);
     max-height: 100vh;
+    max-height: 100dvh;
+    max-height: calc(var(--vh, 1vh) * 100);
     border-radius: 0;
   }
   
   .search-input-wrapper {
     padding: 0.75rem 1rem;
+    /* iOS 安全區域支援 */
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
   
   .search-results-wrapper {
     padding: 0.75rem 1rem;
+    /* iOS 安全區域支援 */
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   }
   
   .result-item {

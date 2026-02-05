@@ -436,8 +436,7 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
-  /* iOS Safari 相容性：使用 rgba */
-  background: rgba(198, 185, 155, 0.6);
+  background: rgba(192, 183, 163, 0.6);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
@@ -475,8 +474,7 @@ const flipSelected = (axis) => {
    3. 控制按鈕（badge-btn）
    ======================================== */
 .badge-btn {
-  /* iOS Safari 相容性：使用 rgba */
-  background: rgba(198, 185, 155, 0.6);
+  background: rgba(192, 183, 163, 0.6);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
@@ -507,7 +505,7 @@ const flipSelected = (axis) => {
 
 /* 模式切換按鈕 */
 .badge-btn.mode {
-  background: rgba(198, 185, 155, 0.25);
+  background: rgba(192, 183, 163, 0.25);
   font-size: 0.8rem;
 }
 
@@ -519,7 +517,7 @@ const flipSelected = (axis) => {
 
 /* 翻轉按鈕 */
 .badge-btn.flip {
-  background: rgba(198, 185, 155, 0.75);
+  background: rgba(192, 183, 163, 0.75);
   padding: 7px 12px;
   font-size: 0.8rem;
 }
@@ -537,7 +535,6 @@ const flipSelected = (axis) => {
 
 /* 儲存搭配按鈕 */
 .badge-btn.save {
-  /* iOS Safari 相容性：使用 rgba */
   background: linear-gradient(135deg, var(--color-warning), rgba(245, 187, 100, 0.8));
   color: var(--color-text-primary);
   font-weight: 600;
@@ -553,8 +550,7 @@ const flipSelected = (axis) => {
    4. 縮放控制
    ======================================== */
 .zoom-badge {
-  /* iOS Safari 相容性：使用 rgba */
-  background: rgba(198, 185, 155, 0.85);
+  background: rgba(192, 183, 163, 0.85);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 999px;
@@ -581,7 +577,6 @@ const flipSelected = (axis) => {
 }
 
 .zoom-icon:hover:not(:disabled) {
-  /* iOS Safari 相容性：使用 rgba */
   background: rgba(248, 245, 234, 0.15);
 }
 
@@ -609,8 +604,7 @@ const flipSelected = (axis) => {
 
 /* 勾選徽章（旋轉/縮放選項） */
 .check-badge {
-  /* iOS Safari 相容性：使用 rgba */
-  background: rgba(198, 185, 155, 0.8);
+  background: rgba(192, 183, 163, 0.8);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
@@ -640,8 +634,7 @@ const flipSelected = (axis) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  /* iOS Safari 相容性：使用 rgba */
-  background: rgba(198, 185, 155, 0.85);
+  background: rgba(192, 183, 163, 0.85);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -712,7 +705,6 @@ const flipSelected = (axis) => {
   left: 0;
   right: 0;
   bottom: 0;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background: rgba(118, 98, 88, 0.5);
   display: flex;
   align-items: center;
@@ -724,7 +716,6 @@ const flipSelected = (axis) => {
 .download-dialog {
   background: var(--color-bg-card);
   border-radius: 12px;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   box-shadow: 0 8px 32px rgba(118, 98, 88, 0.25);
   min-width: 280px;
   max-width: 90vw;
@@ -787,8 +778,7 @@ const flipSelected = (axis) => {
 }
 
 .size-option:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: rgba(198, 185, 155, 0.3);
+  background: rgba(192, 183, 163, 0.3);
 }
 
 .size-option input[type="radio"] {
@@ -824,7 +814,6 @@ const flipSelected = (axis) => {
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background: rgba(245, 187, 100, 0.1);
   border: 1px dashed var(--color-warning);
   border-radius: 8px;
@@ -886,14 +875,12 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.cancel {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: rgba(198, 185, 155, 0.3);
+  background: rgba(192, 183, 163, 0.3);
   color: var(--color-text-primary);
 }
 
 .dialog-btn.cancel:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: rgba(198, 185, 155, 0.5);
+  background: rgba(192, 183, 163, 0.5);
 }
 
 .dialog-btn.confirm {
@@ -902,8 +889,7 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.confirm:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background: rgba(165, 149, 209, 0.85);
 }
 
 /* ========================================

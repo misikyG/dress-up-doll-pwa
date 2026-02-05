@@ -238,19 +238,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
-  /* iOS Safari 防止溺出和彈性滾動 */
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
 }
 
 #app-container {
   width: 100vw;
-  /* iOS Safari 100vh 修復 - 使用 dvh 並提供 fallback */
+  /* iOS Safari 100vh 修復 - 使用多重回退 */
   height: 100vh;
   height: 100dvh;
-  height: -webkit-fill-available;
+  height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
 }
 
@@ -316,8 +311,7 @@ body {
 }
 
 .btn-close:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -351,8 +345,7 @@ body {
 
 /* 載入動畫 */
 .spinner {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  border: 3px solid rgba(198, 185, 155, 0.3);
+  border: 3px solid rgba(192, 183, 163, 0.3);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -383,12 +376,10 @@ body {
 }
 
 .btn-primary:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
   opacity: 0.85;
 }
 
 .btn-secondary {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(232, 232, 232, 0.5);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -406,7 +397,6 @@ body {
 }
 
 .btn-danger:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
   opacity: 0.85;
 }
 
@@ -563,10 +553,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* iOS Safari 100vh 修復 */
   height: 100vh;
   height: 100dvh;
-  height: -webkit-fill-available;
+  height: calc(var(--vh, 1vh) * 100);
   background-color: var(--color-primary);
   color: var(--color-bg-main);
 }
@@ -574,7 +563,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .loading-spinner {
   width: 40px;
   height: 40px;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   border: 4px solid rgba(248, 245, 234, 0.3);
   border-top-color: var(--color-bg-main);
   border-radius: var(--radius-full);
@@ -588,10 +576,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .main-app {
   display: flex;
   flex-direction: column;
-  /* iOS Safari 100vh 修復 */
   height: 100vh;
   height: 100dvh;
-  height: -webkit-fill-available;
+  height: calc(var(--vh, 1vh) * 100);
 }
 
 .app-header {
@@ -638,8 +625,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .main-nav button:not(.active):hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -665,8 +651,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .header-actions button:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -772,15 +757,12 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   left: 0;
   width: 100%;
   height: 100%;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(118, 98, 88, 0.5);
+  background-color: rgba(119, 98, 88, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
-  /* iOS Safari 安全區域支援 */
-  padding: env(safe-area-inset-top, 1rem) env(safe-area-inset-right, 1rem) env(safe-area-inset-bottom, 1rem) env(safe-area-inset-left, 1rem);
 }
 
 /* ========================================
@@ -950,19 +932,23 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
     /* iOS Safari 100vh 修復 */
     max-height: 100vh;
     max-height: 100dvh;
-    max-height: -webkit-fill-available;
+    max-height: calc(var(--vh, 1vh) * 100);
     height: 100vh;
     height: 100dvh;
-    height: -webkit-fill-available;
+    height: calc(var(--vh, 1vh) * 100);
     border-radius: 0;
   }
   
   .modal-header {
     padding: 0.75rem 1rem;
+    /* iOS 安全區域支援 */
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
   
   .modal-content {
     padding: 1rem;
+    /* iOS 安全區域支援 */
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 }
 

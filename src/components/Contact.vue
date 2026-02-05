@@ -155,7 +155,6 @@ const copyEmail = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background: linear-gradient(135deg, rgba(165, 149, 209, 0.1), rgba(125, 165, 133, 0.05));
   border-radius: var(--radius-lg);
   padding: 1.25rem;
@@ -322,8 +321,7 @@ const copyEmail = () => {
 }
 
 .copy-btn:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: rgba(198, 185, 155, 0.3);
+  background: rgba(192, 183, 163, 0.3);
   color: var(--color-primary);
 }
 
@@ -365,8 +363,7 @@ const copyEmail = () => {
 }
 
 .open-form-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background: rgba(165, 149, 209, 0.85);
   transform: translateY(-1px);
 }
 

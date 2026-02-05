@@ -191,8 +191,7 @@ const tabs = [
 }
 
 .help-tab:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -284,8 +283,7 @@ const tabs = [
 .faq-item {
   margin-bottom: 1.25rem;
   padding: 1rem;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background: rgba(193, 211, 172, 0.5);
+  background: rgba(198, 211, 172, 0.5);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary);
 }

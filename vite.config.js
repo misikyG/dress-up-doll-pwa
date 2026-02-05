@@ -18,16 +18,25 @@ export default defineConfig({
         short_name: '紙娃娃',
         description: '紙娃娃換裝應用程式',
         theme_color: '#ffffff',
+        background_color: '#f8f5ea',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/dress-up-doll-pwa/',
+        scope: '/dress-up-doll-pwa/',
+        lang: 'zh-TW',
+        categories: ['games', 'entertainment'],
         icons: [
           {
             src: 'icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }

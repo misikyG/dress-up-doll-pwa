@@ -382,14 +382,12 @@ const cleanup = () => {
 
 .drop-zone.is-dragover { 
   border-color: var(--color-primary); 
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(125, 165, 133, 0.3); 
   transform: scale(1.02);
 }
 
 .drop-zone.is-processing {
   border-color: var(--color-primary);
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(125, 165, 133, 0.2);
 }
 
@@ -425,8 +423,7 @@ const cleanup = () => {
 }
 
 .select-file-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(165, 149, 209, 0.85);
 }
 
 .hint { 
@@ -513,14 +510,12 @@ const cleanup = () => {
 
 .error-message {
   color: var(--color-error); 
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(173, 75, 68, 0.1); 
   border: 1px solid rgba(173, 75, 68, 0.3);
 }
 
 .success-message {
   color: var(--color-success);
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(112, 145, 114, 0.1);
   border: 1px solid rgba(112, 145, 114, 0.3);
 }
@@ -572,8 +567,7 @@ const cleanup = () => {
 }
 
 .retry-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(173, 75, 68, 0.85);
 }
 
 /* ========================================

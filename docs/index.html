@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="./icons/icon-192x192.png" />
-  <!-- iOS Safari 必要的 viewport 設定 -->
+  <!-- iOS Safari 優化的 viewport 設定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <!-- iOS Safari PWA 支援 -->
+  
+  <!-- Apple PWA 專用 meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="紙娃娃" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
-  <!-- iOS 安全區域顏色 -->
-  <meta name="theme-color" content="#f8f5ea" />
+  
+  <!-- 防止 iOS Safari 自動檢測電話號碼 -->
+  <meta name="format-detection" content="telephone=no" />
+  
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
   <title>換裝紙娃娃</title>
@@ -60,12 +63,12 @@
       --color-info: #71a2ca;
       
       /* ========================================
-         陰影 (使用固定色值確保 iOS Safari 相容性)
+         陰影 (使用主題色的半透明)
          ======================================== */
-      --shadow-sm: 0 1px 3px rgba(118, 98, 88, 0.05);
-      --shadow-md: 0 2px 8px rgba(118, 98, 88, 0.08);
-      --shadow-lg: 0 4px 12px rgba(118, 98, 88, 0.12);
-      --shadow-xl: 0 8px 24px rgba(118, 98, 88, 0.15);
+      --shadow-sm: 0 1px 3px rgba(119, 98, 88, 0.05);
+      --shadow-md: 0 2px 8px rgba(119, 98, 88, 0.08);
+      --shadow-lg: 0 4px 12px rgba(119, 98, 88, 0.12);
+      --shadow-xl: 0 8px 24px rgba(119, 98, 88, 0.15);
       
       /* ========================================
          尺寸變數
@@ -90,10 +93,10 @@
     }
   </style>
   <style id="custom-css"></style>
-  <script type="module" crossorigin src="/dress-up-doll-pwa/assets/main-BQVZaktT.js"></script>
-  <link rel="stylesheet" crossorigin href="/dress-up-doll-pwa/assets/main-DfF5jaSU.css">
+  <script type="module" crossorigin src="/dress-up-doll-pwa/assets/main-Cj3tJUAh.js"></script>
+  <link rel="stylesheet" crossorigin href="/dress-up-doll-pwa/assets/main-Czd7xRtP.css">
 <link rel="manifest" href="/dress-up-doll-pwa/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/dress-up-doll-pwa/registerSW.js"></script></head>
 <body>
-  <div id="app"></div>
+  <div id="app"></div>
 </body>
 </html>

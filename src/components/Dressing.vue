@@ -538,9 +538,7 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background: rgba(165, 149, 209, 0.85);
-  /* iOS Safari 相容性：添加 -webkit- 前綴 */
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
@@ -550,8 +548,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
   max-width: 180px;
   z-index: 51;
 }
@@ -703,7 +700,6 @@ onUnmounted(() => {
   position: relative;
   z-index: 89;
   background-color: var(--color-bg-panel);
-  /* iOS Safari 相容性：添加 -webkit- 前綴 */
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 16px 16px 0 0;

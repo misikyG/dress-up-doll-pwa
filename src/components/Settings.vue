@@ -810,8 +810,7 @@ const clearAllData = () => {
 }
 
 .close-btn:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -882,7 +881,6 @@ const clearAllData = () => {
 
 .theme-option.active {
   border-color: var(--color-primary);
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background: rgba(165, 149, 209, 0.1);
 }
 
@@ -1247,7 +1245,6 @@ const clearAllData = () => {
 }
 
 .icon-btn-action:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
   background-color: rgba(165, 149, 209, 0.1);
   border-color: var(--color-primary);
   color: var(--color-primary);
@@ -1297,13 +1294,11 @@ const clearAllData = () => {
 }
 
 .primary-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(165, 149, 209, 0.85);
 }
 
 .secondary-btn {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.2);
+  background-color: rgba(192, 183, 163, 0.2);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 0.6rem 1rem;
@@ -1319,8 +1314,7 @@ const clearAllData = () => {
 }
 
 .secondary-btn:hover {
-  /* iOS Safari 相容性：使用 rgba 取代 rgb(from ...) */
-  background-color: rgba(198, 185, 155, 0.35);
+  background-color: rgba(192, 183, 163, 0.35);
 }
 
 .secondary-btn:disabled,
@@ -1341,8 +1335,7 @@ const clearAllData = () => {
 }
 
 .delete-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(173, 75, 68, 0.85);
 }
 
 .delete-btn:disabled {
@@ -1363,8 +1356,7 @@ const clearAllData = () => {
 }
 
 .danger-btn:hover {
-  /* iOS Safari 相容性：使用 opacity 取代 rgb(from ...) */
-  opacity: 0.85;
+  background-color: rgba(173, 75, 68, 0.85);
 }
 
 /* ========================================
@@ -1439,13 +1431,20 @@ select {
   .settings-modal {
     width: 100vw;
     max-width: 100vw;
+    /* iOS Safari 100vh 修復 */
     height: 100vh;
+    height: 100dvh;
+    height: calc(var(--vh, 1vh) * 100);
     max-height: 100vh;
+    max-height: 100dvh;
+    max-height: calc(var(--vh, 1vh) * 100);
     border-radius: 0;
   }
 
   .settings-header {
     padding: 0.75rem 1rem;
+    /* iOS 安全區域支援 */
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
   .settings-header h3 {
@@ -1454,6 +1453,8 @@ select {
 
   .settings-content {
     padding: 1rem;
+    /* iOS 安全區域支援 */
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 
   .settings-section {
