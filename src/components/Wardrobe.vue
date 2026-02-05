@@ -714,7 +714,6 @@ const handleItemTouchStart = (item, event) => {
 };
 
 const handleItemTouchEnd = () => cancelLongPress();
-};
 
 const handleItemContextMenu = (item, event) => {
   showContextMenu(item, event);
