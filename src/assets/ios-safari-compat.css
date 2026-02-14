@@ -43,6 +43,21 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 獨立頁面（如隱私權政策）需要解除滾動限制 */
+html.scrollable-page,
+html.scrollable-page body {
+  position: static !important;
+  overflow: auto !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+}
+
+html.scrollable-page #app {
+  height: auto !important;
+  overflow: visible !important;
+}
+
 /* 安全區域支援 (瀏海和 Home Bar) */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top, 0px);

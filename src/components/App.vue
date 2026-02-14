@@ -1,5 +1,9 @@
 <template>
-  <div id="app-container" :class="{ 'mobile-view': gameStore.ui.isMobile, 'tablet-view': gameStore.ui.isTablet }">
+  <!-- 隱私權政策獨立頁面 -->
+  <PrivacyPolicy v-if="isPrivacyPage" />
+
+  <!-- 主應用 -->
+  <div v-else id="app-container" :class="{ 'mobile-view': gameStore.ui.isMobile, 'tablet-view': gameStore.ui.isTablet }">
     <!-- 全局載入遮罩 -->
     <div v-if="gameStore.ui.loading" class="loading-overlay">
       <div class="loading-spinner"></div>
@@ -83,7 +87,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useGameStore } from '../store/index.js'
 import { icons } from '../icons.js'
 
@@ -95,6 +100,16 @@ import Settings from './Settings.vue'
 import LayerPanel from './LayerPanel.vue'
 import Help from './Help.vue'
 import Contact from './Contact.vue'
+import PrivacyPolicy from './PrivacyPolicy.vue'
+
+const route = useRoute()
+const isPrivacyPage = computed(() => route.path === '/privacy')
+
+// 隱私權頁面需要解除 body fixed + overflow:hidden 限制以允許滾動
+watch(isPrivacyPage, (val) => {
+  document.body.classList.toggle('scrollable-page', val)
+  document.documentElement.classList.toggle('scrollable-page', val)
+}, { immediate: true })
 
 const gameStore = useGameStore()
 const showHelp = ref(false)

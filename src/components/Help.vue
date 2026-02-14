@@ -7,7 +7,7 @@
     
     <div class="help-content">
       <!-- 目錄 Tab -->
-      <div class="help-tabs">
+      <div class="help-tabs" ref="helpTabs" @wheel="handleTabsScroll">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
@@ -116,6 +116,25 @@
             </div>
           </div>
         </div>
+
+        <!-- 隱私權政策 -->
+        <div v-if="activeTab === 'privacy'" class="help-section">
+          <h4><span class="section-icon" v-html="icons.shield"></span> 隱私權政策</h4>
+          <div class="help-text">
+            <p>本應用重視您的隱私。以下是重點摘要：</p>
+            <ul>
+              <li><strong>本地儲存</strong>：所有資料預設存儲在您的瀏覽器中，不會自動上傳至任何伺服器</li>
+              <li><strong>Google 雲端硬碟</strong>：僅在您主動授權時才會存取，且僅限本應用建立的檔案</li>
+              <li><strong>不追蹤</strong>：我們不收集個人身分資訊、不使用 Cookie、不進行行為追蹤</li>
+              <li><strong>您的權利</strong>：您可以隨時刪除本地資料或撤銷雲端授權</li>
+            </ul>
+            <p class="privacy-full-link">
+              <a href="#/privacy" target="_blank" rel="noopener noreferrer">
+                📄 查看完整隱私權政策（獨立頁面）
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -128,6 +147,15 @@ import { icons } from '../icons.js';
 defineEmits(['close']);
 
 const activeTab = ref('quickstart');
+const helpTabs = ref(null);
+
+// 滾輪轉橫向滾動
+const handleTabsScroll = (event) => {
+  if (helpTabs.value) {
+    event.preventDefault();
+    helpTabs.value.scrollLeft += event.deltaY;
+  }
+};
 
 const tabs = [
   { id: 'quickstart', name: '快速入門', icon: icons.rocket },
@@ -135,6 +163,7 @@ const tabs = [
   { id: 'modes', name: '模式說明', icon: icons.sliders },
   { id: 'wardrobe', name: '衣櫃功能', icon: icons.closet },
   { id: 'faq', name: '常見問題', icon: icons.questionCircle },
+  { id: 'privacy', name: '隱私權政策', icon: icons.shield },
 ];
 </script>
 
@@ -173,6 +202,25 @@ const tabs = [
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
   flex-shrink: 0;
+}
+
+/* 自訂橫向滾動條（與物件列表同粗細） */
+.help-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.help-tabs::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.help-tabs::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.help-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .help-tab {
@@ -300,7 +348,32 @@ const tabs = [
 }
 
 /* ========================================
-   6. 響應式設計
+   6. 隱私權連結樣式
+   ======================================== */
+
+.privacy-full-link {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.privacy-full-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.privacy-full-link a:hover {
+  color: var(--color-primary-dark);
+}
+
+/* ========================================
+   7. 響應式設計
    ======================================== */
 
 @media (max-width: 767px) {

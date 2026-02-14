@@ -899,6 +899,24 @@ const blobToDataURL = (blob) => {
   flex: 1;
 }
 
+/* 自訂滾動條 */
+.settings-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
 .settings-section {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;

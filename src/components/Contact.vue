@@ -154,6 +154,24 @@ const copyEmail = () => {
   max-height: calc(85vh - 60px);
 }
 
+/* 自訂滾動條 */
+.contact-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.contact-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contact-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.contact-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
 .contact-section {
   margin-bottom: 1.5rem;
   padding-bottom: 1.25rem;

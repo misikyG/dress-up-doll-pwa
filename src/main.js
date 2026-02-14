@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import router from './router/index.js'
 import App from './components/App.vue'
 import './assets/ios-safari-compat.css'
 
@@ -121,4 +122,4 @@ if (document.readyState === 'loading') {
   applyIOSSafariFixes();
 }
 
-createApp(App).use(createPinia()).mount('#app')
+createApp(App).use(createPinia()).use(router).mount('#app')
