@@ -299,9 +299,10 @@ onMounted(() => {
   padding: 0.75rem 2.5rem; 
   border-radius: var(--radius-md); 
   border: 1px solid var(--color-border); 
-  font-size: 1rem;
+  font-size: 0.8rem;
   transition: border-color 0.2s ease;
   background: var(--color-bg-main);
+  color: var(--color-text-primary);
 }
 
 .search-input:focus {
@@ -443,8 +444,8 @@ onMounted(() => {
   right: 2px;
   width: 14px;
   height: 14px;
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border-radius: var(--radius-full);
   font-size: 0.6rem;
   display: flex;
@@ -502,9 +503,9 @@ onMounted(() => {
 }
 
 .action-btn.equipped {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
-  border-color: var(--color-primary);
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  border-color: var(--color-primary-dark);
 }
 
 .goto-btn {
@@ -515,9 +516,9 @@ onMounted(() => {
 }
 
 .goto-btn:hover {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
-  border-color: var(--color-primary);
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  border-color: var(--color-primary-dark);
 }
 
 .pack-action {

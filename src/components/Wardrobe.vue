@@ -1,5 +1,6 @@
 <template>
-  <aside
+  <section
+    aria-label="衣櫃"
     class="panel left-panel wardrobe"
     :class="{ collapsed: gameStore.ui.wardrobeCollapsed, 'mobile-bottom-sheet': gameStore.ui.isMobile, 'tablet-style': gameStore.ui.isTablet }"
   >
@@ -34,13 +35,14 @@
           <div class="items-controls">
             <!-- 篩選器按鈕 -->
             <button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel" 
-                    :class="{ active: showFilterPanel || hasActiveFilters }">
+                    :class="{ active: showFilterPanel || hasActiveFilters }"
+                    aria-label="篩選">
               <span class="filter-icon" v-html="filterIcon"></span>
               <span v-if="hasActiveFilters" class="filter-badge">{{ activeFilterCount }}</span>
             </button>
             
             <!-- 排序方式 (單選) -->
-            <select v-model="sortBy" class="filter-select sort-select" title="排序方式">
+            <select v-model="sortBy" class="filter-select sort-select" title="排序方式" aria-label="排序方式">
               <option value="name">按名稱</option>
               <option value="pack">按圖包</option>
               <option value="recent">最近加入</option>
@@ -358,7 +360,7 @@
         </div>
       </div>
     </Teleport>
-  </aside>
+  </section>
 </template>
 
 <script setup>
@@ -937,7 +939,7 @@ watch(characterOptions, (options) => {
   transform: translateY(-50%);
   width: 20px;
   height: 50px;
-  background: rgba(165, 149, 209, 0.3);
+  background: rgba(75, 65, 100, 0.75);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -947,7 +949,7 @@ watch(characterOptions, (options) => {
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: var(--color-bg-main);
+  color: #fff;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
   border-radius: 50px 0 0 50px;
@@ -955,7 +957,7 @@ watch(characterOptions, (options) => {
 }
 
 .panel-toggle-handle:hover {
-  background: var(--color-primary);
+  background: var(--color-primary-dark);
   width: 24px;
 }
 
@@ -1041,13 +1043,13 @@ watch(characterOptions, (options) => {
 }
 
 .category-tab:hover { 
-  background-color: rgba(165, 149, 209, 0.1); 
-  color: var(--color-primary); 
+  background-color: rgba(117, 101, 169, 0.12); 
+  color: var(--color-primary-dark); 
 }
 
 .category-tab.active { 
-  background-color: var(--color-primary); 
-  color: var(--color-bg-main); 
+  background-color: var(--color-primary-dark); 
+  color: #fff; 
 }
 
 .tab-icon { 
@@ -1117,9 +1119,9 @@ watch(characterOptions, (options) => {
 }
 
 .filter-toggle-btn.active {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary-dark);
+  color: #fff;
 }
 
 .filter-toggle-btn .filter-icon {
@@ -1242,6 +1244,13 @@ watch(characterOptions, (options) => {
   border-radius: 6px;
   background: var(--color-bg-main);
   font-size: 0.8rem;
+  color: var(--color-text-primary);
+  transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .items-grid-container { 
@@ -1768,9 +1777,9 @@ watch(characterOptions, (options) => {
 }
 
 .mobile-category-tab.active {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: #fff;
 }
 
 .mobile-tab-icon {

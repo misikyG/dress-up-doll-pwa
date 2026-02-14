@@ -11,14 +11,14 @@
       <!-- 頂部導航欄 -->
       <header class="app-header">
         <div class="logo">
-          <h1><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-needle-thread" width="32" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <h1><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-needle-thread" width="32" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
   <path d="M3 21c-.667 -.667 3.262 -6.236 11.785 -16.709a3.5 3.5 0 1 1 5.078 4.791c-10.575 8.612 -16.196 12.585 -16.863 11.918z" />
   <path d="M17.5 6.5l-1 1" />
   <path d="M17 7c-2.333 -2.667 -3.5 -4 -5 -4s-2 1 -2 2c0 4 8.161 8.406 6 11c-1.056 1.268 -3.363 1.285 -5.75 .808" />
   <path d="M5.739 15.425c-1.393 -.565 -3.739 -1.925 -3.739 -3.425" />
   <path d="M19.5 9.5l1.5 1.5" />
-</svg></h1>
+</svg><span class="sr-only">換裝紙娃娃</span></h1>
         </div>
         <nav class="main-nav">
           <button :class="{ active: gameStore.ui.currentPage === 'dressing' }"
@@ -30,19 +30,19 @@
           </button>
         </nav>
         <div class="header-actions">
-          <button @click="gameStore.toggleSearch()" title="搜尋" class="icon-btn" v-html="icons.search"></button>
-          <button @click="showHelp = !showHelp" title="使用說明" class="icon-btn" v-html="icons.help"></button>
-          <button @click="showContact = !showContact" title="聯繫作者" class="icon-btn" v-html="icons.contact"></button>
-          <button @click="gameStore.toggleSettings()" title="設定" class="icon-btn" v-html="icons.settings"></button>
+          <button @click="gameStore.toggleSearch()" title="搜尋" aria-label="搜尋" class="icon-btn" v-html="icons.search"></button>
+          <button @click="showHelp = !showHelp" title="使用說明" aria-label="使用說明" class="icon-btn" v-html="icons.help"></button>
+          <button @click="showContact = !showContact" title="聯繫作者" aria-label="聯繫作者" class="icon-btn" v-html="icons.contact"></button>
+          <button @click="gameStore.toggleSettings()" title="設定" aria-label="設定" class="icon-btn" v-html="icons.settings"></button>
         </div>
       </header>
 
       <!-- 主要內容區域 -->
       <div class="content-wrapper" :class="layoutClass">
         <!-- 左側面板：衣櫃 -->
-        <aside class="panel left-panel" :class="{ collapsed: gameStore.ui.wardrobeCollapsed }">
+        <div class="panel left-panel" :class="{ collapsed: gameStore.ui.wardrobeCollapsed }">
           <Wardrobe />
-        </aside>
+        </div>
 
         <!-- 中央面板：主要顯示區域 (換裝或房間) -->
         <div class="panel center-panel">
@@ -232,6 +232,19 @@ textarea,
   user-select: text;
 }
 
+/* 無障礙螢幕閱讀器專用 (visually-hidden) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* 基礎佈局 */
 body {
   margin: 0;
@@ -370,8 +383,8 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   padding: 0.6rem 1.2rem;
 }
 
@@ -556,8 +569,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   height: 100vh;
   height: 100dvh;
   height: calc(var(--vh, 1vh) * 100);
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
 }
 
 .loading-spinner {
@@ -620,8 +633,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .main-nav button.active {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
 }
 
 .main-nav button:not(.active):hover {

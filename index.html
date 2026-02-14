@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="./icons/icon-192x192.png" />
   <!-- iOS Safari 優化的 viewport 設定 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   
   <!-- Apple PWA 專用 meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -22,6 +22,9 @@
     :root {    
       /* 1. 主題色 */
       --color-primary: #a595d1;
+      
+      /* 1.5 主題色(深) - 用於 active 狀態背景，確保與白色文字的對比度 >= 4.5:1 */
+      --color-primary-dark: #7565a9;
       
       /* 2. 主題色(淺) */
       --color-primary-light: #7da585;
@@ -41,8 +44,8 @@
       /* 7. 主要文字色 */
       --color-text-primary: #766258;
       
-      /* 8. 次要文字色 */
-      --color-text-secondary: #666666;
+      /* 8. 次要文字色 (加深以確保在面板背景上的對比度 >= 4.5:1) */
+      --color-text-secondary: #4e4e4e;
       
       /* 9. 邊框色 */
       --color-border: #c6b99b;

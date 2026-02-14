@@ -1,0 +1,34 @@
+{
+  "name": "demo-sample-pack",
+  "displayName": "示範圖包",
+  "description": "內建示範用紙娃娃圖包",
+  "version": 1,
+  "defaultWidth": 2000,
+  "defaultHeight": 3800,
+  "items": [
+    {
+      "id": "sample-character",
+      "name": "sample-character",
+      "displayName": "範例人物",
+      "category": "character",
+      "image": "images/sample-character.png",
+      "tags": ["示範"]
+    },
+    {
+      "id": "sample-hair",
+      "name": "sample-hair",
+      "displayName": "範例髮型",
+      "category": "hair",
+      "image": "images/sample-hair.png",
+      "tags": ["示範"]
+    },
+    {
+      "id": "sample-top",
+      "name": "sample-top",
+      "displayName": "範例上衣",
+      "category": "top",
+      "image": "images/sample-top.png",
+      "tags": ["示範"]
+    }
+  ]
+}

@@ -1,33 +1,91 @@
 ## 專案：紙娃娃換裝
 
-- Vue 3 + Pinia + Vite 的前端專案，提供匯入圖包後的換裝/搭配體驗，資料持久化於 IndexedDB。
-- Web Worker + JSZip 處理 ZIP 圖包，避免主執行緒阻塞。
-- 另有獨立的圖包打包器 `紙娃娃打包器.html` 供創作者產出含 `config.json` 的 ZIP。
+Vue 3 + Pinia + Vite PWA。匯入 ZIP 圖包後進行換裝搭配，資料存於 IndexedDB。
+ZIP 由 Web Worker + JSZip 背景解析。另有獨立打包器 `紙娃娃打包器.html`。
 
-### 技術棧與執行
-- Vue 3 (script setup)、Pinia 狀態樹、Vite 開發/打包。
-- IndexedDB：`core/index.js` 封裝 stores `items` / `outfits` / `packs`（DB v3）。
-- Web Worker：`public/zip.worker.js` + `jszip.min.js` 處理上傳與進度回報。
-- 指令：`npm install` → `npm run dev`；`npm run build` 產出靜態檔。
+### 核心技術
+- IndexedDB（`core/index.js`，DB v5）：stores `items` / `outfits` / `packs` / `theme` / `settings`。版本升級自動重建。
+- 應用程式狀態每次操作後 debounce 1 秒自動存入 `settings` store，重開瀏覽器可恢復。
+- 主題設定同時存 IndexedDB + localStorage（加速首次載入）。
+- `main.js` 含 iOS Safari 相容修復（100vh、橡皮筋捲動等）。
+- 指令：`npm install` → `npm run dev`；`npm run build` 產出至 `docs/`。
 
-### 主要模組與職責
-- `App.vue`：兩頁切換（換裝/房間）、頂欄搜尋與設定彈窗、響應式佈局（桌機/平板/手機）。
-- `Wardrobe.vue`：左側衣櫃；分類側欄、圖包多選篩選、Tag 篩選、排序、虛擬滾動、行動版水平滾動；支援長按/右鍵開啟變體選單；星號類別對應已儲存搭配。
-- `Dressing.vue`：畫布（固定/自由模式）、背景/人物/前景分層、選取高亮、鍵盤快捷鍵、縮放/平移、自由拖曳/縮放/翻轉/旋轉（非角色）。
-- `Controls.vue`：浮動控制（清空、重置變換、模式切換、縮放、啟用旋轉/縮放、左右/上下翻轉、Undo/Redo、儲存搭配）。
-- `LayerPanel.vue`：當前畫布物件列表，點選選取、拖曳或按鈕調整層級、可重置自訂順序。
-- `Room.vue`：已儲存搭配的卡片牆；可載入、複製、刪除；目前僅預覽/載入。(預計未來提供自由擺放多角色的房間編輯)
-- `Search.vue`：全域搜尋物件/搭配/圖包（含 Tag 比對），可直接穿戴/載入/查看。
-- `Settings.vue`：圖包管理（開啟 Importer、刪除圖包）、清空所有本地資料。
-- `Importer.vue`：ZIP 匯入介面，拖放或選檔；顯示進度、錯誤提示、成功提示；呼叫 Worker 解析後寫入 IndexedDB。
-- `core/index.js`：IndexedDB 初始化與 CRUD、刪除圖包連動刪物件、清庫；版本升級時重建 stores。
-- `store/index.js`：全域狀態、換裝邏輯、Undo/Redo（上限 50 步）、自由模式座標/縮放/翻轉/旋轉、圖層排序、通知、UI 折疊/響應式旗標。
-- `public/zip.worker.js`：讀取 ZIP → 解析 `config.json` → 生成 items + packInfo，支援變體圖片；以 `progress`/`success`/`error` 回傳。
-- `紙娃娃打包器.html`：JSZip 製包工具（網頁獨立執行），協助作者產出符合 `config.json` 規格的圖包。
+### 模組功能總覽
 
+`App.vue` — 外殼與全域機制
+- 兩頁切換（換裝 / 房間）、頂欄按鈕（搜尋、說明、聯繫、設定）。
+- 全域載入遮罩、通知、右鍵禁用、Modal 層（Search / Settings / Help / Contact）。
+- 響應式三段佈局（桌機 > 1024 / 平板 > 768 / 手機）。
+
+`Wardrobe.vue` — 左側衣櫃
+- 15 個分類（⭐已儲存搭配 + 14 物件類別）。
+- 篩選：圖包多選、人物篩選、Tag 標籤篩選、顯示隱藏物件開關。排序：名稱 / 圖包 / 最近加入。
+- 桌面版虛擬滾動；手機版底部抽屜 + 水平滾動。
+- 右鍵 / 長按選單：變體選擇、隱藏、重新命名、刪除；搭配可載入 / 重新命名 / 刪除。
+- 搜尋跳轉高亮（3 秒消失）。
+
+`Dressing.vue` — 畫布
+- 固定 / 自由模式；背景層獨立渲染。
+- 縮放（滾輪 / 手指捏合）、平移（手型工具 / 中鍵拖曳）。
+- 自由模式：拖曳移動、縮放手柄、旋轉手柄、翻轉。濾鏡層不擋互動。
+- 預設畫布 2000×3800，有背景時自動採用背景尺寸。
+
+`Controls.vue` — 浮動控制面板（可收合）
+- 清空、重置變換、手型工具、固定/自由切換、縮放（0.1×~5×）。
+- 自由模式：旋轉/縮放開關、左右/上下翻轉。
+- Undo / Redo。
+- 儲存搭配（自動生成預覽縮圖）。
+- 下載圖像（原尺寸 / 中 / 小三種尺寸，可加浮水印），合成所有圖層後匯出 PNG。
+
+`LayerPanel.vue` — 物件列表
+- 拖曳排序（vuedraggable）、上移/下移、重置順序。
+- 圖層隱藏（不渲染但保留於列表）、右鍵選單（隱藏/刪除）。
+
+`Room.vue` — 搭配卡片牆
+- 多層疊加預覽、點擊載入跳轉換裝頁、複製 / 刪除搭配。
+
+`Search.vue` — 全域搜尋
+- 搜尋範圍：物件（名稱 / 圖包 / 分類 / Tag）、搭配（名稱）、圖包（名稱 / 描述）。
+- 物件可直接穿脫或跳轉衣櫃高亮；搭配可直接載入。
+
+`Settings.vue` — 設定（四大區塊）
+1. 主題管理：預設/自訂主題切換、iro.js 色彩選取器編輯 14 組 CSS 變數、自訂 CSS、預覽/儲存/匯出/匯入。
+2. 圖包管理：匯入（開啟 Importer）、匯出全部資料 JSON 備份、匯出/刪除單一圖包。
+3. 雲端同步：Google Drive AppData 上傳/下載（`googleDrive.js`，初步整合）。
+4. 危險區域：清空所有本地數據。
+
+`Importer.vue` — ZIP 匯入
+- 附贈圖包一鍵載入（讀取 `bundled-packs/manifest.json`，排除已匯入或已略過的）。
+- 拖放/選檔上傳、進度條、錯誤/成功提示。Worker 解析後逐筆寫入 DB。
+
+`Help.vue` — 使用說明（分頁：快速入門、操作、模式、衣櫃、FAQ）
+
+`Contact.vue` — 聯繫作者（社交連結、信箱、Google Form 回饋）
+
+`store/index.js` — Pinia 狀態中心
+- 類別系統：`categoryOrder`（渲染順序）、`defaultZIndexMap`（預設 z-index）、`singleSlotCategories`（filter/background/character/expression 為單槽位）。
+- 換裝：穿戴/脫下/變體切換/清空；穿角色時自動清表情並連動 selectedCharacterId。
+- 圖層：`buildLayers` 組合排序後圖層陣列，支援自訂層級與隱藏。
+- 自由模式：每物件獨立 position/scale/flip/rotation。
+- Undo/Redo：上限 50 步完整快照。
+- 穿搭 CRUD：儲存（含預覽圖與完整狀態）、載入、刪除、重新命名、匯入、同名覆蓋。
+- 物件管理：隱藏/重新命名/刪除（持久化）。
+- 圖包管理：新增/刪除，刪除時連動清理穿搭中失效物件。
+- 主題系統：CSS 變數切換 + 自訂 CSS，預覽色臨時狀態（關閉設定還原），匯出/匯入。
+- 附贈圖包管理：追蹤 `dismissedBundledPacks` 避免重複提示。
+
+`core/index.js` — IndexedDB 封裝（CRUD + `deletePackAndItems` 連動刪除 + `clearAllData`）
+
+`core/googleDrive.js` — Google Drive AppData 同步（初始化/授權/上傳/下載）
+
+`public/zip.worker.js` — 解析 ZIP 中的 `config.json`，以 `packId`/`itemId` 為主鍵，支援 characterId/tags/變體系統（variants + variantFiles + defaultVariant）。
+
+`紙娃娃打包器.html` — 獨立製包工具（拖放圖片、分類/命名/人物綁定/Tag/變體設定、匯出 ZIP）。
 
 ### 開發提示
-- 重新初始化資料時請留意 IndexedDB 版本號位於 `core/index.js`（目前 v3）。
-- Undo/Redo 最多保留 50 筆狀態；涉及自由模式的操作請呼叫 `recordHistory()`。
-- 在套用變體時會優先使用 `variantImages` 中的圖片；Importer 會自動套預設變體圖片。
-- 若調整類別或槽位名稱，需同步更新 `slotNameMap`、`categoryOrder`、`defaultZIndexMap` 和 `categories`。
+- IndexedDB 版本號在 `core/index.js`（v5），新增 store 或索引須遞增並修改 `_setupStores`。
+- 操作後需呼叫 `recordHistory()` 以支援 Undo/Redo。
+- 變體圖片優先取 `variantImages`；Worker 自動套用 `defaultVariant`。
+- 修改類別/槽位名稱須同步：`slotNameMap`、`categoryOrder`、`defaultZIndexMap`、`singleSlotCategories`、`categories`。
+- 附贈圖包：ZIP 放 `src/assets/bundled-packs/` 並更新 `manifest.json`。
+- Google Drive 需配置 `GOOGLE_CLIENT_ID`（目前寫在 `Settings.vue`）。

@@ -344,8 +344,8 @@ const cleanup = () => {
 
 .bundled-load-btn {
   padding: 0.35rem 0.75rem;
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border: none;
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
@@ -412,8 +412,8 @@ const cleanup = () => {
 
 .select-file-btn { 
   padding: 0.6rem 1.5rem;
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;

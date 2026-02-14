@@ -136,21 +136,21 @@ button,
    6. 輸入框優化
    =========================================== */
 
-/* 防止 iOS 自動縮放 - 最小 16px 字體 */
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-input[type="search"],
-textarea,
-select {
+/* 防止 iOS 自動縮放 - 最小 16px 字體（僅限 iOS Safari） */
+.is-ios-safari input[type="text"],
+.is-ios-safari input[type="number"],
+.is-ios-safari input[type="email"],
+.is-ios-safari input[type="password"],
+.is-ios-safari input[type="search"],
+.is-ios-safari textarea,
+.is-ios-safari select {
   font-size: 16px !important;
 }
 
-/* 防止輸入時頁面縮放 */
-input:focus,
-textarea:focus,
-select:focus {
+/* 防止輸入時頁面縮放（僅限 iOS Safari） */
+.is-ios-safari input:focus,
+.is-ios-safari textarea:focus,
+.is-ios-safari select:focus {
   font-size: 16px !important;
 }
 

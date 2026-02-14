@@ -179,6 +179,9 @@
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.import"></span> 圖包管理</h4>
         <div class="pack-actions">
+          <button class="secondary-btn" @click="loadDemoPack" :disabled="isLoadingDemo">
+            {{ isLoadingDemo ? '載入中...' : '載入示範圖包' }}
+          </button>
           <button class="primary-btn" @click="showImporter = true">匯入圖包</button>
           <button class="secondary-btn" @click="exportAllData" :disabled="isExportingAll">
             {{ isExportingAll ? '匯出中...' : '匯出全部資料' }}
@@ -243,6 +246,7 @@ const showImporter = ref(false);
 const selectedPackId = ref('');
 const isExportingAll = ref(false);
 const isGoogleReady = ref(false);
+const isLoadingDemo = ref(false);
 const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
 
 // 顏色管理相關
@@ -745,6 +749,81 @@ const clearAllData = () => {
     gameStore.clearAllData();
   }
 };
+
+// 載入示範圖包
+const DEMO_PACK_ID = 'demo-sample-pack';
+
+const loadDemoPack = async () => {
+  // 檢查是否已載入
+  if (gameStore.availablePacks.some(p => p.id === DEMO_PACK_ID)) {
+    gameStore.showNotification('ℹ️ 示範圖包已存在，請先刪除後再重新載入', 'info');
+    return;
+  }
+  
+  isLoadingDemo.value = true;
+  try {
+    const basePath = import.meta.env.BASE_URL;
+    const manifestUrl = `${basePath}demo-pack/manifest.json`;
+    const manifestResp = await fetch(manifestUrl);
+    if (!manifestResp.ok) throw new Error('找不到示範圖包（尚未放入 public/demo-pack/）');
+    
+    const manifest = await manifestResp.json();
+    
+    // 載入每個圖片為 base64
+    const items = [];
+    for (const item of manifest.items) {
+      const imgResp = await fetch(`${basePath}demo-pack/${item.image}`);
+      if (!imgResp.ok) continue;
+      const blob = await imgResp.blob();
+      const imageData = await blobToDataURL(blob);
+      
+      items.push({
+        id: `${DEMO_PACK_ID}-${item.id}`,
+        name: item.name,
+        displayName: item.displayName || item.name,
+        category: item.category,
+        packId: DEMO_PACK_ID,
+        imageData,
+        width: item.width || manifest.defaultWidth || 2000,
+        height: item.height || manifest.defaultHeight || 3800,
+        variants: item.variants || null,
+        variantImages: item.variantImages || null,
+        tags: item.tags || [],
+      });
+    }
+    
+    // 儲存圖包資訊
+    const packInfo = {
+      id: DEMO_PACK_ID,
+      name: manifest.name || 'demo-sample-pack',
+      displayName: manifest.displayName || '示範圖包',
+      description: manifest.description || '內建示範用紙娃娃圖包',
+      itemCount: items.length,
+      isDemo: true,
+    };
+    
+    for (const item of items) {
+      await gameStore.addNewItem(item);
+    }
+    await gameStore.addPack(packInfo);
+    
+    gameStore.showNotification(`🎉 已載入示範圖包，包含 ${items.length} 個物件`, 'success');
+  } catch (err) {
+    console.error('載入示範圖包失敗:', err);
+    gameStore.showNotification(`❌ 載入示範圖包失敗: ${err.message}`, 'error');
+  } finally {
+    isLoadingDemo.value = false;
+  }
+};
+
+const blobToDataURL = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 </script>
 
 <style scoped>
@@ -1087,7 +1166,7 @@ const clearAllData = () => {
 
 .color-input {
   font-family: monospace;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -1189,8 +1268,16 @@ const clearAllData = () => {
   padding: 0.3rem 0.4rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-family: monospace;
+  color: var(--color-text-primary);
+  background: var(--color-bg-main);
+  transition: border-color 0.2s;
+}
+
+.color-hex:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .subsection-actions {
@@ -1218,7 +1305,14 @@ const clearAllData = () => {
   border: 1px solid var(--color-border);
   background: var(--color-bg-main);
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  color: var(--color-text-primary);
+  transition: border-color 0.2s;
+}
+
+.theme-name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .subsection-footer {
@@ -1272,14 +1366,20 @@ const clearAllData = () => {
   color: var(--color-text-primary);
   box-sizing: border-box;
   max-width: 100%;
+  transition: border-color 0.2s;
+}
+
+.css-editor:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 /* ========================================
    7. 按鈕樣式
    ======================================== */
 .primary-btn {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border: none;
   padding: 0.6rem 1rem;
   border-radius: var(--radius-sm);
@@ -1406,7 +1506,13 @@ select {
   border: 1px solid var(--color-border);
   background: var(--color-bg-main);
   color: var(--color-text-primary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  transition: border-color 0.2s;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .hint {
@@ -1526,7 +1632,7 @@ select {
   .color-hex {
     width: 80px;
     flex: none;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: 0.35rem 0.4rem;
   }
 
@@ -1548,7 +1654,7 @@ select {
     background: var(--color-bg-main);
     color: var(--color-text-primary);
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
   .subsection-actions button {
@@ -1564,6 +1670,11 @@ select {
   .css-editor {
     min-height: 120px;
     font-size: 0.8rem;
+  }
+
+  .css-editor:focus {
+    outline: none;
+    border-color: var(--color-primary);
   }
 
   .primary-btn,

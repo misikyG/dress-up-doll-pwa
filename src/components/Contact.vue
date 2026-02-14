@@ -9,12 +9,19 @@
       <!-- 作者資訊區塊 -->
       <div class="contact-section author-section">
         <div class="author-avatar">
-          <span class="avatar-icon">
+          <img 
+            :src="avatarUrl" 
+            alt="作者頭貼" 
+            class="avatar-img"
+            @error="avatarError = true"
+            v-if="!avatarError"
+          />
+          <span class="avatar-icon" v-else>
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </span>
         </div>
         <div class="author-info">
-          <h4 class="author-name">紙娃娃系統開發者</h4>
+          <h4 class="author-name">蟲餡包</h4>
           <p class="author-desc">感謝您使用本系統！如有任何問題或建議，歡迎透過以下方式聯繫。</p>
         </div>
       </div>
@@ -28,17 +35,23 @@
           社交平台
         </h4>
         <div class="social-links">
-          <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" class="social-link twitter">
+          <a href="https://www.facebook.com/bao.chong.chong.chong" target="_blank" rel="noopener noreferrer" class="social-link facebook">
             <span class="social-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </span>
-            <span class="social-name">X (Twitter)</span>
+            <span class="social-name">Facebook</span>
           </a>
-          <a href="https://www.plurk.com/" target="_blank" rel="noopener noreferrer" class="social-link plurk">
+          <a href="https://www.plurk.com/misikyG" target="_blank" rel="noopener noreferrer" class="social-link plurk">
             <span class="social-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
             </span>
             <span class="social-name">Plurk</span>
+          </a>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="social-link website">
+            <span class="social-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </span>
+            <span class="social-name">個人網站</span>
           </a>
         </div>
       </div>
@@ -52,11 +65,11 @@
           電子信箱
         </h4>
         <div class="email-container">
-          <a href="mailto:contact@example.com" class="email-link">
+          <a href="mailto:misiky1@gmail.com" class="email-link">
             <span class="email-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             </span>
-            <span class="email-text">contact@example.com</span>
+            <span class="email-text">misiky1@gmail.com</span>
           </a>
           <button class="copy-btn" @click="copyEmail" title="複製信箱">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -75,7 +88,7 @@
         <p class="feedback-desc">有任何功能建議、問題回報或使用心得？歡迎填寫以下表單：</p>
         <div class="feedback-form-container">
           <iframe 
-            src="https://docs.google.com/forms/d/e/1FAIpQLSc_placeholder/viewform?embedded=true" 
+            src="https://docs.google.com/forms/d/e/1FAIpQLScxhDB6SGwSb-jW-RAW-T_BgmZ6QssIcyfywaGdiYw2cJUCcA/viewform?embedded=true" 
             width="100%" 
             height="400" 
             frameborder="0" 
@@ -84,7 +97,7 @@
             class="feedback-iframe"
           >載入中…</iframe>
         </div>
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc_placeholder/viewform" 
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLScxhDB6SGwSb-jW-RAW-T_BgmZ6QssIcyfywaGdiYw2cJUCcA/viewform?embedded=true" 
            target="_blank" 
            rel="noopener noreferrer" 
            class="open-form-btn">
@@ -97,14 +110,19 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { icons } from '../icons.js';
 import { useGameStore } from '../store/index.js';
 
 const emit = defineEmits(['close']);
 const gameStore = useGameStore();
 
+// 作者頭貼（放在 public/author-avatar.png）
+const avatarUrl = `${import.meta.env.BASE_URL}author-avatar.png`;
+const avatarError = ref(false);
+
 const copyEmail = () => {
-  navigator.clipboard.writeText('contact@example.com').then(() => {
+  navigator.clipboard.writeText('misiky1@gmail.com').then(() => {
     gameStore.showNotification('📋 已複製電子信箱', 'success');
   }).catch(() => {
     gameStore.showNotification('❌ 複製失敗', 'error');
@@ -171,6 +189,14 @@ const copyEmail = () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
 }
 
 .avatar-icon {
@@ -247,10 +273,16 @@ const copyEmail = () => {
   box-shadow: var(--shadow-md);
 }
 
-.social-link.twitter:hover {
-  background: #1da1f2;
+.social-link.facebook:hover {
+  background: #1877f2;
   color: white;
-  border-color: #1da1f2;
+  border-color: #1877f2;
+}
+
+.social-link.website:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
 
 .social-link.plurk:hover {
@@ -353,8 +385,8 @@ const copyEmail = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--color-primary);
-  color: var(--color-bg-main);
+  background: var(--color-primary-dark);
+  color: #fff;
   text-decoration: none;
   border-radius: var(--radius-md);
   font-size: 0.85rem;

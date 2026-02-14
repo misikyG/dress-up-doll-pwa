@@ -196,9 +196,9 @@ const tabs = [
 }
 
 .help-tab.active {
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
-  border-color: var(--color-primary);
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  border-color: var(--color-primary-dark);
 }
 
 .tab-icon {

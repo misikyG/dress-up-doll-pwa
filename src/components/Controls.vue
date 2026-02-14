@@ -3,16 +3,17 @@
     <transition name="slide-fade">
       <div v-if="!collapsed" class="controls-stack">
         <div class="btn-row icon-row">
-          <button class="icon-btn-ctrl" @click="confirmClearCanvas" title="清空畫布" v-html="icons.clear"></button>
-          <button class="icon-btn-ctrl" @click="resetPositions" title="重置位置" v-html="icons.reset"></button>
+          <button class="icon-btn-ctrl" @click="confirmClearCanvas" title="清空畫布" aria-label="清空畫布" v-html="icons.clear"></button>
+          <button class="icon-btn-ctrl" @click="resetPositions" title="重置位置" aria-label="重置位置" v-html="icons.reset"></button>
           <button 
             class="icon-btn-ctrl"
             :class="{ active: panMode }"
             @click="togglePanMode"
             title="手型工具（可用滑鼠中鍵觸發）"
+            aria-label="手型工具"
             v-html="icons.hand"
           ></button>
-          <button class="icon-btn-ctrl" @click="showDownloadDialog = true" title="儲存圖像" v-html="icons.download"></button>
+          <button class="icon-btn-ctrl" @click="showDownloadDialog = true" title="儲存圖像" aria-label="儲存圖像" v-html="icons.download"></button>
         </div>
 
         <div class="mode-row">
@@ -436,10 +437,10 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
-  background: rgba(192, 183, 163, 0.6);
+  background: rgba(80, 68, 62, 0.80);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--color-bg-main);
+  color: #fff;
   border: none;
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -448,20 +449,17 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.85;
   padding: 0;
 }
 
 .icon-btn-ctrl:hover:not(:disabled) {
-  background: var(--color-border);
+  background: rgba(80, 68, 62, 0.92);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
-  opacity: 1;
 }
 
 .icon-btn-ctrl.active {
-  background: var(--color-primary) !important;
-  opacity: 1;
+  background: var(--color-primary-dark) !important;
 }
 
 .icon-btn-ctrl :deep(svg) {
@@ -474,10 +472,10 @@ const flipSelected = (axis) => {
    3. 控制按鈕（badge-btn）
    ======================================== */
 .badge-btn {
-  background: rgba(192, 183, 163, 0.6);
+  background: rgba(80, 68, 62, 0.80);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--color-bg-main);
+  color: #fff;
   border: none;
   border-radius: 999px;
   padding: 7px 14px;
@@ -488,14 +486,12 @@ const flipSelected = (axis) => {
   white-space: nowrap;
   flex: 1;
   min-width: 0;
-  opacity: 0.85;
 }
 
 .badge-btn:hover:not(:disabled) {
-  background: var(--color-border);
+  background: rgba(80, 68, 62, 0.92);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
-  opacity: 1;
 }
 
 .badge-btn:disabled {
@@ -505,19 +501,18 @@ const flipSelected = (axis) => {
 
 /* 模式切換按鈕 */
 .badge-btn.mode {
-  background: rgba(192, 183, 163, 0.25);
+  background: rgba(80, 68, 62, 0.55);
   font-size: 0.8rem;
 }
 
 .badge-btn.mode.active {
-  background: var(--color-primary);
-  color: var(--color-bg-main);
-  opacity: 1;
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 /* 翻轉按鈕 */
 .badge-btn.flip {
-  background: rgba(192, 183, 163, 0.75);
+  background: rgba(80, 68, 62, 0.80);
   padding: 7px 12px;
   font-size: 0.8rem;
 }
@@ -536,21 +531,19 @@ const flipSelected = (axis) => {
 /* 儲存搭配按鈕 */
 .badge-btn.save {
   background: linear-gradient(135deg, var(--color-warning), rgba(245, 187, 100, 0.8));
-  color: var(--color-text-primary);
+  color: #3a2e20;
   font-weight: 600;
-  opacity: 0.9;
 }
 
 .badge-btn.save:hover {
   background: var(--color-warning);
-  opacity: 1;
 }
 
 /* ========================================
    4. 縮放控制
    ======================================== */
 .zoom-badge {
-  background: rgba(192, 183, 163, 0.85);
+  background: rgba(80, 68, 62, 0.85);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 999px;
@@ -566,7 +559,7 @@ const flipSelected = (axis) => {
   height: 28px;
   background: none;
   border: none;
-  color: var(--color-bg-main);
+  color: #fff;
   cursor: pointer;
   border-radius: 50%;
   display: flex;
@@ -586,7 +579,7 @@ const flipSelected = (axis) => {
 }
 
 .zoom-text {
-  color: var(--color-bg-main);
+  color: #fff;
   font-size: 0.8rem;
   font-weight: 600;
   min-width: 42px;
@@ -604,10 +597,10 @@ const flipSelected = (axis) => {
 
 /* 勾選徽章（旋轉/縮放選項） */
 .check-badge {
-  background: rgba(192, 183, 163, 0.8);
+  background: rgba(80, 68, 62, 0.80);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--color-bg-main);
+  color: #fff;
   border-radius: 999px;
   padding: 7px 14px;
   font-size: 0.8rem;
@@ -622,7 +615,7 @@ const flipSelected = (axis) => {
 }
 
 .check-badge:hover {
-  background: var(--color-border);
+  background: rgba(80, 68, 62, 0.92);
 }
 
 /* checkbox 樣式由 App.vue 全局管理 */
@@ -634,11 +627,11 @@ const flipSelected = (axis) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(192, 183, 163, 0.85);
+  background: rgba(80, 68, 62, 0.85);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
-  color: var(--color-bg-main);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -649,7 +642,7 @@ const flipSelected = (axis) => {
 }
 
 .toggle-btn:hover {
-  background: var(--color-border);
+  background: rgba(80, 68, 62, 0.95);
   transform: scale(1.05);
 }
 
@@ -728,8 +721,8 @@ const flipSelected = (axis) => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: var(--color-primary);
-  color: var(--color-bg-main);
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 .dialog-title {
@@ -884,12 +877,12 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.confirm {
-  background: var(--color-primary);
-  color: var(--color-bg-main);
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 .dialog-btn.confirm:hover {
-  background: rgba(165, 149, 209, 0.85);
+  background: rgba(117, 101, 169, 0.85);
 }
 
 /* ========================================

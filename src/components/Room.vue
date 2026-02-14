@@ -331,8 +331,8 @@ const formatDate = (dateString) => {
 
 .go-dressing-btn {
   padding: 0.6rem 1.25rem;
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -342,7 +342,7 @@ const formatDate = (dateString) => {
 }
 
 .go-dressing-btn:hover {
-  background-color: rgba(165, 149, 209, 0.85);
+  background-color: rgba(117, 101, 169, 0.85);
 }
 
 /* ========================================

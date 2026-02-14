@@ -306,7 +306,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%) ;
   width: 47px;
   height: 16px;
-  background: rgba(165, 149, 209, 0.3);
+  background: rgba(75, 65, 100, 0.75);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -316,7 +316,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  color: var(--color-bg-main);
+  color: #fff;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
   border-radius: 0 0 50px 50px;
@@ -324,7 +324,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .panel-toggle-handle--top:hover {
-  background: var(--color-primary);
+  background: var(--color-primary-dark);
   width: 47px;
   height: 20px;
   border-radius: 0 0 50px 50px;
@@ -351,7 +351,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 50px;
   height: 20px;
-  background: rgba(165, 149, 209, 0.3);
+  background: rgba(75, 65, 100, 0.75);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -361,7 +361,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: var(--color-bg-main);
+  color: #fff;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
   border-radius: 50px 50px 0 0;
@@ -369,7 +369,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .panel-toggle-handle--bottom:hover {
-  background: var(--color-primary);
+  background: var(--color-primary-dark);
   height: 26px;
 }
 
@@ -405,8 +405,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-count-badge {
-  background: var(--color-primary);
-  color: var(--color-bg-main);
+  background: var(--color-primary-dark);
+  color: #fff;
   font-size: 0.7rem;
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
@@ -487,7 +487,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 47px;
   height: 16px;
-  background: rgba(165, 149, 209, 0.3);
+  background: rgba(75, 65, 100, 0.75);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -497,7 +497,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  color: var(--color-bg-main);
+  color: #fff;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
   border-radius: 0 0 50px 50px;
@@ -505,7 +505,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .empty-state-toggle-handle:hover {
-  background: var(--color-primary);
+  background: var(--color-primary-dark);
   width: 47px;
   height: 20px;
   border-radius: 0 0 50px 50px;
@@ -649,8 +649,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   right: -3px;
   width: 16px;
   height: 16px;
-  background-color: var(--color-primary);
-  color: var(--color-bg-main);
+  background-color: var(--color-primary-dark);
+  color: #fff;
   border-radius: 50%;
   font-size: 0.6rem;
   display: flex;
@@ -803,8 +803,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: space-between;
   padding: 0.6rem 0.85rem;
-  background: var(--color-primary);
-  color: var(--color-bg-main);
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 .layer-context-title {
