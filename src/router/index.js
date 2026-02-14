@@ -6,10 +6,12 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
+      component: () => import('../components/MainApp.vue'),
     },
     {
       path: '/privacy',
       name: 'privacy',
+      component: () => import('../components/PrivacyPolicy.vue'),
       meta: { title: '隱私權政策 - 紙娃娃換裝系統' }
     }
   ]

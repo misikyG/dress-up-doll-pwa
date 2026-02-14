@@ -113,7 +113,18 @@
 </template>
 
 <script setup>
-// 獨立頁面，無需額外邏輯
+import { onMounted, onUnmounted } from 'vue'
+
+// 隱私權頁面需要解除 body fixed + overflow:hidden 限制以允許滾動
+onMounted(() => {
+  document.body.classList.add('scrollable-page')
+  document.documentElement.classList.add('scrollable-page')
+})
+
+onUnmounted(() => {
+  document.body.classList.remove('scrollable-page')
+  document.documentElement.classList.remove('scrollable-page')
+})
 </script>
 
 <style scoped>
