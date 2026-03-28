@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="settings-modal" @click.stop>
     <div class="settings-header">
       <h3><span class="title-icon" v-html="icons.settings"></span> 設定</h3>
@@ -16,15 +16,23 @@
           <div class="theme-options">
             <button 
               :class="['theme-option', { active: gameStore.theme.currentTheme === 'default' }]"
-              @click="applyTheme('default')">
+              @click="handleThemeClick('default')">
               <div class="theme-preview" :style="getDefaultThemePreviewStyle()"></div>
               <span>預設</span>
+            </button>
+            <button 
+              v-for="preset in presetThemesList"
+              :key="preset.id"
+              :class="['theme-option', { active: gameStore.theme.currentTheme === preset.id }]"
+              @click="handleThemeClick(preset.id)">
+              <div class="theme-preview" :style="getThemePreviewStyle(preset)"></div>
+              <span>{{ preset.name }}</span>
             </button>
             <div 
               v-for="theme in gameStore.theme.customThemes" 
               :key="theme.id"
               :class="['theme-option', { active: gameStore.theme.currentTheme === theme.id }]"
-              @click="applyTheme(theme.id)">
+              @click="handleThemeClick(theme.id)">
               <div class="theme-preview" :style="getThemePreviewStyle(theme)"></div>
               <span>{{ theme.name }}</span>
               <button class="delete-theme-btn" @click.stop="deleteTheme(theme.id)" title="刪除">×</button>
@@ -152,6 +160,7 @@
             
             <div class="subsection-actions">
               <button class="primary-btn small" @click="applyCustomCSS">套用</button>
+              <button class="secondary-btn small" @click="previewCustomCSS">預覽</button>
               <button class="secondary-btn small" @click="clearCustomCSS">清除</button>
             </div>
 
@@ -170,6 +179,34 @@
                 accept=".json,.css"
                 @change="handleCSSImport"
                 style="display: none;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 默認字體 -->
+        <div class="subsection">
+          <button class="subsection-toggle" @click="showFontSettings = !showFontSettings">
+            <span class="toggle-icon">{{ showFontSettings ? '▼' : '▶' }}</span>
+            默認字體
+          </button>
+          
+          <div v-if="showFontSettings" class="subsection-content">
+            <div class="font-setting-row">
+              <label>字體大小</label>
+              <div class="font-size-control">
+                <button class="font-size-btn" @click="decreaseFontSize" :disabled="editingFontSize <= 12">−</button>
+                <span class="font-size-value">{{ editingFontSize }}px</span>
+                <button class="font-size-btn" @click="increaseFontSize" :disabled="editingFontSize >= 24">+</button>
+              </div>
+            </div>
+            <div class="font-setting-row">
+              <label>更改默認字體</label>
+              <select v-model="editingFontFamily" class="font-family-select" @change="applyFontSettings">
+                <option value="">系統預設</option>
+                <option v-for="font in fontOptions" :key="font.value" :value="font.value" :style="{ fontFamily: font.value }">
+                  {{ font.label }}
+                </option>
+              </select>
             </div>
           </div>
         </div>
@@ -238,6 +275,8 @@
       <!-- 危險區域 -->
       <div class="settings-section">
         <h4>⚠️ 危險區域</h4>
+        <button @click="factoryResetTheme" class="danger-btn">恢復原廠設置</button>
+        <p class="hint">將主題恢復為預設，並刪除所有自定義主題與自定義 CSS。</p>
         <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
         <p class="hint">此操作會刪除所有匯入的物件和儲存的搭配，且無法復原！</p>
       </div>
@@ -253,7 +292,7 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive, watch, nextTick, onUnmounted } from 'vue';
-import { useGameStore } from '../store/index.js';
+import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
 import { ensureGoogleClient, ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, listBackupFiles, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
@@ -272,11 +311,28 @@ const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.go
 // 顏色管理相關
 const showColorEditor = ref(false);
 const showCustomCSS = ref(false);
+const showFontSettings = ref(false);
 const newThemeName = ref('');
 const colorFileInput = ref(null);
 const cssFileInput = ref(null);
 const customCSS = ref('');
 const activeColorKey = ref(null);
+
+// 預設主題列表
+const presetThemesList = presetThemes;
+
+// 字體設定
+const editingFontSize = ref(16);
+const editingFontFamily = ref('');
+const fontOptions = [
+  { label: '微軟正黑體', value: '"Microsoft JhengHei", sans-serif' },
+  { label: '思源宋體', value: '"Noto Serif TC", serif' },
+  { label: '蘋方', value: '"PingFang TC", sans-serif' },
+  { label: 'Arial', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Segoe UI', value: '"Segoe UI", Tahoma, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
+  { label: '等寬字體', value: '"Consolas", "Courier New", monospace' },
+];
 
 // 從 CSS 變數動態讀取預設顏色，確保與 index.html 同步
 const getCSSVariable = (name) => {
@@ -286,7 +342,6 @@ const getCSSVariable = (name) => {
 // 顏色變數名稱列表
 const colorKeys = [
   'color-primary',
-  'color-primary-light',
   'color-bg-main',
   'color-bg-panel',
   'color-bg-card',
@@ -294,7 +349,6 @@ const colorKeys = [
   'color-text-primary',
   'color-text-secondary',
   'color-border',
-  'color-border-light',
   'color-success',
   'color-error',
   'color-warning',
@@ -314,7 +368,6 @@ const defaultColors = getDefaultColors();
 
 const colorLabels = {
   'color-primary': '主題色',
-  'color-primary-light': '主題色（淺）',
   'color-bg-main': '主背景色',
   'color-bg-panel': '面板背景色',
   'color-bg-card': '主卡片顏色',
@@ -322,7 +375,6 @@ const colorLabels = {
   'color-text-primary': '主要文字色',
   'color-text-secondary': '次要文字色',
   'color-border': '邊框色',
-  'color-border-light': '淺邊框色',
   'color-success': '成功色',
   'color-error': '錯誤色',
   'color-warning': '警告色',
@@ -360,7 +412,7 @@ const initIroColorPicker = () => {
     width: 200,
     color: editingColors[activeColorKey.value],
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim() || '#ddd',
     layout: [
       {
         component: iro.ui.Box,
@@ -460,12 +512,15 @@ const handleRgbInput = (channel, event) => {
 
 onMounted(() => {
   customCSS.value = gameStore.theme.customCSS || '';
+  editingFontSize.value = gameStore.theme.fontSize || 16;
+  editingFontFamily.value = gameStore.theme.fontFamily || '';
   
   // 載入當前主題的顏色或預覽顏色
   if (gameStore.theme.previewColors) {
     Object.assign(editingColors, gameStore.theme.previewColors);
   } else if (gameStore.theme.currentTheme !== 'default') {
-    const currentTheme = gameStore.theme.customThemes.find(
+    const preset = presetThemes.find(t => t.id === gameStore.theme.currentTheme);
+    const currentTheme = preset || gameStore.theme.customThemes.find(
       t => t.id === gameStore.theme.currentTheme
     );
     if (currentTheme && currentTheme.colors) {
@@ -492,6 +547,14 @@ onUnmounted(() => {
 });
 
 // 主題相關函數
+const handleThemeClick = (themeId) => {
+  if (themeId === gameStore.theme.currentTheme) {
+    showColorEditor.value = !showColorEditor.value;
+    return;
+  }
+  applyTheme(themeId);
+};
+
 const applyTheme = async (themeId) => {
   await gameStore.setCurrentTheme(themeId);
   
@@ -499,7 +562,8 @@ const applyTheme = async (themeId) => {
   if (themeId === 'default') {
     Object.assign(editingColors, defaultColors);
   } else {
-    const theme = gameStore.theme.customThemes.find(t => t.id === themeId);
+    const preset = presetThemes.find(t => t.id === themeId);
+    const theme = preset || gameStore.theme.customThemes.find(t => t.id === themeId);
     if (theme && theme.colors) {
       Object.assign(editingColors, theme.colors);
     }
@@ -516,18 +580,16 @@ const deleteTheme = async (themeId) => {
 };
 
 const getThemePreviewStyle = (theme) => {
-  const primary = theme.colors?.['color-primary'] || '#618b6a';
-  const primaryLight = theme.colors?.['color-primary-light'] || '#7da585';
+  const primary = theme.colors?.['color-primary'] || getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+  const panel = theme.colors?.['color-bg-panel'] || getComputedStyle(document.documentElement).getPropertyValue('--color-bg-panel').trim();
   return {
-    background: `linear-gradient(135deg, ${primary} 0%, ${primaryLight} 100%)`,
+    background: `linear-gradient(135deg, ${primary} 0%, ${panel} 100%)`,
   };
 };
 
 const getDefaultThemePreviewStyle = () => {
-  const primary = getCSSVariable('color-primary');
-  const primaryLight = getCSSVariable('color-primary-light');
   return {
-    background: `linear-gradient(135deg, ${primary} 0%, ${primaryLight} 100%)`,
+    background: `linear-gradient(135deg, #a595d1 0%, #c6d3ac 100%)`,
   };
 };
 
@@ -550,13 +612,28 @@ const resetColors = () => {
 };
 
 const saveCurrentTheme = async () => {
-  if (!newThemeName.value.trim()) {
-    gameStore.showNotification('❌ 請輸入主題名稱', 'error');
+  const trimmedName = newThemeName.value.trim();
+
+  if (!trimmedName) {
+    // 沒有輸入名稱→覆蓋當前選擇的主題
+    const currentId = gameStore.theme.currentTheme;
+    if (currentId === 'default') {
+      gameStore.showNotification('❌ 無法覆蓋預設主題，請輸入新名稱', 'error');
+      return;
+    }
+    const currentTheme = gameStore.theme.customThemes.find(t => t.id === currentId);
+    if (!currentTheme) {
+      gameStore.showNotification('❌ 請輸入主題名稱', 'error');
+      return;
+    }
+    if (!confirm(`是否確認覆蓋「${currentTheme.name}」主題設定？將無法恢復`)) return;
+    await gameStore.updateCustomTheme(currentId, { colors: { ...editingColors } });
+    gameStore.showNotification('✅ 已覆蓋並套用主題', 'success');
     return;
   }
 
   const theme = await gameStore.addCustomTheme({
-    name: newThemeName.value,
+    name: trimmedName,
     colors: { ...editingColors },
   });
 
@@ -659,10 +736,34 @@ const applyCustomCSS = async () => {
   gameStore.showNotification('✅ 已套用自定義 CSS', 'success');
 };
 
+const previewCustomCSS = () => {
+  gameStore.applyCustomCSS(customCSS.value);
+  gameStore.showNotification('👁️ 預覽中（尚未儲存）', 'info');
+};
+
 const clearCustomCSS = async () => {
   customCSS.value = '';
   await gameStore.setCustomCSS('');
   gameStore.showNotification('🗑️ 已清除自定義 CSS', 'success');
+};
+
+// 字體設定相關
+const increaseFontSize = () => {
+  if (editingFontSize.value < 24) {
+    editingFontSize.value++;
+    applyFontSettings();
+  }
+};
+
+const decreaseFontSize = () => {
+  if (editingFontSize.value > 12) {
+    editingFontSize.value--;
+    applyFontSettings();
+  }
+};
+
+const applyFontSettings = async () => {
+  await gameStore.setFontSettings(editingFontFamily.value, editingFontSize.value);
 };
 
 // 圖包管理相關函數
@@ -836,6 +937,32 @@ const syncFromDrive = async () => {
   }
 };
 
+const factoryResetTheme = async () => {
+  if (!confirm('確定要恢復原廠設置嗎？將刪除所有自定義主題與自定義 CSS，且無法復原。')) return;
+  // 清除所有自定義主題
+  gameStore.theme.customThemes = [];
+  // 清除自定義 CSS
+  gameStore.theme.customCSS = '';
+  gameStore.applyCustomCSS('');
+  // 重置為預設主題
+  gameStore.theme.currentTheme = 'default';
+  gameStore.applyTheme('default');
+  // 清除預覽顏色
+  gameStore.theme.previewColors = null;
+  // 重置字體設定
+  gameStore.theme.fontFamily = '';
+  gameStore.theme.fontSize = 16;
+  gameStore.applyFontSettings();
+  await gameStore.saveThemeSettings();
+  // 重置編輯中的狀態
+  Object.assign(editingColors, getDefaultColors());
+  customCSS.value = '';
+  newThemeName.value = '';
+  editingFontSize.value = 16;
+  editingFontFamily.value = '';
+  gameStore.showNotification('✅ 已恢復原廠設置', 'success');
+};
+
 const clearAllData = () => {
   if (confirm('再次確認：真的要刪除所有數據嗎？')) {
     gameStore.clearAllData();
@@ -965,26 +1092,6 @@ const blobToDataURL = (blob) => {
   font-size: 1.25rem;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  transition: var(--transition-fast);
-}
-
-.close-btn:hover {
-  background-color: rgba(192, 183, 163, 0.2);
-  color: var(--color-text-primary);
-}
-
 .settings-content {
   padding: 1.5rem;
   overflow-y: auto;
@@ -1012,7 +1119,7 @@ const blobToDataURL = (blob) => {
 .settings-section {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .settings-section:last-child {
@@ -1064,13 +1171,13 @@ const blobToDataURL = (blob) => {
 }
 
 .theme-option:hover {
-  border-color: var(--color-primary-light);
+  border-color: var(--color-bg-panel);
   transform: translateY(-2px);
 }
 
 .theme-option.active {
   border-color: var(--color-primary);
-  background: rgba(165, 149, 209, 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .theme-preview {
@@ -1114,13 +1221,17 @@ const blobToDataURL = (blob) => {
    3. 子區塊樣式
    ======================================== */
 .subsection {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.subsection + .subsection {
+  margin-top: 0.25rem;
 }
 
 .subsection-toggle {
   background: none;
   border: none;
-  padding: 0.5rem 0;
+  padding: 0.35rem 0;
   cursor: pointer;
   font-size: 0.9rem;
   color: var(--color-text-secondary);
@@ -1147,7 +1258,7 @@ const blobToDataURL = (blob) => {
   padding: 0.75rem;
   background: var(--color-bg-panel);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -1185,12 +1296,12 @@ const blobToDataURL = (blob) => {
   border: 2px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
 }
 
 .color-swatch:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 
 .color-swatch.active {
@@ -1396,7 +1507,7 @@ const blobToDataURL = (blob) => {
   flex-wrap: wrap;
   align-items: stretch;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--color-border-light);
+  border-top: 1px solid var(--color-border);
 }
 
 .subsection-actions .theme-name-input {
@@ -1430,7 +1541,7 @@ const blobToDataURL = (blob) => {
   gap: 0.5rem;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border-light);
+  border-top: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
@@ -1449,7 +1560,7 @@ const blobToDataURL = (blob) => {
 }
 
 .icon-btn-action:hover {
-  background-color: rgba(165, 149, 209, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -1485,11 +1596,89 @@ const blobToDataURL = (blob) => {
 }
 
 /* ========================================
+   6.5 字體設定
+   ======================================== */
+.font-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.font-setting-row + .font-setting-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.font-setting-row label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.font-size-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+  line-height: 1;
+}
+
+.font-size-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.font-size-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.font-size-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.font-family-select {
+  flex: 1;
+  max-width: 200px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+
+.font-family-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* ========================================
    7. 按鈕樣式
    ======================================== */
 .primary-btn {
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border: none;
   padding: 0.6rem 1rem;
   border-radius: var(--radius-sm);
@@ -1504,11 +1693,11 @@ const blobToDataURL = (blob) => {
 }
 
 .primary-btn:hover {
-  background-color: rgba(165, 149, 209, 0.85);
+  background-color: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 
 .secondary-btn {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 0.6rem 1rem;
@@ -1524,7 +1713,7 @@ const blobToDataURL = (blob) => {
 }
 
 .secondary-btn:hover {
-  background-color: rgba(192, 183, 163, 0.35);
+  background-color: color-mix(in srgb, var(--color-text-primary) 35%, transparent);
 }
 
 .secondary-btn:disabled,
@@ -1545,7 +1734,7 @@ const blobToDataURL = (blob) => {
 }
 
 .delete-btn:hover {
-  background-color: rgba(173, 75, 68, 0.85);
+  background-color: color-mix(in srgb, var(--color-error) 85%, transparent);
 }
 
 .delete-btn:disabled {
@@ -1566,7 +1755,7 @@ const blobToDataURL = (blob) => {
 }
 
 .danger-btn:hover {
-  background-color: rgba(173, 75, 68, 0.85);
+  background-color: color-mix(in srgb, var(--color-error) 85%, transparent);
 }
 
 /* ========================================
@@ -1606,7 +1795,7 @@ const blobToDataURL = (blob) => {
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
   background: var(--color-bg-main);
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border);
   margin-bottom: 0.5rem;
   font-size: 0.85rem;
 }
@@ -1903,3 +2092,4 @@ select:focus {
   }
 }
 </style>
+

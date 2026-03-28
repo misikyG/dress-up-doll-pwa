@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div class="importer-modal modal-base modal-md" @click.stop>
     <div class="modal-header">
       <h3><span class="title-icon" v-html="icons.import"></span> 匯入圖包</h3>
-      <button @click="$emit('close')" class="btn-close" title="關閉">×</button>
+      <button @click="$emit('close')" class="close-btn" title="關閉">×</button>
     </div>
     <div class="importer-content">
       <!-- 附贈圖包區域 -->
@@ -128,7 +128,7 @@ const handleFileSelect = (event) => {
 const handleFileDrop = (event) => {
   isDragOver.value = false;
   const file = event.dataTransfer.files[0];
-  if (file && file.type === 'application/zip') {
+  if (file && (file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip'))) {
     processFile(file);
   } else {
     showError('請拖放一個有效的 ZIP 檔案！');
@@ -192,6 +192,15 @@ const processFile = (file, bundledInfo = null) => {
 
 const saveItemsToDB = async (items, packInfo) => {
   try {
+    // 檢查重複圖包
+    const existingPack = gameStore.availablePacks.find(p => p.id === packInfo.id);
+    if (existingPack) {
+      processingState.value.isProcessing = false;
+      showError(`圖包「${packInfo.displayName || packInfo.name}」已匯入過（ID: ${packInfo.id}）。如需重新匯入，請先到設定中刪除舊圖包。`);
+      cleanup();
+      return;
+    }
+
     processingState.value.progress = 95;
     processingState.value.message = '正在儲存物件到資料庫...';
     
@@ -220,9 +229,8 @@ const saveItemsToDB = async (items, packInfo) => {
     // 清除附贈圖包信息
     currentBundledInfo = null;
     
-    setTimeout(() => {
-      emit('close');
-    }, 3000);
+    // 重置檔案輸入，允許繼續匯入
+    if (fileInput.value) fileInput.value.value = '';
     
   } catch (dbError) {
     console.error('儲存到資料庫失敗:', dbError);
@@ -289,7 +297,7 @@ const cleanup = () => {
   padding: 0.75rem;
   background-color: var(--color-bg-panel);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-primary-light);
+  border: 1px solid var(--color-bg-panel);
 }
 
 .bundled-packs-header {
@@ -322,7 +330,7 @@ const cleanup = () => {
   padding: 0.5rem 0.75rem;
   background-color: var(--color-bg-card);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border);
 }
 
 .bundled-pack-info {
@@ -344,8 +352,8 @@ const cleanup = () => {
 
 .bundled-load-btn {
   padding: 0.35rem 0.75rem;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border: none;
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
@@ -354,7 +362,7 @@ const cleanup = () => {
 }
 
 .bundled-load-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-primary);
 }
 
 .bundled-load-btn:disabled {
@@ -382,13 +390,13 @@ const cleanup = () => {
 
 .drop-zone.is-dragover { 
   border-color: var(--color-primary); 
-  background-color: rgba(125, 165, 133, 0.3); 
+  background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent); 
   transform: scale(1.02);
 }
 
 .drop-zone.is-processing {
   border-color: var(--color-primary);
-  background-color: rgba(125, 165, 133, 0.2);
+  background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent);
 }
 
 .drop-zone-icon {
@@ -412,8 +420,8 @@ const cleanup = () => {
 
 .select-file-btn { 
   padding: 0.6rem 1.5rem;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -423,7 +431,7 @@ const cleanup = () => {
 }
 
 .select-file-btn:hover {
-  background-color: rgba(165, 149, 209, 0.85);
+  background-color: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 
 .hint { 
@@ -461,15 +469,16 @@ const cleanup = () => {
 
 .progress-bar {
   flex: 1;
-  height: 6px;
+  height: 10px;
   background-color: var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: 5px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   background-color: var(--color-primary);
+  border-radius: 5px;
   transition: width 0.3s ease;
 }
 
@@ -489,7 +498,7 @@ const cleanup = () => {
 .loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--color-border-light);
+  border: 2px solid var(--color-border);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -510,14 +519,14 @@ const cleanup = () => {
 
 .error-message {
   color: var(--color-error); 
-  background-color: rgba(173, 75, 68, 0.1); 
-  border: 1px solid rgba(173, 75, 68, 0.3);
+  background-color: color-mix(in srgb, var(--color-error) 10%, transparent); 
+  border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
 }
 
 .success-message {
   color: var(--color-success);
-  background-color: rgba(112, 145, 114, 0.1);
-  border: 1px solid rgba(112, 145, 114, 0.3);
+  background-color: color-mix(in srgb, var(--color-success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
 }
 
 .error-icon,
@@ -567,7 +576,7 @@ const cleanup = () => {
 }
 
 .retry-btn:hover {
-  background-color: rgba(173, 75, 68, 0.85);
+  background-color: color-mix(in srgb, var(--color-error) 85%, transparent);
 }
 
 /* ========================================
@@ -595,3 +604,4 @@ const cleanup = () => {
   }
 }
 </style>
+

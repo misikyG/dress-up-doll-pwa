@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div class="search-modal modal-base modal-lg" @click.stop>
     <div class="modal-header">
       <h3><span class="title-icon" v-html="icons.search"></span> 全局搜尋</h3>
-      <button @click="$emit('close')" class="btn-close" title="關閉">×</button>
+      <button @click="$emit('close')" class="close-btn" title="關閉">×</button>
     </div>
     
     <div class="search-input-wrapper">
@@ -328,7 +328,7 @@ onMounted(() => {
 }
 
 .clear-btn:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 
 /* ========================================
@@ -357,7 +357,7 @@ onMounted(() => {
 .searching-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(192, 183, 163, 0.3);
+  border: 2px solid color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -411,7 +411,7 @@ onMounted(() => {
 }
 
 .result-item:hover { 
-  background-color: rgba(192, 183, 163, 0.15);
+  background-color: color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   border-color: var(--color-border);
 }
 
@@ -435,7 +435,7 @@ onMounted(() => {
 }
 
 .outfit-thumbnail, .pack-thumbnail {
-  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, rgba(192, 183, 163, 0.3) 100%);
+  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, color-mix(in srgb, var(--color-text-primary) 30%, transparent) 100%);
 }
 
 .equipped-indicator {
@@ -444,8 +444,8 @@ onMounted(() => {
   right: 2px;
   width: 14px;
   height: 14px;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border-radius: var(--radius-full);
   font-size: 0.6rem;
   display: flex;
@@ -498,14 +498,14 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   border-color: var(--color-primary);
 }
 
 .action-btn.equipped {
-  background-color: var(--color-primary-dark);
-  color: #fff;
-  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  border-color: var(--color-primary);
 }
 
 .goto-btn {
@@ -516,9 +516,9 @@ onMounted(() => {
 }
 
 .goto-btn:hover {
-  background-color: var(--color-primary-dark);
-  color: #fff;
-  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  border-color: var(--color-primary);
 }
 
 .pack-action {
@@ -528,7 +528,7 @@ onMounted(() => {
 }
 
 .pack-action:hover {
-  background-color: rgba(245, 187, 100, 0.85);
+  background-color: color-mix(in srgb, var(--color-warning) 85%, transparent);
 }
 
 /* ========================================
@@ -623,3 +623,4 @@ onMounted(() => {
   }
 }
 </style>
+

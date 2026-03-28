@@ -88,7 +88,7 @@ textarea,
 /* 基礎佈局 */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
 }
@@ -167,8 +167,29 @@ body {
 }
 
 .btn-close:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
+}
+
+/* close-btn 通用關閉按鈕 */
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--color-primary);
 }
 
 /* 空狀態樣式 */
@@ -201,7 +222,7 @@ body {
 
 /* 載入動畫 */
 .spinner {
-  border: 3px solid rgba(192, 183, 163, 0.3);
+  border: 3px solid color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
@@ -226,8 +247,8 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   padding: 0.6rem 1.2rem;
 }
 
@@ -236,7 +257,7 @@ body {
 }
 
 .btn-secondary {
-  background-color: rgba(232, 232, 232, 0.5);
+  background-color: color-mix(in srgb, var(--color-border) 50%, transparent);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 0.6rem 1.2rem;
@@ -410,14 +431,14 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   align-items: center;
   justify-content: center;
   height: 100%;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(248, 245, 234, 0.3);
+  border: 4px solid color-mix(in srgb, var(--color-border) 30%, transparent);
   border-top-color: var(--color-bg-main);
   border-radius: var(--radius-full);
   animation: spin 1s linear infinite;
@@ -474,12 +495,12 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .main-nav button.active {
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 .main-nav button:not(.active):hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
 
@@ -505,7 +526,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .header-actions button:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
 
@@ -611,7 +632,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(119, 98, 88, 0.5);
+  background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -728,10 +749,17 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   }
   
   .notification {
-    bottom: 10px;
+    top: 56px;
+    bottom: auto;
     left: 10px;
     right: 10px;
     text-align: center;
+  }
+
+  .slide-fade-enter-from,
+  .slide-fade-leave-to {
+    transform: translateY(-100%);
+    opacity: 0;
   }
 
   .content-wrapper {

@@ -28,7 +28,6 @@ const singleSlotCategories = new Set(['filter', 'background', 'character', 'expr
 const hardcodedDefaultThemeCSS = `
 :root {
   --color-primary: #618b6a;
-  --color-primary-light: #7da585;
   --color-bg-main: #f8f5ea;
   --color-bg-panel: #f1f7e5;
   --color-bg-card: #ffffff;
@@ -36,7 +35,6 @@ const hardcodedDefaultThemeCSS = `
   --color-text-primary: #472d25;
   --color-text-secondary: #666666;
   --color-border: #c0b7a3;
-  --color-border-light: #e8e8e8;
   --color-success: #709172;
   --color-error: #ad4b44;
   --color-warning: #f5bb64;
@@ -60,6 +58,46 @@ const hardcodedDefaultThemeCSS = `
   --transition-slow: 0.5s ease;
 }
 `;
+
+// 預設主題配色
+export const presetThemes = [
+  {
+    id: 'preset-crimson',
+    name: '輕粉',
+    colors: {
+      'color-primary': '#c65c5c',
+      'color-bg-main': '#efefe7',
+      'color-bg-panel': '#f2dada',
+      'color-bg-card': '#fffcfa',
+      'color-bg-canvas': '#f2edea',
+      'color-text-primary': '#707454',
+      'color-text-secondary': '#a49090',
+      'color-border': '#c48a76',
+      'color-success': '#3d8b7a',
+      'color-error': '#b83a32',
+      'color-warning': '#d4a03c',
+      'color-info': '#4a8b9b',
+    }
+  },
+  {
+    id: 'preset-amber',
+    name: '琥珀',
+    colors: {
+      'color-primary': '#d2833a',
+      'color-bg-main': '#fdf8f0',
+      'color-bg-panel': '#fbf3e4',
+      'color-bg-card': '#fffdf8',
+      'color-bg-canvas': '#f5f0e8',
+      'color-text-primary': '#867360',
+      'color-text-secondary': '#a89ab3',
+      'color-border': '#c69986',
+      'color-success': '#7a9b5b',
+      'color-error': '#b8453a',
+      'color-warning': '#e6b830',
+      'color-info': '#4a6fa5',
+    }
+  }
+];
 
 let initialThemeCSS = '';
 const captureInitialThemeCSS = () => {
@@ -190,6 +228,8 @@ export const useGameStore = defineStore('game', {
       currentTheme: 'default',
       customThemes: [],
       customCSS: '',
+      fontFamily: '',
+      fontSize: 16,
     },
 
     // 已刪除的附贈圖包 ID 列表
@@ -262,6 +302,8 @@ export const useGameStore = defineStore('game', {
           this.theme.customThemes = Array.isArray(themeData.customThemes) ? themeData.customThemes : [];
           this.theme.customCSS = themeData.customCSS || '';
           this.theme.previewColors = themeData.previewColors || null;
+          this.theme.fontFamily = themeData.fontFamily || '';
+          this.theme.fontSize = themeData.fontSize || 16;
 
           if (this.theme.previewColors && Object.keys(this.theme.previewColors).length > 0) {
             Object.entries(this.theme.previewColors).forEach(([key, value]) => {
@@ -270,6 +312,7 @@ export const useGameStore = defineStore('game', {
           } else {
             this.applyTheme(this.theme.currentTheme);
           }
+          this.applyFontSettings();
           this.applyCustomCSS(this.theme.customCSS);
         }
 
@@ -785,6 +828,8 @@ export const useGameStore = defineStore('game', {
         customThemes: this.theme.customThemes,
         customCSS: this.theme.customCSS,
         previewColors: this.theme.previewColors || null,
+        fontFamily: this.theme.fontFamily || '',
+        fontSize: this.theme.fontSize || 16,
       });
       try {
         await DressingCore.setData('theme', 'settings', themeData);
@@ -794,6 +839,7 @@ export const useGameStore = defineStore('game', {
 
     async setCurrentTheme(themeName) {
       this.theme.currentTheme = themeName;
+      this.theme.previewColors = null;
       this.applyTheme(themeName);
       await this.saveThemeSettings();
     },
@@ -835,10 +881,10 @@ export const useGameStore = defineStore('game', {
       const styleElement = document.getElementById('theme-variables');
       captureInitialThemeCSS();
       const cssVars = [
-        'color-primary', 'color-primary-light',
+        'color-primary',
         'color-bg-main', 'color-bg-panel', 'color-bg-card', 'color-bg-canvas',
         'color-text-primary', 'color-text-secondary',
-        'color-border', 'color-border-light',
+        'color-border',
         'color-success', 'color-error', 'color-warning', 'color-info'
       ];
 
@@ -847,11 +893,31 @@ export const useGameStore = defineStore('game', {
         if (styleElement && fallback) styleElement.innerHTML = fallback;
         cssVars.forEach(v => root.style.removeProperty(`--${v}`));
       } else {
-        const custom = this.theme.customThemes.find(t => t.id === themeName);
+        const preset = presetThemes.find(t => t.id === themeName);
+        const custom = preset || this.theme.customThemes.find(t => t.id === themeName);
         if (custom?.colors) {
           Object.entries(custom.colors).forEach(([k, v]) => root.style.setProperty(`--${k}`, v));
         }
       }
+    },
+
+    applyFontSettings() {
+      const root = document.documentElement;
+      const size = this.theme.fontSize || 16;
+      root.style.setProperty('--app-base-font-size', `${size}px`);
+      root.style.fontSize = `${size}px`;
+      if (this.theme.fontFamily) {
+        document.body.style.fontFamily = this.theme.fontFamily;
+      } else {
+        document.body.style.fontFamily = '';
+      }
+    },
+
+    async setFontSettings(fontFamily, fontSize) {
+      this.theme.fontFamily = fontFamily;
+      this.theme.fontSize = fontSize;
+      this.applyFontSettings();
+      await this.saveThemeSettings();
     },
 
     async setCustomCSS(css) {
@@ -910,9 +976,12 @@ export const useGameStore = defineStore('game', {
       this.theme.currentTheme = themeData.currentTheme || 'default';
       this.theme.customThemes = Array.isArray(themeData.customThemes) ? themeData.customThemes : [];
       this.theme.customCSS = themeData.customCSS || '';
+      this.theme.fontFamily = themeData.fontFamily || '';
+      this.theme.fontSize = themeData.fontSize || 16;
       this.theme.previewColors = null;
       this.applyTheme(this.theme.currentTheme);
       this.applyCustomCSS(this.theme.customCSS);
+      this.applyFontSettings();
       await this.saveThemeSettings();
     },
 

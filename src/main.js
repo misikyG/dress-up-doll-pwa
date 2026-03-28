@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+﻿import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router/index.js'
 import App from './components/App.vue'
@@ -20,19 +20,19 @@ const applyIOSSafariFixes = () => {
     style.textContent = `
       /* iOS Safari rgb(from ...) 語法回退 */
       :root {
-        --shadow-sm: 0 1px 3px rgba(119, 98, 88, 0.05);
-        --shadow-md: 0 2px 8px rgba(119, 98, 88, 0.08);
-        --shadow-lg: 0 4px 12px rgba(119, 98, 88, 0.12);
-        --shadow-xl: 0 8px 24px rgba(119, 98, 88, 0.15);
+        --shadow-sm: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+        --shadow-md: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+        --shadow-lg: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+        --shadow-xl: 0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
       }
       
       /* 額外的 iOS Safari 樣式修復 */
       .wardrobe {
-        background-color: rgba(255, 255, 255, 0.95) !important;
+        background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent) !important;
       }
       
       .panel-toggle-handle {
-        background: rgba(165, 149, 209, 0.3) !important;
+        background: color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
       }
       
       .panel-toggle-handle:hover {
@@ -40,51 +40,51 @@ const applyIOSSafariFixes = () => {
       }
       
       .category-tab:hover {
-        background-color: rgba(165, 149, 209, 0.1) !important;
+        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
       }
       
       .filter-toggle-btn:hover {
-        background-color: rgba(165, 149, 209, 0.1) !important;
+        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
       }
       
       .filter-clear-btn:hover {
-        background-color: rgba(165, 149, 209, 0.1) !important;
+        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
       }
       
       .filter-checkbox-item:hover {
-        background-color: rgba(198, 185, 155, 0.3) !important;
+        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
       }
       
       .tag-item {
-        background-color: rgba(125, 165, 133, 0.2) !important;
+        background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent) !important;
       }
       
       .tag-item:hover {
-        background-color: rgba(125, 165, 133, 0.3) !important;
+        background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent) !important;
       }
       
       .grid-item:hover {
-        box-shadow: 0 4px 12px rgba(119, 98, 88, 0.15) !important;
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important;
       }
       
       .item-card.equipped {
-        background-color: rgba(198, 185, 155, 0.3) !important;
+        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
       }
       
       .outfit-card {
-        background: linear-gradient(135deg, var(--color-info) 0%, rgba(113, 162, 202, 0.7) 100%) !important;
+        background: linear-gradient(135deg, var(--color-info) 0%, color-mix(in srgb, var(--color-info) 70%, transparent) 100%) !important;
       }
       
       .item-card.has-variant {
-        border-color: rgba(245, 187, 100, 0.5) !important;
+        border-color: color-mix(in srgb, var(--color-warning) 50%, transparent) !important;
       }
       
       .item-card.highlighted {
-        box-shadow: 0 0 12px rgba(112, 145, 114, 0.5) !important;
+        box-shadow: 0 0 12px color-mix(in srgb, var(--color-success) 50%, transparent) !important;
       }
       
       .context-menu-overlay {
-        background-color: rgba(119, 98, 88, 0.3) !important;
+        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
       }
     `;
     document.head.appendChild(style);
@@ -123,3 +123,4 @@ if (document.readyState === 'loading') {
 }
 
 createApp(App).use(createPinia()).use(router).mount('#app')
+

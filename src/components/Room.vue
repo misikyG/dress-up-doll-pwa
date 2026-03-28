@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="room-container">
     <div class="room-header">
       <h2><span class="title-icon" v-html="icons.background"></span> 我的小房間</h2>
@@ -230,7 +230,7 @@ const formatDate = (dateString) => {
 .preview-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(119, 98, 88, 0.5);
+  background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,7 +245,7 @@ const formatDate = (dateString) => {
 .load-hint {
   color: var(--color-bg-main);
   font-weight: 500;
-  background: rgba(119, 98, 88, 0.6);
+  background: color-mix(in srgb, var(--color-text-primary) 60%, transparent);
   padding: 0.5rem 1rem;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
@@ -303,11 +303,11 @@ const formatDate = (dateString) => {
 }
 
 .duplicate-btn:hover {
-  background-color: rgba(113, 162, 202, 0.15);
+  background-color: color-mix(in srgb, var(--color-info) 15%, transparent);
 }
 
 .delete-btn:hover {
-  background-color: rgba(173, 75, 68, 0.15);
+  background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
 }
 
 /* ========================================
@@ -331,8 +331,8 @@ const formatDate = (dateString) => {
 
 .go-dressing-btn {
   padding: 0.6rem 1.25rem;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -342,7 +342,7 @@ const formatDate = (dateString) => {
 }
 
 .go-dressing-btn:hover {
-  background-color: rgba(117, 101, 169, 0.85);
+  background-color: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 
 /* ========================================
@@ -395,3 +395,4 @@ const formatDate = (dateString) => {
   }
 }
 </style>
+

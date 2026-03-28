@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div class="contact-modal modal-base modal-md" @click.stop>
     <div class="modal-header">
       <h3><span class="title-icon" v-html="icons.contact"></span> 聯繫作者</h3>
-      <button @click="$emit('close')" class="btn-close" title="關閉">×</button>
+      <button @click="$emit('close')" class="close-btn" title="關閉">×</button>
     </div>
     
     <div class="contact-content">
@@ -175,7 +175,7 @@ const copyEmail = () => {
 .contact-section {
   margin-bottom: 1.5rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .contact-section:last-child {
@@ -191,7 +191,7 @@ const copyEmail = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: linear-gradient(135deg, rgba(165, 149, 209, 0.1), rgba(125, 165, 133, 0.05));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), color-mix(in srgb, var(--color-bg-panel) 5%, transparent));
   border-radius: var(--radius-lg);
   padding: 1.25rem;
   border: none;
@@ -202,7 +202,8 @@ const copyEmail = () => {
   width: 60px;
   height: 60px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  background: transparent;
+  border: 2px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -292,21 +293,21 @@ const copyEmail = () => {
 }
 
 .social-link.facebook:hover {
-  background: #1877f2;
-  color: white;
-  border-color: #1877f2;
+  background: var(--color-info);
+  color: var(--color-bg-card);
+  border-color: var(--color-info);
 }
 
 .social-link.website:hover {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-bg-card);
   border-color: var(--color-primary);
 }
 
 .social-link.plurk:hover {
-  background: #cf682f;
-  color: white;
-  border-color: #cf682f;
+  background: var(--color-warning);
+  color: var(--color-bg-card);
+  border-color: var(--color-warning);
 }
 
 .social-icon {
@@ -371,7 +372,7 @@ const copyEmail = () => {
 }
 
 .copy-btn:hover {
-  background: rgba(192, 183, 163, 0.3);
+  background: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   color: var(--color-primary);
 }
 
@@ -403,8 +404,8 @@ const copyEmail = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
   text-decoration: none;
   border-radius: var(--radius-md);
   font-size: 0.85rem;
@@ -413,7 +414,7 @@ const copyEmail = () => {
 }
 
 .open-form-btn:hover {
-  background: rgba(165, 149, 209, 0.85);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
   transform: translateY(-1px);
 }
 
@@ -467,3 +468,5 @@ const copyEmail = () => {
   }
 }
 </style>
+
+

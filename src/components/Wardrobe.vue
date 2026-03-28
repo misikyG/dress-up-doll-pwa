@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section
     aria-label="衣櫃"
     class="panel left-panel wardrobe"
@@ -187,15 +187,16 @@
           @click="gameStore.toggleWardrobe()"
           :title="gameStore.ui.wardrobeCollapsed ? '展開衣櫥' : '收合衣櫥'"
         >
-          <span class="drawer-handle"></span>
-          <span class="drawer-label">{{ gameStore.ui.wardrobeCollapsed ? '展開衣櫥' : '收合衣櫥' }}</span>
-          <span class="drawer-icon">{{ gameStore.ui.wardrobeCollapsed ? '▲' : '▼' }}</span>
+          <div class="drawer-handle"></div>
+          <div class="drawer-title">
+            <span>衣櫃</span>
+          </div>
         </button>
 
         <div class="mobile-wardrobe-body">
           <!-- 分類 TAB -->
           <div class="mobile-categories">
-            <div class="categories-scroll">
+            <div class="categories-scroll" @wheel.prevent="onMobileCategoriesWheel">
               <button
                 v-for="category in gameStore.categories"
                 :key="category.key"
@@ -211,7 +212,7 @@
           </div>
 
           <!-- 物件水平滾動列表 -->
-          <div class="mobile-items-scroll">
+          <div class="mobile-items-scroll" @wheel.prevent="onMobileItemsWheel">
             <!-- 儲存搭配顯示 (starred 分類) -->
             <template v-if="activeCategory === 'starred'">
               <div
@@ -244,6 +245,11 @@
                 <div v-if="gameStore.isItemInCurrentOutfit(item)" class="mobile-equipped-badge">✓</div>
               </div>
             </template>
+          </div>
+
+          <!-- 衣櫃空狀態 -->
+          <div v-if="activeCategory !== 'starred' && filteredAndSortedItems.length === 0" class="mobile-wardrobe-empty">
+            {{ gameStore.availablePacks.length === 0 ? '衣櫃空空如也' : '此分類暫無物件' }}
           </div>
         </div>
       </div>
@@ -807,6 +813,21 @@ const handleScroll = () => {
   }
 };
 
+// --- 手機版衣櫃滾輪轉橫向滾動 ---
+const onMobileItemsWheel = (e) => {
+  const container = e.currentTarget;
+  if (container) {
+    container.scrollLeft += e.deltaY || e.deltaX;
+  }
+};
+
+const onMobileCategoriesWheel = (e) => {
+  const container = e.currentTarget;
+  if (container) {
+    container.scrollLeft += e.deltaY || e.deltaX;
+  }
+};
+
 const updateContainerHeight = () => {
   if (scrollContainer.value) {
     containerHeight.value = scrollContainer.value.clientHeight;
@@ -898,7 +919,7 @@ watch(characterOptions, (options) => {
    ======================================== */
 .wardrobe { 
   position: relative;
-  background-color: rgba(255, 255, 255, 0.95); 
+  background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent); 
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px); 
   overflow: hidden; 
@@ -939,7 +960,7 @@ watch(characterOptions, (options) => {
   transform: translateY(-50%);
   width: 20px;
   height: 50px;
-  background: rgba(75, 65, 100, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -949,15 +970,15 @@ watch(characterOptions, (options) => {
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: #fff;
+  color: var(--color-bg-card);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   border-radius: 50px 0 0 50px;
   padding-left: 2px;
 }
 
 .panel-toggle-handle:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
   width: 24px;
 }
 
@@ -969,10 +990,13 @@ watch(characterOptions, (options) => {
   right: -5px;
 }
 
-.left-panel.collapsed {
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
+/* 僅桌面版/平板版收合時限制寬度，手機版不限制 */
+@media (min-width: 768px) {
+  .left-panel.collapsed {
+    width: 68px;
+    min-width: 68px;
+    max-width: 68px;
+  }
 }
 
 /* 桌面版衣櫃收起時 */
@@ -1036,20 +1060,20 @@ watch(characterOptions, (options) => {
   background: none; 
   cursor: pointer; 
   transition: all 0.2s ease; 
-  color: var(--color-text-secondary); 
+  color: var(--color-text-primary); 
   min-height: 52px;
   border-radius: 8px;
   margin: 2px;
 }
 
 .category-tab:hover { 
-  background-color: rgba(117, 101, 169, 0.12); 
-  color: var(--color-primary-dark); 
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent); 
+  color: var(--color-primary); 
 }
 
 .category-tab.active { 
-  background-color: var(--color-primary-dark); 
-  color: #fff; 
+  background-color: var(--color-primary); 
+  color: var(--color-bg-card); 
 }
 
 .tab-icon { 
@@ -1115,13 +1139,13 @@ watch(characterOptions, (options) => {
 
 .filter-toggle-btn:hover {
   border-color: var(--color-primary);
-  background-color: rgba(165, 149, 209, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .filter-toggle-btn.active {
-  border-color: var(--color-primary-dark);
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 .filter-toggle-btn .filter-icon {
@@ -1189,7 +1213,7 @@ watch(characterOptions, (options) => {
 }
 
 .filter-clear-btn:hover {
-  background-color: rgba(165, 149, 209, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .filter-checkboxes {
@@ -1211,17 +1235,17 @@ watch(characterOptions, (options) => {
 }
 
 .filter-checkbox-item:hover {
-  background-color: rgba(192, 183, 163, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
 /* checkbox 樣式由 App.vue 全局管理 */
 
 .tag-item {
-  background-color: rgba(125, 165, 133, 0.2);
+  background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent);
 }
 
 .tag-item:hover {
-  background-color: rgba(125, 165, 133, 0.3);
+  background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent);
 }
 
 /* 篩選面板動畫 */
@@ -1293,7 +1317,7 @@ watch(characterOptions, (options) => {
 
 .grid-item:hover { 
   transform: scale(1.05); 
-  box-shadow: 0 4px 12px rgba(119, 98, 88, 0.15); 
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent); 
 }
 
 .item-card { 
@@ -1302,11 +1326,11 @@ watch(characterOptions, (options) => {
 
 .item-card.equipped { 
   border-color: var(--color-primary); 
-  background-color: rgba(192, 183, 163, 0.3); 
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent); 
 }
 
 .outfit-card { 
-  background: linear-gradient(135deg, var(--color-info) 0%, rgba(113, 162, 202, 0.7) 100%); 
+  background: linear-gradient(135deg, var(--color-info) 0%, color-mix(in srgb, var(--color-info) 70%, transparent) 100%); 
   color: var(--color-bg-main); 
 }
 
@@ -1365,20 +1389,20 @@ watch(characterOptions, (options) => {
 }
 
 .item-card.has-variant {
-  border-color: rgba(245, 187, 100, 0.5);
+  border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
 }
 
 /* 搜尋跳轉高亮閃爍效果 */
 .item-card.highlighted {
   animation: highlight-flash 0.6s ease-in-out 5;
   border-color: var(--color-success);
-  box-shadow: 0 0 12px rgba(112, 145, 114, 0.5);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-success) 50%, transparent);
 }
 
 @keyframes highlight-flash {
   0%, 100% {
     border-color: var(--color-success);
-    box-shadow: 0 0 12px rgba(112, 145, 114, 0.5);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--color-success) 50%, transparent);
   }
   50% {
     border-color: transparent;
@@ -1395,7 +1419,7 @@ watch(characterOptions, (options) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(119, 98, 88, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   z-index: 10000;
 }
 
@@ -1405,7 +1429,7 @@ watch(characterOptions, (options) => {
   max-width: 250px;
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(119, 98, 88, 0.25);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
   overflow: hidden;
   z-index: 10001;
 }
@@ -1463,7 +1487,7 @@ watch(characterOptions, (options) => {
 
 .context-menu-divider {
   height: 1px;
-  background: var(--color-border-light);
+  background: var(--color-border);
   margin: 0.5rem 0;
 }
 
@@ -1484,15 +1508,15 @@ watch(characterOptions, (options) => {
 }
 
 .context-menu-option:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 
 .context-menu-option.variant-option:hover {
-  background-color: rgba(245, 187, 100, 0.15);
+  background-color: color-mix(in srgb, var(--color-warning) 15%, transparent);
 }
 
 .context-menu-option.variant-option.active {
-  background-color: rgba(245, 187, 100, 0.15);
+  background-color: color-mix(in srgb, var(--color-warning) 15%, transparent);
 }
 
 .context-menu-option.danger {
@@ -1500,7 +1524,7 @@ watch(characterOptions, (options) => {
 }
 
 .context-menu-option.danger:hover {
-  background-color: rgba(173, 75, 68, 0.1);
+  background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
 .context-menu-option .option-icon {
@@ -1517,7 +1541,7 @@ watch(characterOptions, (options) => {
 }
 
 .hide-toggle {
-  background-color: rgba(245, 187, 100, 0.1) !important;
+  background-color: color-mix(in srgb, var(--color-warning) 10%, transparent) !important;
   border: 1px dashed var(--color-warning) !important;
 }
 
@@ -1529,12 +1553,12 @@ watch(characterOptions, (options) => {
 
 .variant-option.active .variant-option-name {
   font-weight: 600;
-  color: rgba(245, 187, 100, 0.9);
+  color: color-mix(in srgb, var(--color-warning) 90%, transparent);
 }
 
 /* 手機版物件詳細資訊 */
 .mobile-item-details {
-  background: rgba(240, 242, 245, 0.5);
+  background: color-mix(in srgb, var(--color-bg-canvas) 50%, transparent);
   border-radius: 8px;
   padding: 0.5rem !important;
   margin: 0.25rem 0;
@@ -1568,7 +1592,7 @@ watch(characterOptions, (options) => {
 .detail-tag {
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
-  background-color: rgba(125, 165, 133, 0.2);
+  background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent);
   color: var(--color-primary);
   border-radius: 8px;
 }
@@ -1600,7 +1624,7 @@ watch(characterOptions, (options) => {
 .item-tag {
   font-size: 0.58rem;
   padding: 0.1rem 0.28rem;
-  background-color: rgba(125, 165, 133, 0.2);
+  background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent);
   color: var(--color-primary);
   border-radius: 8px;
   white-space: nowrap;
@@ -1661,22 +1685,22 @@ watch(characterOptions, (options) => {
 .mobile-bottom-sheet {
   z-index: 90;
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -12px 30px rgba(119, 98, 88, 0.18);
+  box-shadow: 0 -12px 30px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
   width: 100%;
   max-width: 100vw;
   margin: 0 auto;
   border-right: none;
-  background-color: rgba(248, 245, 234, 0.98);
+  background-color: var(--color-bg-panel);
 }
 
 .mobile-wardrobe {
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 245, 234, 0.98);
+  background-color: var(--color-bg-panel);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transition: max-height 0.25s ease-out;
-  max-height: 16vh;
+  max-height: clamp(140px, 28vh, 260px);
   min-height: 0;
   border-top: 1px solid var(--color-border);
   overflow: hidden;
@@ -1692,24 +1716,24 @@ watch(characterOptions, (options) => {
 }
 
 .mobile-wardrobe.collapsed .mobile-drawer-toggle {
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem 0.4rem;
 }
 
 .mobile-drawer-toggle {
   width: 100%;
   background: none;
   border: none;
-  padding: 0.35rem 1rem 0.25rem;
+  padding: 0.35rem 0.75rem 0.4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  gap: 0.2rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   position: sticky;
   top: 0;
-  background: rgba(248, 245, 234, 0.98);
+  background: var(--color-bg-panel);
   z-index: 2;
 }
 
@@ -1720,6 +1744,15 @@ watch(characterOptions, (options) => {
   border-radius: 999px;
   display: inline-block;
   position: relative;
+}
+
+.drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .drawer-label {
@@ -1742,7 +1775,7 @@ watch(characterOptions, (options) => {
 .mobile-categories {
   display: flex;
   flex-direction: row;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .categories-scroll {
@@ -1758,7 +1791,7 @@ watch(characterOptions, (options) => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.65rem;
+  padding: 0.4rem 0.45rem;
   border-radius: 10px;
   border: 1px solid var(--color-border);
   background: var(--color-bg-card);
@@ -1769,13 +1802,14 @@ watch(characterOptions, (options) => {
 
 .mobile-category-tab:hover {
   border-color: var(--color-primary);
-  background-color: rgba(165, 149, 209, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .mobile-category-tab.active {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-bg-card);
+  padding: 0.4rem 0.65rem;
 }
 
 .mobile-tab-icon {
@@ -1808,6 +1842,15 @@ watch(characterOptions, (options) => {
   touch-action: pan-x;
 }
 
+.mobile-wardrobe-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.75rem;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+}
+
 .mobile-item {
   width: 64px;
   height: 64px;
@@ -1823,12 +1866,12 @@ watch(characterOptions, (options) => {
 
 .mobile-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(119, 98, 88, 0.12);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
 }
 
 .mobile-item.equipped {
   border-color: var(--color-primary);
-  background-color: rgba(192, 183, 163, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
 .mobile-item img {
@@ -1905,13 +1948,13 @@ watch(characterOptions, (options) => {
   }
 
   .mobile-wardrobe {
-    max-height: clamp(180px, 35vh, 280px);
+    max-height: clamp(140px, 28vh, 260px);
     transition: max-height 0.3s ease;
   }
   
   .mobile-wardrobe.collapsed {
-    max-height: 32px;
-    min-height: 32px;
+    max-height: 36px;
+    min-height: 36px;
   }
 
   .mobile-category-tab {
@@ -2115,7 +2158,7 @@ watch(characterOptions, (options) => {
 
 .tablet-style .category-tab.active {
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(248, 245, 234, 0.7);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
 .tablet-style .tab-icon {
@@ -2185,3 +2228,4 @@ watch(characterOptions, (options) => {
   display: flex;
 }
 </style>
+

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="dressing-container">
     <!-- 畫布外部容器 -->
     <div class="canvas-viewport" ref="canvasViewport" 
@@ -172,7 +172,7 @@ const canvasStyle = computed(() => {
     height: `${canvasSize.height}px`,
     transform: `scale(${finalCanvasScale.value}) translate(${gameStore.canvasPan.x}px, ${gameStore.canvasPan.y}px)`,
     transformOrigin: 'center center',
-    backgroundColor: hasBackground ? 'transparent' : 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: hasBackground ? 'transparent' : 'color-mix(in srgb, var(--color-bg-card) 50%, transparent)',
   };
 });
 
@@ -538,7 +538,7 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(165, 149, 209, 0.85);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--color-bg-main);
@@ -548,7 +548,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   max-width: 180px;
   z-index: 51;
 }
@@ -649,7 +649,7 @@ onUnmounted(() => {
   position: absolute;
   bottom: -16px; right: -16px;
   width: 100px; height: 100px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-bg-panel));
   border: 2px solid var(--color-bg-card);
   border-radius: 0 50% 0 50%;
   cursor: nwse-resize;
@@ -699,15 +699,15 @@ onUnmounted(() => {
 .embedded-layer-panel {
   position: relative;
   z-index: 89;
-  background-color: var(--color-bg-panel);
+  background-color: var(--color-bg-card);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   transition: all 0.3s ease;
-  max-height: clamp(160px, 22vh, 210px);
+  max-height: clamp(130px, 20vh, 200px);
   flex-shrink: 1;
-  min-height: 44px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -754,8 +754,8 @@ onUnmounted(() => {
 
   /* 內嵌物件選單 */
   .embedded-layer-panel {
-    max-height: clamp(100px, 16vh, 150px);
-    min-height: 40px;
+    max-height: clamp(100px, 18vh, 160px);
+    min-height: 0;
   }
   
   /* 高亮效果 */
@@ -764,3 +764,4 @@ onUnmounted(() => {
   }
 }
 </style>
+

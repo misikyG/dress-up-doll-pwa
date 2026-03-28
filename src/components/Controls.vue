@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="floating-controls" @click.stop @touchstart.stop>
     <transition name="slide-fade">
       <div v-if="!collapsed" class="controls-stack">
@@ -205,9 +205,9 @@ const executeDownload = async () => {
     exportCanvas.height = canvasSize.height;
     const ctx = exportCanvas.getContext('2d');
 
-    // 如果沒有背景，填充白色
+    // 如果沒有背景，填充背景色
     if (!hasBackground) {
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-bg-card').trim() || '#ffffff';
       ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
     }
 
@@ -321,7 +321,7 @@ const generatePreviewImage = async () => {
     const ctx = previewCanvas.getContext('2d');
 
     // 填充背景
-    ctx.fillStyle = '#f8f5ea';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-bg-main').trim() || '#f8f5ea';
     ctx.fillRect(0, 0, previewSize, previewSize);
 
     // 取得畫布實際尺寸
@@ -437,15 +437,15 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
-  background: rgba(80, 68, 62, 0.80);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--color-bg-card);
   border: none;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,13 +453,13 @@ const flipSelected = (axis) => {
 }
 
 .icon-btn-ctrl:hover:not(:disabled) {
-  background: rgba(80, 68, 62, 0.92);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
 }
 
 .icon-btn-ctrl.active {
-  background: var(--color-primary-dark) !important;
+  background: var(--color-primary) !important;
 }
 
 .icon-btn-ctrl :deep(svg) {
@@ -472,26 +472,26 @@ const flipSelected = (axis) => {
    3. 控制按鈕（badge-btn）
    ======================================== */
 .badge-btn {
-  background: rgba(80, 68, 62, 0.80);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--color-bg-card);
   border: none;
   border-radius: 999px;
   padding: 7px 14px;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   white-space: nowrap;
   flex: 1;
   min-width: 0;
 }
 
 .badge-btn:hover:not(:disabled) {
-  background: rgba(80, 68, 62, 0.92);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(118, 98, 88, 0.25);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
 }
 
 .badge-btn:disabled {
@@ -501,18 +501,18 @@ const flipSelected = (axis) => {
 
 /* 模式切換按鈕 */
 .badge-btn.mode {
-  background: rgba(80, 68, 62, 0.55);
+  background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
   font-size: 0.8rem;
 }
 
 .badge-btn.mode.active {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 /* 翻轉按鈕 */
 .badge-btn.flip {
-  background: rgba(80, 68, 62, 0.80);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   padding: 7px 12px;
   font-size: 0.8rem;
 }
@@ -530,8 +530,8 @@ const flipSelected = (axis) => {
 
 /* 儲存搭配按鈕 */
 .badge-btn.save {
-  background: linear-gradient(135deg, var(--color-warning), rgba(245, 187, 100, 0.8));
-  color: #3a2e20;
+  background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent));
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
@@ -543,7 +543,7 @@ const flipSelected = (axis) => {
    4. 縮放控制
    ======================================== */
 .zoom-badge {
-  background: rgba(80, 68, 62, 0.85);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 999px;
@@ -551,7 +551,7 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
 }
 
 .zoom-icon {
@@ -559,7 +559,7 @@ const flipSelected = (axis) => {
   height: 28px;
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-bg-card);
   cursor: pointer;
   border-radius: 50%;
   display: flex;
@@ -570,7 +570,7 @@ const flipSelected = (axis) => {
 }
 
 .zoom-icon:hover:not(:disabled) {
-  background: rgba(248, 245, 234, 0.15);
+  background: color-mix(in srgb, var(--color-border) 15%, transparent);
 }
 
 .zoom-icon:disabled {
@@ -579,7 +579,7 @@ const flipSelected = (axis) => {
 }
 
 .zoom-text {
-  color: #fff;
+  color: var(--color-bg-card);
   font-size: 0.8rem;
   font-weight: 600;
   min-width: 42px;
@@ -597,10 +597,10 @@ const flipSelected = (axis) => {
 
 /* 勾選徽章（旋轉/縮放選項） */
 .check-badge {
-  background: rgba(80, 68, 62, 0.80);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--color-bg-card);
   border-radius: 999px;
   padding: 7px 14px;
   font-size: 0.8rem;
@@ -608,14 +608,14 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   transition: all 0.2s ease;
   flex: 1;
   justify-content: center;
 }
 
 .check-badge:hover {
-  background: rgba(80, 68, 62, 0.92);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
 }
 
 /* checkbox 樣式由 App.vue 全局管理 */
@@ -627,22 +627,22 @@ const flipSelected = (axis) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(80, 68, 62, 0.85);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
-  color: #fff;
+  color: var(--color-bg-card);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(118, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   transition: all 0.2s ease;
   font-size: 0.9rem;
 }
 
 .toggle-btn:hover {
-  background: rgba(80, 68, 62, 0.95);
+  background: color-mix(in srgb, var(--color-text-primary) 90%, transparent);
   transform: scale(1.05);
 }
 
@@ -698,7 +698,7 @@ const flipSelected = (axis) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(118, 98, 88, 0.5);
+  background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -709,7 +709,7 @@ const flipSelected = (axis) => {
 .download-dialog {
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(118, 98, 88, 0.25);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
   min-width: 280px;
   max-width: 90vw;
   overflow: hidden;
@@ -721,8 +721,8 @@ const flipSelected = (axis) => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-bg-panel);
+  color: var(--color-text-primary);
 }
 
 .dialog-title {
@@ -733,7 +733,7 @@ const flipSelected = (axis) => {
 .dialog-close {
   background: none;
   border: none;
-  color: var(--color-bg-main);
+  color: var(--color-text-primary);
   font-size: 1.3rem;
   cursor: pointer;
   padding: 0.25rem;
@@ -771,7 +771,7 @@ const flipSelected = (axis) => {
 }
 
 .size-option:hover {
-  background: rgba(192, 183, 163, 0.3);
+  background: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
 .size-option input[type="radio"] {
@@ -807,7 +807,7 @@ const flipSelected = (axis) => {
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.75rem;
-  background: rgba(245, 187, 100, 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
   border: 1px dashed var(--color-warning);
   border-radius: 8px;
   cursor: pointer;
@@ -868,21 +868,21 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.cancel {
-  background: rgba(192, 183, 163, 0.3);
+  background: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   color: var(--color-text-primary);
 }
 
 .dialog-btn.cancel:hover {
-  background: rgba(192, 183, 163, 0.5);
+  background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
 }
 
 .dialog-btn.confirm {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 .dialog-btn.confirm:hover {
-  background: rgba(117, 101, 169, 0.85);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 
 /* ========================================
@@ -1047,3 +1047,5 @@ const flipSelected = (axis) => {
   }
 }
 </style>
+
+

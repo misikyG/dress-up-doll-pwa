@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="layer-panel" :class="{ 
     'mobile-collapsed': gameStore.ui.isMobile && gameStore.ui.layerPanelCollapsed,
     'mobile-layout': gameStore.ui.isMobile,
@@ -88,11 +88,11 @@
           <!-- 層級控制按鈕 -->
           <div class="layer-controls">
             <button @click.stop="moveUp(layer.id)" 
-                    :disabled="index === layers.length - 1"
+                    :disabled="index === 0"
                     class="layer-btn" 
                     title="上移">▲</button>
             <button @click.stop="moveDown(layer.id)" 
-                    :disabled="index === 0"
+                    :disabled="index === layers.length - 1"
                     class="layer-btn" 
                     title="下移">▼</button>
           </div>
@@ -306,7 +306,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%) ;
   width: 47px;
   height: 16px;
-  background: rgba(75, 65, 100, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -316,15 +316,15 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  color: #fff;
+  color: var(--color-bg-card);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   border-radius: 0 0 50px 50px;
   padding: 0;
 }
 
 .panel-toggle-handle--top:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
   width: 47px;
   height: 20px;
   border-radius: 0 0 50px 50px;
@@ -351,7 +351,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 50px;
   height: 20px;
-  background: rgba(75, 65, 100, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -361,15 +361,15 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: #fff;
+  color: var(--color-bg-card);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   border-radius: 50px 50px 0 0;
   padding: 0;
 }
 
 .panel-toggle-handle--bottom:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
   height: 26px;
 }
 
@@ -387,6 +387,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   padding: 0.5rem 1rem;
   background-color: var(--color-bg-panel);
   position: relative;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .layer-panel-footer.mobile-style {
@@ -401,12 +402,12 @@ const onDragHandleTouchStart = (event, layer, index) => {
   gap: 0.5rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .layer-count-badge {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
   font-size: 0.7rem;
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
@@ -439,7 +440,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .action-btn:hover {
-  background-color: rgba(192, 183, 163, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
 .action-btn:disabled {
@@ -448,12 +449,12 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .delete-btn {
-  border-color: var(--color-danger, #e74c3c);
-  color: var(--color-danger, #e74c3c);
+  border-color: var(--color-danger, var(--color-error));
+  color: var(--color-danger, var(--color-error));
 }
 
 .delete-btn:hover:not(:disabled) {
-  background-color: rgba(231, 76, 60, 0.15);
+  background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
 }
 
 /* ========================================
@@ -487,7 +488,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transform: translateX(-50%);
   width: 47px;
   height: 16px;
-  background: rgba(75, 65, 100, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: none;
@@ -497,15 +498,15 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  color: #fff;
+  color: var(--color-bg-card);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(119, 98, 88, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   border-radius: 0 0 50px 50px;
   padding: 0;
 }
 
 .empty-state-toggle-handle:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary);
   width: 47px;
   height: 20px;
   border-radius: 0 0 50px 50px;
@@ -529,7 +530,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-list {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent);
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px); 
   display: flex;
@@ -601,13 +602,13 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-item.selected {
   border-color: var(--color-primary);
-  background-color: rgba(192, 183, 163, 0.3);
+  background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
 /* Vuedraggable 拖曳樣式 */
 .layer-item-ghost {
   opacity: 0.4;
-  background-color: rgba(165, 149, 209, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
   border: 2px dashed var(--color-primary);
 }
 
@@ -618,7 +619,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-item-drag {
   opacity: 0.8;
   transform: scale(1.05) rotate(3deg);
-  box-shadow: 0 8px 16px rgba(165, 149, 209, 0.4);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--color-primary) 40%, transparent);
   cursor: grabbing !important;
 }
 
@@ -649,8 +650,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   right: -3px;
   width: 16px;
   height: 16px;
-  background-color: var(--color-primary-dark);
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
   border-radius: 50%;
   font-size: 0.6rem;
   display: flex;
@@ -671,7 +672,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(119, 98, 88, 0.18);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 
 /* ========================================
@@ -724,7 +725,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-btn {
   width: 16px;
   height: 16px;
-  background-color: rgba(248, 245, 234, 0.9);
+  background-color: color-mix(in srgb, var(--color-border) 90%, transparent);
   border: 1px solid var(--color-border);
   border-radius: 3px;
   cursor: pointer;
@@ -772,11 +773,11 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-item:hover .drag-handle {
   opacity: 1;
-  background-color: rgba(192, 183, 163, 0.5);
+  background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
 }
 
 .layer-item.selected .drag-handle {
-  background-color: rgba(165, 149, 209, 0.5);
+  background-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 /* ========================================
@@ -785,7 +786,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-context-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(119, 98, 88, 0.25);
+  background: color-mix(in srgb, var(--color-text-primary) 25%, transparent);
   z-index: 12000;
 }
 
@@ -794,7 +795,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   min-width: 170px;
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(119, 98, 88, 0.25);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
   overflow: hidden;
 }
 
@@ -803,8 +804,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   align-items: center;
   justify-content: space-between;
   padding: 0.6rem 0.85rem;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
 }
 
 .layer-context-title {
@@ -848,7 +849,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-context-option:hover {
-  background: rgba(192, 183, 163, 0.25);
+  background: color-mix(in srgb, var(--color-text-primary) 25%, transparent);
 }
 
 .layer-context-option .option-icon {
@@ -871,7 +872,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-context-option.danger:hover {
-  background: rgba(173, 75, 68, 0.12);
+  background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 .layer-item.hidden {
@@ -900,7 +901,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   display: flex;
   flex-direction: column;
   background: transparent;
-  max-height: 42vh;
+  max-height: none;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
   width: 100%;
@@ -908,7 +909,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-panel.mobile-layout.mobile-collapsed {
-  max-height: 58px;
+  max-height: 48px;
 }
 
 /* 手機版頂部控制欄 */
@@ -917,12 +918,12 @@ const onDragHandleTouchStart = (event, layer, index) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem 0.75rem 0.25rem;
-  background-color: var(--color-bg-card);
+  padding: 0.35rem 0.75rem 0.4rem;
+  background-color: var(--color-bg-panel);
   border-radius: 16px 16px 0 0;
   cursor: pointer;
   position: relative;
-  gap: 0.15rem;
+  gap: 0.2rem;
 }
 
 .mobile-drawer-handle {
@@ -938,7 +939,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   gap: 0.4rem;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .mobile-layer-actions {
@@ -955,7 +956,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
 /* 手機版物件列表容器 */
 .layer-panel.mobile-layout .layer-list-container {
   border-radius: 0;
-  max-height: clamp(70px, 12vh, 100px);
+  flex: 1;
+  min-height: 0;
+  max-height: none;
 }
 
 .layer-panel.mobile-layout .layer-list {
@@ -966,9 +969,18 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-panel.mobile-layout .empty-state {
   border-radius: 0;
-  min-height: 60px;
-  padding: 0.4rem 0.75rem;
-  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.3rem 0.75rem;
+  gap: 0.3rem;
+  background-color: var(--color-bg-panel);
+}
+
+.layer-panel.mobile-layout .empty-state .empty-icon {
+  display: none;
+}
+
+.layer-panel.mobile-layout .empty-state .empty-text {
+  font-size: 0.7rem;
 }
 
 /* ========================================
@@ -1199,3 +1211,4 @@ const onDragHandleTouchStart = (event, layer, index) => {
   }
 }
 </style>
+

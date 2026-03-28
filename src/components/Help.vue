@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div class="help-modal modal-base modal-lg" @click.stop>
     <div class="modal-header">
       <h3><span class="title-icon" v-html="icons.help"></span> 使用說明</h3>
-      <button @click="$emit('close')" class="btn-close" title="關閉">×</button>
+      <button @click="$emit('close')" class="close-btn" title="關閉">×</button>
     </div>
     
     <div class="help-content">
@@ -39,6 +39,14 @@
         <div v-if="activeTab === 'controls'" class="help-section">
           <h4><span class="section-icon" v-html="icons.gamepad"></span> 操作說明</h4>
           <div class="help-text">
+            <h5>工具列按鈕</h5>
+            <ul class="toolbar-list">
+              <li><span class="toolbar-icon" v-html="icons.clear"></span><strong>清空畫布</strong>：移除畫布上所有已穿戴的物件</li>
+              <li><span class="toolbar-icon" v-html="icons.reset"></span><strong>重置位置</strong>：將所有物件恢復到預設位置與大小</li>
+              <li><span class="toolbar-icon" v-html="icons.hand"></span><strong>手型工具</strong>：啟用後可拖曳畫布平移視角，也可用滑鼠中鍵觸發</li>
+              <li><span class="toolbar-icon" v-html="icons.download"></span><strong>儲存圖像</strong>：將目前畫布匯出為 PNG 圖片下載</li>
+            </ul>
+
             <h5>滑鼠操作</h5>
             <ul>
               <li><strong>左鍵點擊</strong>：穿戴/脫下物件、選取物件</li>
@@ -239,14 +247,14 @@ const tabs = [
 }
 
 .help-tab:hover {
-  background-color: rgba(192, 183, 163, 0.2);
+  background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
 
 .help-tab.active {
-  background-color: var(--color-primary-dark);
-  color: #fff;
-  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary);
+  color: var(--color-bg-card);
+  border-color: var(--color-primary);
 }
 
 .tab-icon {
@@ -324,6 +332,36 @@ const tabs = [
   color: var(--color-primary);
 }
 
+/* 工具列按鈕說明樣式 */
+.toolbar-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.toolbar-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+}
+
+.toolbar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+}
+
+.toolbar-icon :deep(svg) {
+  width: 18px;
+  height: 18px;
+}
+
 /* ========================================
    5. FAQ 樣式
    ======================================== */
@@ -331,7 +369,7 @@ const tabs = [
 .faq-item {
   margin-bottom: 1.25rem;
   padding: 1rem;
-  background: rgba(198, 211, 172, 0.5);
+  background: color-mix(in srgb, var(--color-bg-panel) 50%, transparent);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary);
 }
@@ -369,7 +407,7 @@ const tabs = [
 }
 
 .privacy-full-link a:hover {
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
 }
 
 /* ========================================
@@ -404,3 +442,5 @@ const tabs = [
   }
 }
 </style>
+
+

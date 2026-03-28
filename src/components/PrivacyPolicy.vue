@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="privacy-page">
     <header class="privacy-header">
       <div class="privacy-header-inner">
@@ -137,18 +137,19 @@ onUnmounted(() => {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg, #f8f5ea);
-  color: var(--color-text-primary, #4a3f35);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
   font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Header */
 .privacy-header {
-  background: var(--color-primary-dark, #7a6e9a);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
   padding: 1rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -176,19 +177,19 @@ onUnmounted(() => {
 }
 
 .back-link {
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--color-bg-card) 90%, transparent);
   text-decoration: none;
   font-size: 0.9rem;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-bg-card) 30%, transparent);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .back-link:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: color-mix(in srgb, var(--color-bg-card) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-bg-card) 50%, transparent);
 }
 
 /* Body */
@@ -200,18 +201,18 @@ onUnmounted(() => {
 .privacy-container {
   max-width: 800px;
   margin: 0 auto;
-  background: var(--color-bg-card, #fff);
+  background: var(--color-bg-card, var(--color-bg-card));
   border-radius: 12px;
   padding: 2rem 2.5rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
 
 .last-updated {
-  color: var(--color-text-secondary, #8a7e74);
+  color: var(--color-text-secondary, var(--color-text-secondary));
   font-size: 0.85rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border, #e0dcd3);
+  border-bottom: 1px solid var(--color-border, var(--color-border));
 }
 
 /* Sections */
@@ -225,15 +226,15 @@ onUnmounted(() => {
 
 .policy-section h2 {
   font-size: 1.2rem;
-  color: var(--color-primary-dark, #7a6e9a);
+  color: var(--color-primary);
   margin: 0 0 0.75rem 0;
   padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--color-primary, #a595d1);
+  border-bottom: 2px solid var(--color-primary, var(--color-primary));
 }
 
 .policy-section h3 {
   font-size: 1rem;
-  color: var(--color-primary, #a595d1);
+  color: var(--color-primary, var(--color-primary));
   margin: 1.25rem 0 0.5rem 0;
 }
 
@@ -253,34 +254,34 @@ onUnmounted(() => {
 }
 
 .policy-section strong {
-  color: var(--color-primary-dark, #7a6e9a);
+  color: var(--color-primary);
 }
 
 .policy-section code {
-  background: rgba(165, 149, 209, 0.12);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   font-size: 0.9em;
-  color: var(--color-primary-dark, #7a6e9a);
+  color: var(--color-primary);
 }
 
 .policy-section a {
-  color: var(--color-primary, #a595d1);
+  color: var(--color-primary, var(--color-primary));
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .policy-section a:hover {
-  color: var(--color-primary-dark, #7a6e9a);
+  color: var(--color-primary);
 }
 
 /* Footer */
 .privacy-footer {
   text-align: center;
   padding: 1.5rem;
-  color: var(--color-text-secondary, #8a7e74);
+  color: var(--color-text-secondary, var(--color-text-secondary));
   font-size: 0.8rem;
-  border-top: 1px solid var(--color-border, #e0dcd3);
+  border-top: 1px solid var(--color-border, var(--color-border));
 }
 
 .privacy-footer p {
@@ -307,3 +308,5 @@ onUnmounted(() => {
   }
 }
 </style>
+
+

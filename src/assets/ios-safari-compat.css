@@ -132,7 +132,6 @@ button,
 
 /* iOS Safari 固定定位修復 */
 .modal-overlay,
-.notification,
 .context-menu-overlay,
 .floating-controls,
 .layer-context-overlay {
@@ -142,9 +141,11 @@ button,
   position: fixed;
 }
 
-/* 通知位置考慮安全區域 */
-.notification {
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+/* 通知位置考慮安全區域（僅限非手機版，避免覆蓋手機 top toast） */
+@media (min-width: 768px) {
+  .notification {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ===========================================
