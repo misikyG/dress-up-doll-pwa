@@ -706,7 +706,8 @@ onUnmounted(() => {
   box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
   max-height: clamp(160px, 22vh, 210px);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -753,7 +754,8 @@ onUnmounted(() => {
 
   /* 內嵌物件選單 */
   .embedded-layer-panel {
-    max-height: clamp(120px, 18vh, 160px);
+    max-height: clamp(100px, 16vh, 150px);
+    min-height: 40px;
   }
   
   /* 高亮效果 */

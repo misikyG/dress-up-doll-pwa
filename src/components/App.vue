@@ -100,6 +100,9 @@ body {
   height: 100dvh;
   height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
+  /* 確保 safe-area padding 包含在高度內，
+     避免 viewport-fit=cover 時底部內容被裁切 */
+  box-sizing: border-box;
 }
 
 /* ========================================
@@ -406,9 +409,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  height: 100dvh;
-  height: calc(var(--vh, 1vh) * 100);
+  height: 100%;
   background-color: var(--color-primary-dark);
   color: #fff;
 }
@@ -429,9 +430,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .main-app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  height: calc(var(--vh, 1vh) * 100);
+  /* 使用 100% 填滿 #app-container 的內容區域，
+     而非重複使用 100dvh，避免 safe-area padding 導致溢出 */
+  height: 100%;
 }
 
 .app-header {
@@ -751,8 +752,8 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   /* 手機版的衣櫃面板樣式 */
   .left-panel {
     order: 2;
-    flex: 0 0 auto;
-    min-height: 0;
+    flex: 0 1 auto;
+    min-height: 36px;
     height: auto;
     background: transparent;
     box-shadow: none;
@@ -763,7 +764,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   .left-panel.collapsed {
     display: block;
     width: 100%;
-    min-height: 0;
+    min-height: 36px;
   }
 
   

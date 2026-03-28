@@ -1659,10 +1659,6 @@ watch(characterOptions, (options) => {
    8. 手機版佈局：底部抽屜
    ======================================== */
 .mobile-bottom-sheet {
-  position: sticky;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 90;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -12px 30px rgba(119, 98, 88, 0.18);

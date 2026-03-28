@@ -903,8 +903,6 @@ const onDragHandleTouchStart = (event, layer, index) => {
   max-height: 42vh;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
-  position: sticky;
-  bottom: 0;
   width: 100%;
   transition: max-height 0.25s ease;
 }
@@ -968,9 +966,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-panel.mobile-layout .empty-state {
   border-radius: 0;
-  min-height: clamp(70px, 12vh, 100px);
-  max-height: clamp(70px, 12vh, 100px);
-  padding: 0.6rem 0.75rem;
+  min-height: 60px;
+  padding: 0.4rem 0.75rem;
+  gap: 0.4rem;
 }
 
 /* ========================================
@@ -1093,10 +1091,18 @@ const onDragHandleTouchStart = (event, layer, index) => {
   /* 空狀態 */
   .empty-state {
     font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    gap: 0.4rem;
   }
   
   .empty-icon {
     font-size: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  .empty-icon svg {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 }
 
