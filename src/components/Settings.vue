@@ -208,12 +208,31 @@
       <!-- 雲端同步區塊 -->
       <div class="settings-section">
         <h4>☁️ 雲端同步（Google Drive）</h4>
-        <p class="hint">需先配置 Google OAuth Client ID，以下按鈕目前為占位實作。</p>
-        <div class="cloud-actions">
-          <button class="primary-btn" @click="connectGoogle">登入 Google</button>
-          <button class="secondary-btn" @click="uploadToDrive" :disabled="!isGoogleReady">上傳本機資料</button>
-          <button class="secondary-btn" @click="syncFromDrive" :disabled="!isGoogleReady">從雲端同步</button>
+
+        <!-- 登入狀態指示 -->
+        <div class="cloud-status" :class="{ connected: isGoogleReady }">
+          <span class="status-dot"></span>
+          <span v-if="isGoogleReady" class="status-text">已連線 Google 雲端</span>
+          <span v-else class="status-text">尚未連線</span>
         </div>
+
+        <div class="cloud-actions">
+          <template v-if="!isGoogleReady">
+            <button class="primary-btn" @click="connectGoogle" :disabled="isCloudBusy">
+              {{ isCloudBusy ? '連線中...' : '登入 Google' }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="secondary-btn" @click="uploadToDrive" :disabled="isCloudBusy">
+              {{ isCloudBusy ? '處理中...' : '上傳備份到雲端' }}
+            </button>
+            <button class="secondary-btn" @click="syncFromDrive" :disabled="isCloudBusy">
+              {{ isCloudBusy ? '處理中...' : '從雲端還原' }}
+            </button>
+            <button class="danger-btn small" @click="disconnectGoogle">登出 Google</button>
+          </template>
+        </div>
+        <p class="hint">備份資料存放於 Google Drive 應用程式資料夾，僅本應用可存取。雲端最多保留最新 5 筆備份。</p>
       </div>
       
       <!-- 危險區域 -->
@@ -237,7 +256,7 @@ import { ref, computed, onMounted, reactive, watch, nextTick, onUnmounted } from
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
-import { ensureGoogleClient, ensureAccessToken, uploadJsonFile, downloadLatestJson } from '../core/googleDrive.js';
+import { ensureGoogleClient, ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, listBackupFiles, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 
 defineEmits(['close']);
@@ -246,6 +265,7 @@ const showImporter = ref(false);
 const selectedPackId = ref('');
 const isExportingAll = ref(false);
 const isGoogleReady = ref(false);
+const isCloudBusy = ref(false);
 const isLoadingDemo = ref(false);
 const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
 
@@ -452,6 +472,9 @@ onMounted(() => {
       Object.assign(editingColors, currentTheme.colors);
     }
   }
+
+  // 嘗試從 localStorage 恢復登入狀態（不觸發 popup）
+  restoreSession();
 });
 
 onUnmounted(() => {
@@ -674,7 +697,14 @@ const exportAllData = () => {
     packs: gameStore.availablePacks,
     items: gameStore.wardrobeItems,
     outfits: gameStore.savedOutfits,
-    schemaVersion: 1,
+    theme: {
+      currentTheme: gameStore.theme.currentTheme,
+      customThemes: gameStore.theme.customThemes,
+      customCSS: gameStore.theme.customCSS,
+    },
+    hiddenItems: gameStore.hiddenItems,
+    dismissedBundledPacks: gameStore.dismissedBundledPacks,
+    schemaVersion: 2,
   };
   downloadJson(payload, `doll-backup-${Date.now()}.json`);
   gameStore.showNotification('💾 全部資料已匯出', 'success');
@@ -692,21 +722,47 @@ const downloadJson = (data, filename) => {
 };
 
 // Google Drive 同步
+const BACKUP_FILENAME = 'doll-backup.json';
+
 const connectGoogle = async () => {
+  isCloudBusy.value = true;
   try {
-    await ensureGoogleClient(GOOGLE_CLIENT_ID);
-    await ensureAccessToken();
+    // 使用互動式登入，確保彈出 Google 帳號選擇 / 授權畫面
+    await interactiveSignIn(GOOGLE_CLIENT_ID);
     isGoogleReady.value = true;
     gameStore.showNotification('✅ 已登入 Google', 'success');
   } catch (err) {
     console.error(err);
     gameStore.showNotification('❌ Google 登入失敗，請稍後再試', 'error');
+  } finally {
+    isCloudBusy.value = false;
   }
 };
 
-const uploadToDrive = async () => {
+const disconnectGoogle = () => {
+  signOut();
+  isGoogleReady.value = false;
+  gameStore.showNotification('ℹ️ 已登出 Google', 'info');
+};
+
+/**
+ * 從 localStorage 恢復登入狀態（不觸發任何 OAuth 彈窗）。
+ * 只有當儲存的 token 仍然有效時才會成功。
+ */
+const restoreSession = async () => {
+  if (isGoogleReady.value) return;
+  if (!hasPreviousAuth()) return;
+  isCloudBusy.value = true;
   try {
-    if (!isGoogleReady.value) await connectGoogle();
+    const ok = await tryRestoreSession(GOOGLE_CLIENT_ID);
+    if (ok) isGoogleReady.value = true;
+  } catch { /* 恢復失敗不提示 */ }
+  finally { isCloudBusy.value = false; }
+};
+
+const uploadToDrive = async () => {
+  isCloudBusy.value = true;
+  try {
     await ensureAccessToken();
     const payload = {
       type: 'full-backup',
@@ -714,33 +770,69 @@ const uploadToDrive = async () => {
       packs: gameStore.availablePacks,
       items: gameStore.wardrobeItems,
       outfits: gameStore.savedOutfits,
-      schemaVersion: 1,
+      theme: {
+        currentTheme: gameStore.theme.currentTheme,
+        customThemes: gameStore.theme.customThemes,
+        customCSS: gameStore.theme.customCSS,
+      },
+      hiddenItems: gameStore.hiddenItems,
+      dismissedBundledPacks: gameStore.dismissedBundledPacks,
+      schemaVersion: 2,
     };
-    await uploadJsonFile({ name: 'doll-backup.json', json: payload });
-    gameStore.showNotification('☁️ 已上傳備份到 Google Drive', 'success');
+    await uploadJsonFile({ name: BACKUP_FILENAME, json: payload });
+
+    // 僅保留最新 5 筆備份
+    const deleted = await pruneOldBackups({ name: BACKUP_FILENAME, keep: 5 });
+    const extra = deleted > 0 ? `（已清理 ${deleted} 筆舊備份）` : '';
+    gameStore.showNotification(`☁️ 已上傳備份到 Google Drive${extra}`, 'success');
   } catch (err) {
     console.error(err);
+    // 若 token 已失效，重置連線狀態
+    if (!isTokenValid()) isGoogleReady.value = false;
     gameStore.showNotification('❌ 上傳失敗，請檢查網路或權限', 'error');
+  } finally {
+    isCloudBusy.value = false;
   }
 };
 
 const syncFromDrive = async () => {
+  isCloudBusy.value = true;
   try {
-    if (!isGoogleReady.value) await connectGoogle();
     await ensureAccessToken();
-    const data = await downloadLatestJson({ name: 'doll-backup.json' });
+    const data = await downloadLatestJson({ name: BACKUP_FILENAME });
     if (!data) {
       gameStore.showNotification('ℹ️ 雲端沒有備份檔', 'info');
       return;
     }
+    if (!confirm('從雲端還原將覆蓋本機所有資料，確定要繼續嗎？')) return;
     await gameStore.clearAllData();
     for (const pack of data.packs || []) await gameStore.addPack(pack);
     for (const item of data.items || []) await gameStore.addNewItem(item);
     for (const outfit of data.outfits || []) await gameStore.importOutfit(outfit);
+
+    // 還原主題設定（schemaVersion >= 2）
+    if (data.theme) {
+      await gameStore.restoreThemeFromBackup(data.theme);
+    }
+    // 還原隱藏物件清單
+    if (Array.isArray(data.hiddenItems)) {
+      gameStore.hiddenItems = data.hiddenItems;
+      await gameStore.saveHiddenItems();
+    }
+    // 還原已關閉的附贈圖包
+    if (Array.isArray(data.dismissedBundledPacks)) {
+      gameStore.dismissedBundledPacks = data.dismissedBundledPacks;
+      await gameStore.saveDismissedBundledPacks();
+    }
+
     gameStore.showNotification('☁️ 已從雲端同步完成', 'success');
   } catch (err) {
     console.error(err);
+    // 若 token 已失效，重置連線狀態
+    if (!isTokenValid()) isGoogleReady.value = false;
     gameStore.showNotification('❌ 同步失敗，請檢查網路或權限', 'error');
+  } finally {
+    isCloudBusy.value = false;
   }
 };
 
@@ -1507,11 +1599,50 @@ const blobToDataURL = (blob) => {
 /* ========================================
    9. 雲端同步
    ======================================== */
+.cloud-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-main);
+  border: 1px solid var(--color-border-light);
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.cloud-status .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.cloud-status.connected .status-dot {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+.cloud-status .status-text {
+  color: var(--color-text-secondary);
+}
+
+.cloud-status.connected .status-text {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
 .cloud-actions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
+}
+
+.danger-btn.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
 }
 
 /* ========================================

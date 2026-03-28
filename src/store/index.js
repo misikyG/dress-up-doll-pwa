@@ -681,6 +681,8 @@ export const useGameStore = defineStore('game', {
         this.hiddenItems = [];
         this.clearCurrentOutfit();
         this.clearHistory();
+        // 同步清除 IDB 中的隱藏物件記錄
+        await this.saveHiddenItems();
         this.showNotification('🗑️ 所有資料已清空', 'info');
       } catch {
         this.showNotification('❌ 清空失敗', 'error');
@@ -897,6 +899,20 @@ export const useGameStore = defineStore('game', {
         this.theme.customCSS = config.customCSS;
         this.applyCustomCSS(config.customCSS);
       }
+      await this.saveThemeSettings();
+    },
+
+    /**
+     * 從備份資料完整還原主題設定（覆蓋現有）。
+     */
+    async restoreThemeFromBackup(themeData) {
+      if (!themeData) return;
+      this.theme.currentTheme = themeData.currentTheme || 'default';
+      this.theme.customThemes = Array.isArray(themeData.customThemes) ? themeData.customThemes : [];
+      this.theme.customCSS = themeData.customCSS || '';
+      this.theme.previewColors = null;
+      this.applyTheme(this.theme.currentTheme);
+      this.applyCustomCSS(this.theme.customCSS);
       await this.saveThemeSettings();
     },
 
