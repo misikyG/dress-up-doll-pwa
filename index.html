@@ -87,6 +87,41 @@
     }
   </style>
   <style id="custom-css"></style>
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem('theme-settings-cache');
+        if (!raw) return;
+        var t = JSON.parse(raw);
+        var colors = t._resolvedColors || null;
+        if (!colors && t.previewColors && Object.keys(t.previewColors).length > 0) {
+          colors = t.previewColors;
+        }
+        if (!colors && t.currentTheme && t.currentTheme !== 'default') {
+          var themes = t.customThemes || [];
+          for (var i = 0; i < themes.length; i++) {
+            if (themes[i].id === t.currentTheme && themes[i].colors) {
+              colors = themes[i].colors; break;
+            }
+          }
+        }
+        if (colors) {
+          var root = document.documentElement;
+          for (var key in colors) {
+            if (colors.hasOwnProperty(key)) root.style.setProperty('--' + key, colors[key]);
+          }
+        }
+        if (t.customCSS) {
+          var el = document.getElementById('custom-css');
+          if (el) el.textContent = t.customCSS;
+        }
+        if (t.fontSize && t.fontSize !== 16) {
+          document.documentElement.style.setProperty('--app-base-font-size', t.fontSize + 'px');
+          document.documentElement.style.fontSize = t.fontSize + 'px';
+        }
+      } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
   <div id="app"></div>

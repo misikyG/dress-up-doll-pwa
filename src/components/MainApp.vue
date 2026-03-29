@@ -1,14 +1,11 @@
 <template>
   <div id="app-container" :class="{ 'mobile-view': gameStore.ui.isMobile, 'tablet-view': gameStore.ui.isTablet }">
-    <!-- 全局載入遮罩 -->
     <div v-if="gameStore.ui.loading" class="loading-overlay">
       <div class="loading-spinner"></div>
       <p class="loading-text">系統載入中...</p>
     </div>
 
-    <!-- 主應用界面 -->
     <main v-else class="main-app">
-      <!-- 頂部導航欄 -->
       <header class="app-header">
         <div class="logo">
           <h1><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-needle-thread" width="32" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -39,21 +36,17 @@
 
       <!-- 主要內容區域 -->
       <div class="content-wrapper" :class="layoutClass">
-        <!-- 左側面板：衣櫃 -->
         <div class="panel left-panel" :class="{ collapsed: gameStore.ui.wardrobeCollapsed }">
           <Wardrobe />
         </div>
 
-        <!-- 中央面板：主要顯示區域 (換裝或房間) -->
         <div class="panel center-panel">
-          <!-- 主要畫布區域 -->
           <div class="main-content">
             <keep-alive>
               <component :is="activePageComponent" />
             </keep-alive>
           </div>
           
-          <!-- 物件選單 -->
           <div v-if="gameStore.ui.currentPage === 'dressing' && !gameStore.ui.isMobile && !gameStore.ui.isTablet" 
                class="layer-panel-container desktop">
             <LayerPanel />
@@ -63,7 +56,6 @@
       </div>
     </main>
 
-    <!-- 全局彈出視窗 -->
     <transition name="fade">
       <div v-if="gameStore.ui.showSearch || gameStore.ui.showSettings || showHelp || showContact" class="modal-overlay" @click="closeModals">
         <Search v-if="gameStore.ui.showSearch" @close="gameStore.toggleSearch" @click.stop />
@@ -73,7 +65,6 @@
       </div>
     </transition>
 
-    <!-- 通知系統 -->
     <transition name="slide-fade">
       <div v-if="gameStore.ui.notification" :class="['notification', gameStore.ui.notification.type]">
         {{ gameStore.ui.notification.message }}
@@ -112,7 +103,6 @@ const layoutClass = computed(() => {
   return gameStore.ui.wardrobeCollapsed ? 'layout-center-only' : 'layout-left-center';
 });
 
-// 響應式設計處理
 const checkResponsive = () => {
   const width = window.innerWidth;
   if (width <= 768) {
@@ -135,20 +125,16 @@ const closeModals = () => {
   if (showContact.value) showContact.value = false;
 }
 
-// 禁用全局右鍵選單
 const preventContextMenu = (e) => {
-  // 只在非輸入框元素上禁用
   if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
     e.preventDefault();
   }
 }
 
-// 生命週期鉤子
 onMounted(async () => {
   await gameStore.initializeApp()
   checkResponsive()
   window.addEventListener('resize', checkResponsive)
-  // 禁用全局右鍵選單
   document.addEventListener('contextmenu', preventContextMenu)
 })
 

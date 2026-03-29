@@ -1,6 +1,5 @@
 ﻿<template>
   <div class="dressing-container">
-    <!-- 畫布外部容器 -->
     <div class="canvas-viewport" ref="canvasViewport" 
          :class="{ 'pan-mode': panModeActive }"
          @wheel.prevent="handleWheel"
@@ -10,24 +9,19 @@
          @touchend="onTouchEnd"
          @click="handleCanvasClick">
 
-      <!-- 選取物件顯示（獨立於控制台，固定在左上角） -->
       <div v-if="gameStore.selectedItem" class="selected-item-badge">
         <span class="selected-label">選取:</span>
         <span class="selected-name">{{ gameStore.selectedItem.item?.displayName || '未知' }}</span>
       </div>
 
-      <!-- 浮動控制選單 -->
       <Controls ref="controlsRef" @pan-mode-change="onPanModeChange" />
       
-      <!-- 畫布本身，固定尺寸 -->
       <div class="canvas" :style="canvasStyle" ref="canvas">
         
-        <!-- 背景層 -->
         <div v-for="layer in backgroundLayers" :key="layer.id" class="canvas-item background-layer">
           <img :src="layer.item.imageData" :alt="layer.item.displayName" draggable="false" decoding="async" />
         </div>
 
-        <!-- 所有非背景圖層 -->
         <div
           v-for="layer in foregroundLayers"
           :key="layer.id"
@@ -50,9 +44,7 @@
             @touchstart="onItemDragStart($event, layer)"
           />
           
-          <!-- 自由模式下的控制項 -->
           <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls">
-            <!-- 縮放控制：反向縮放抵銷物件縮放 + 畫布縮放，確保觸控大小固定 -->
             <div v-if="gameStore.freeMode.enableFreeScale"
               class="scale-handle"
               @mousedown.stop="onScaleStart($event, layer)"
@@ -62,7 +54,6 @@
               }"
             ></div>
 
-            <!-- 旋轉控制：反向縮放抵銷物件縮放 + 畫布縮放 -->
             <div v-if="gameStore.freeMode.enableFreeRotation"
               class="rotate-handle"
               @mousedown.stop="onRotateStart($event, layer)"
@@ -73,17 +64,13 @@
               }"
             ></div>
             
-            <!-- 選中邊框 -->
             <div v-if="gameStore.selectedItem?.id === layer.id" class="selection-border"></div>
           </div>
 
-          <!-- **高亮效果** -->
           <div v-if="gameStore.selectedItem?.id === layer.id" class="highlight-border"></div>
         </div>
 
-        <!-- CSS/SVG 濾鏡效果層 -->
         <template v-for="layer in filterEffectLayers" :key="layer.id">
-          <!-- CSS Overlay 類型濾鏡 -->
           <template v-if="layer.item.filterEffect?.type === 'css-overlay'">
             <div
               v-for="(ol, idx) in layer.item.filterEffect.layers"
@@ -100,7 +87,6 @@
             ></div>
           </template>
 
-          <!-- SVG Filter 類型濾鏡 -->
           <template v-if="layer.item.filterEffect?.type === 'svg-filter'">
             <svg class="filter-svg-defs" width="0" height="0" :aria-hidden="true">
               <defs v-html="layer.item.filterEffect.svgFilter"></defs>
@@ -119,13 +105,11 @@
       </div>
     </div>
 
-    <!-- **平板和手機版的內嵌物件選單** -->
     <div v-if="gameStore.ui.isTablet || gameStore.ui.isMobile" 
          class="embedded-layer-panel">
       <LayerPanel />
     </div>
     
-    <!-- 空狀態提示 -->
     <div v-if="orderedLayers.length === 0" class="empty-state">
       <div class="empty-icon" v-html="icons.dress"></div>
       <div class="empty-text">從衣櫃中選擇物件開始換裝</div>
@@ -318,12 +302,11 @@ const onTouchEnd = (e) => {
 
 
 const onCanvasDragStart = (e) => {
-  // 中鍵點擊 (button === 1) 或手型工具模式時，強制啟用拖曳
   const isMiddleButton = e.button === 1;
   const isPanMode = panModeActive.value;
   
   if (isMiddleButton) {
-    e.preventDefault(); // 防止中鍵的自動滾動行為
+    e.preventDefault();
     middleButtonDragging.value = true;
   }
   
@@ -361,17 +344,15 @@ const onCanvasDragEnd = () => {
 
 
 const onItemDragStart = (e, layer) => {
-  // 手型模式或中鍵點擊時，交給畫布拖曳處理
   if (panModeActive.value || e.button === 1) {
     onCanvasDragStart(e);
     return;
   }
   
-  // 無論模式都選取物件（iOS 上 touchstart 會阻止 click 合成，所以這裡直接選取）
   gameStore.selectItem(layer);
   
   if (gameStore.canvasMode !== 'free' || layer.category === 'character') return;
-  e.preventDefault(); // 僅在自由模式實際拖拽時阻止預設行為
+  e.preventDefault();
   e.stopPropagation();
   
   const pos = getClientPos(e);
@@ -534,7 +515,7 @@ onUnmounted(() => {
   transform-origin: center center;
   box-shadow: var(--shadow-lg);
   border-radius: var(--radius-lg);
-  flex: 0 0 auto; /* avoid flex shrink that would distort the aspect ratio */
+  flex: 0 0 auto;
   touch-action: none;
 }
 
@@ -575,7 +556,6 @@ onUnmounted(() => {
   display: flex; 
   align-items: center; 
   justify-content: center;
-  /* 移除 transition: filter — 在 iOS 上持續觸發 GPU 合成重繪 */
 }
 
 .canvas-item img {
@@ -583,7 +563,6 @@ onUnmounted(() => {
   height: 100%;
   object-fit: contain;
   pointer-events: auto;
-  /* 避免 iOS 為每張大圖建立獨立 GPU 圖層 */
   content-visibility: auto;
 }
 
@@ -621,11 +600,7 @@ onUnmounted(() => {
   z-index: 9998 !important;
 }
 
-.canvas-item.is-highlighted {
-  /* 移除 filter: drop-shadow() — 在 2000×3800 元素上觸發完整 GPU 圖層重組，
-     iOS 上每次選取變更都佔用 ~30MB GPU 記憶體，多次點擊後崩潰。
-     改用 .highlight-border div 提供視覺回饋 */
-}
+.canvas-item.is-highlighted {}
 
 .highlight-border {
   position: absolute;
@@ -633,7 +608,6 @@ onUnmounted(() => {
   border: 3px solid var(--color-primary);
   border-radius: var(--radius-md);
   pointer-events: none;
-  /* 使用簡單的 opacity 動畫取代 pulse，避免持續觸發 GPU 重繪 */
   opacity: 0.85;
 }
 
@@ -652,7 +626,7 @@ onUnmounted(() => {
   z-index: 1002;
 }
 
-/* 縮放控制把手 — 基礎大小 44px，會被 counter-scale 補償到螢幕上固定 44px */
+/* 縮放控制把手 */
 .scale-handle {
   position: absolute;
   bottom: -8px; right: -8px;
@@ -678,11 +652,10 @@ onUnmounted(() => {
   font-weight: bold;
 }
 
-/* 旋轉控制把手 — 基礎大小 44px，counter-scale 保持固定螢幕大小 */
+/* 旋轉控制把手 */
 .rotate-handle {
   position: absolute;
   top: -8px; right: 50%;
-  /* translateX(50%) 由 inline style 設定，與 counter-scale 合併 */
   width: 44px; height: 44px;
   background: radial-gradient(circle at 30% 30%, var(--color-accent-gold), var(--color-accent-gold-dark));
   border: 2px solid var(--color-bg-card);
