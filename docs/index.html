@@ -87,10 +87,19 @@
     }
   </style>
   <style id="custom-css"></style>
-  <script type="module" crossorigin src="/dress-up-doll-pwa/assets/main-CvRYOdow.js"></script>
+  <script type="module" crossorigin src="/dress-up-doll-pwa/assets/main-D1pKYR65.js"></script>
   <link rel="stylesheet" crossorigin href="/dress-up-doll-pwa/assets/main-B5IQLBDT.css">
 <link rel="manifest" href="/dress-up-doll-pwa/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/dress-up-doll-pwa/registerSW.js"></script></head>
 <body>
   <div id="app"></div>
+  <!-- Eruda: iOS/行動裝置偵錯工具 (URL 加上 ?eruda=true 啟用) -->
+  <script>
+    if (/[?&]eruda=true/.test(location.search)) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      s.onload = function() { eruda.init(); };
+      document.head.appendChild(s);
+    }
+  </script>
 </body>
 </html>

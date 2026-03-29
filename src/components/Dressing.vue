@@ -535,6 +535,8 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative; 
   overflow: hidden;
+  /* iOS Safari fallback: 先給 rgba 回退，再用 color-mix 覆蓋 */
+  background-color: rgba(240, 242, 245, 0.6);
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   min-height: 0;
 }
@@ -769,6 +771,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: visible;
+  /* 确保底缘是直角，不是圓角 */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 /* ========================================

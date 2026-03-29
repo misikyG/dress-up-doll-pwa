@@ -212,7 +212,7 @@
           </div>
 
           <!-- 物件水平滾動列表 -->
-          <div class="mobile-items-scroll" @wheel.prevent="onMobileItemsWheel">
+          <div class="mobile-items-scroll" ref="mobileScrollContainer" @wheel.prevent="onMobileItemsWheel" @scroll="onMobileItemsScroll">
             <!-- 儲存搭配顯示 (starred 分類) -->
             <template v-if="activeCategory === 'starred'">
               <div
@@ -232,7 +232,7 @@
             <!-- 普通物件顯示 -->
             <template v-else>
               <div
-                v-for="item in filteredAndSortedItems"
+                v-for="item in mobileVisibleItems"
                 :key="item.id"
                 :class="['mobile-item', { 'equipped': gameStore.isItemInCurrentOutfit(item) }]"
                 @click="handleItemClick(item)"
@@ -531,6 +531,29 @@ const filteredAndSortedItems = computed(() => {
   return items;
 });
 
+// --- 手機版：限制渲染數量以防止 iOS Safari 記憶體溢出 ---
+const MOBILE_MAX_ITEMS = 50;
+const mobileLoadedCount = ref(MOBILE_MAX_ITEMS);
+const mobileScrollContainer = ref(null);
+
+const mobileVisibleItems = computed(() => {
+  return filteredAndSortedItems.value.slice(0, mobileLoadedCount.value);
+});
+
+const onMobileItemsScroll = () => {
+  const el = mobileScrollContainer.value;
+  if (!el) return;
+  // 當滾動接近右端時載入更多
+  if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 100) {
+    if (mobileLoadedCount.value < filteredAndSortedItems.value.length) {
+      mobileLoadedCount.value = Math.min(
+        mobileLoadedCount.value + MOBILE_MAX_ITEMS,
+        filteredAndSortedItems.value.length
+      );
+    }
+  }
+};
+
 // --- Computed: 虛擬滾動計算 ---
 const itemsPerRow = computed(() => {
   if (!scrollContainer.value || gameStore.ui.wardrobeCollapsed) return 1;
@@ -575,7 +598,10 @@ const setActiveCategory = (categoryKey) => {
   activeCategory.value = categoryKey;
   // 切換分類時重置 tag 篩選
   selectedTags.value = [];
+  // 重置手機版載入數量
+  mobileLoadedCount.value = MOBILE_MAX_ITEMS;
   if (scrollContainer.value) scrollContainer.value.scrollTop = 0;
+  if (mobileScrollContainer.value) mobileScrollContainer.value.scrollLeft = 0;
 };
 
 // 使用 store 中的共用方法
@@ -837,14 +863,21 @@ const updateContainerHeight = () => {
   }
 };
 
+// --- ResizeObserver 防抖保護 ---
+let resizeDebounceTimer = null;
+const debouncedUpdateContainerHeight = () => {
+  if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+  resizeDebounceTimer = setTimeout(updateContainerHeight, 100);
+};
+
 // --- 生命週期 ---
 onMounted(() => {
   updateContainerHeight();
   if (scrollContainer.value) {
-    resizeObserver = new ResizeObserver(() => updateContainerHeight());
+    resizeObserver = new ResizeObserver(() => debouncedUpdateContainerHeight());
     resizeObserver.observe(scrollContainer.value);
   }
-  window.addEventListener('resize', updateContainerHeight);
+  window.addEventListener('resize', debouncedUpdateContainerHeight);
 });
 
 onUnmounted(() => {
@@ -852,7 +885,8 @@ onUnmounted(() => {
     resizeObserver.disconnect();
     resizeObserver = null;
   }
-  window.removeEventListener('resize', updateContainerHeight);
+  if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+  window.removeEventListener('resize', debouncedUpdateContainerHeight);
   if (longPressTimer) {
     clearTimeout(longPressTimer);
   }
@@ -860,24 +894,12 @@ onUnmounted(() => {
 
 watch(() => gameStore.ui.wardrobeCollapsed, async () => {
   await nextTick();
-  updateContainerHeight();
-  setTimeout(updateContainerHeight, 320);
+  debouncedUpdateContainerHeight();
 });
 
 watch(showFilterPanel, async () => {
   await nextTick();
-  updateContainerHeight();
-  // 同步滾動位置，避免篩選面板展開/收合後虛擬滾動跳回頂部
-  if (scrollContainer.value) {
-    scrollTop.value = scrollContainer.value.scrollTop;
-  }
-  // 等動畫結束後再次同步
-  setTimeout(() => {
-    updateContainerHeight();
-    if (scrollContainer.value) {
-      scrollTop.value = scrollContainer.value.scrollTop;
-    }
-  }, 250);
+  debouncedUpdateContainerHeight();
 });
 
 // 監聽衣櫃分類切換
@@ -900,13 +922,21 @@ watch(() => gameStore.selectedCharacterId, (id) => {
 
 // 清理不存在的 tag / character 篩選值
 watch(currentCategoryTags, (tags) => {
+  if (selectedTags.value.length === 0) return;
   const tagKeys = new Set(tags.map(t => t.key));
-  selectedTags.value = selectedTags.value.filter(tag => tagKeys.has(tag));
+  const filtered = selectedTags.value.filter(tag => tagKeys.has(tag));
+  if (filtered.length !== selectedTags.value.length) {
+    selectedTags.value = filtered;
+  }
 });
 
 watch(characterOptions, (options) => {
+  if (selectedCharacters.value.length === 0) return;
   const optionIds = new Set(options.map(opt => opt.id));
-  selectedCharacters.value = selectedCharacters.value.filter(id => optionIds.has(id));
+  const filtered = selectedCharacters.value.filter(id => optionIds.has(id));
+  if (filtered.length !== selectedCharacters.value.length) {
+    selectedCharacters.value = filtered;
+  }
 });
 </script>
 

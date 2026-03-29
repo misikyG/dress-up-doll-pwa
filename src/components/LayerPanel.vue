@@ -53,6 +53,10 @@
           chosen-class="layer-item-chosen"
           drag-class="layer-item-drag"
           class="layer-draggable-container"
+          :delay="150"
+          :delay-on-touch-only="true"
+          :touch-start-threshold="5"
+          direction="horizontal"
           @start="onDragStart"
           @end="onDragEnd"
         >
@@ -403,6 +407,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
   background-color: var(--color-bg-panel);
   position: relative;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* 確保底部無圓角 */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .layer-panel-footer.mobile-style {
@@ -796,6 +803,9 @@ const onDragHandleTouchStart = (event, layer, index) => {
   width: 25px;
   height: 25px;
   cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .drag-handle:active {
