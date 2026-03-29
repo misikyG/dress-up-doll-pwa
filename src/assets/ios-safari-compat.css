@@ -112,7 +112,11 @@ button,
 .wardrobe-content,
 .filter-checkboxes,
 .mobile-wardrobe-body,
-.categories-scroll {
+.categories-scroll,
+.context-menu-content,
+.help-content,
+.contact-content,
+.search-results {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }

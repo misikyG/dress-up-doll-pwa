@@ -79,6 +79,42 @@
           <!-- **高亮效果** -->
           <div v-if="gameStore.selectedItem?.id === layer.id" class="highlight-border"></div>
         </div>
+
+        <!-- CSS/SVG 濾鏡效果層 -->
+        <template v-for="layer in filterEffectLayers" :key="layer.id">
+          <!-- CSS Overlay 類型濾鏡 -->
+          <template v-if="layer.item.filterEffect?.type === 'css-overlay'">
+            <div
+              v-for="(ol, idx) in layer.item.filterEffect.layers"
+              :key="`${layer.id}-ol-${idx}`"
+              class="canvas-item filter-effect-layer"
+              :style="{
+                zIndex: 9000 + idx,
+                background: ol.background,
+                mixBlendMode: ol.mixBlendMode || 'normal',
+                backdropFilter: ol.backdropFilter || 'none',
+                WebkitBackdropFilter: ol.backdropFilter || 'none',
+                opacity: ol.opacity ?? 1,
+              }"
+            ></div>
+          </template>
+
+          <!-- SVG Filter 類型濾鏡 -->
+          <template v-if="layer.item.filterEffect?.type === 'svg-filter'">
+            <svg class="filter-svg-defs" width="0" height="0" :aria-hidden="true">
+              <defs v-html="layer.item.filterEffect.svgFilter"></defs>
+            </svg>
+            <div
+              class="canvas-item filter-effect-layer"
+              :style="{
+                zIndex: 9000,
+                filter: `url(#${getSvgFilterId(layer.item.filterEffect.svgFilter)})`,
+                opacity: layer.item.filterEffect.opacity ?? 0.2,
+                background: 'rgba(128,128,128,0.5)',
+              }"
+            ></div>
+          </template>
+        </template>
       </div>
     </div>
 
@@ -172,7 +208,7 @@ const canvasStyle = computed(() => {
     height: `${canvasSize.height}px`,
     transform: `scale(${finalCanvasScale.value}) translate(${gameStore.canvasPan.x}px, ${gameStore.canvasPan.y}px)`,
     transformOrigin: 'center center',
-    backgroundColor: hasBackground ? 'transparent' : 'color-mix(in srgb, var(--color-bg-card) 50%, transparent)',
+    backgroundColor: hasBackground ? 'transparent' : 'var(--color-bg-canvas)',
   };
 });
 
@@ -185,8 +221,17 @@ const backgroundLayers = computed(() =>
   visibleLayers.value.filter(l => l.category === 'background')
 );
 const foregroundLayers = computed(() => 
-  visibleLayers.value.filter(l => l.category !== 'background')
+  visibleLayers.value.filter(l => l.category !== 'background' && !l.item.filterEffect)
 );
+const filterEffectLayers = computed(() =>
+  visibleLayers.value.filter(l => l.item.filterEffect)
+);
+
+// 從 SVG filter 字串擷取 filter id
+const getSvgFilterId = (svgStr) => {
+  const match = svgStr?.match(/id=['"]([^'"]+)['"]/);
+  return match ? match[1] : '';
+};
 
 // --- 樣式計算方法 ---
 const getItemStyle = (layer) => {
@@ -490,7 +535,7 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative; 
   overflow: hidden;
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   min-height: 0;
 }
 
@@ -582,6 +627,19 @@ onUnmounted(() => {
   height: 100%;
   object-fit: contain;
   pointer-events: auto;
+}
+
+/* 濾鏡效果層 */
+.filter-effect-layer {
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.filter-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 /* 手型模式下物件不可互動 */

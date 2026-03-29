@@ -442,7 +442,7 @@ const cleanup = () => {
 }
 
 .hint code {
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   font-family: 'Monaco', 'Consolas', monospace;

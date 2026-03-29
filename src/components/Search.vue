@@ -418,7 +418,7 @@ onMounted(() => {
 .item-thumbnail { 
   width: 48px; 
   height: 48px; 
-  background-color: var(--color-bg-canvas); 
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent); 
   border-radius: var(--radius-sm); 
   display: flex; 
   align-items: center; 
@@ -435,7 +435,7 @@ onMounted(() => {
 }
 
 .outfit-thumbnail, .pack-thumbnail {
-  background: linear-gradient(135deg, var(--color-bg-canvas) 0%, color-mix(in srgb, var(--color-text-primary) 30%, transparent) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-bg-canvas) 60%, transparent) 0%, color-mix(in srgb, var(--color-text-primary) 30%, transparent) 100%);
 }
 
 .equipped-indicator {

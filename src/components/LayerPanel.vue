@@ -77,8 +77,8 @@
           
           <!-- 物件信息 -->
           <div class="layer-info">
-            <span class="layer-name" :title="layer.item.displayName">
-              {{ layer.item.displayName }}
+            <span class="layer-name" :title="getLayerDisplayTitle(layer)">
+              {{ layer.item.displayName }}<span v-if="getVariantLabel(layer)" class="variant-label">{{ getVariantLabel(layer) }}</span>
             </span>
             <span class="layer-category">
               {{ getCategoryName(layer.category) }}
@@ -187,6 +187,21 @@ const selectLayer = (layer) => {
 
 const getCategoryName = (category) => {
   return gameStore.getCategoryName(category);
+};
+
+// 獲取變體標籤文字
+const getVariantLabel = (layer) => {
+  const item = layer.item;
+  if (!item?.hasVariant && !item?.variants?.length) return null;
+  const currentKey = item.currentVariant || item.defaultVariant || null;
+  const variant = item.variants?.find(v => (v.key || v) === currentKey);
+  const name = variant ? (variant.name || variant.key || variant) : null;
+  return name ? ` (${name})` : null;
+};
+
+const getLayerDisplayTitle = (layer) => {
+  const label = getVariantLabel(layer);
+  return label ? layer.item.displayName + label : layer.item.displayName;
 };
 
 const moveUp = (layerId) => {
@@ -588,6 +603,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
   transition: all 0.2s ease;
   min-width: 70px;
   position: relative;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -595,9 +611,11 @@ const onDragHandleTouchStart = (event, layer, index) => {
   cursor: grabbing;
 }
 
-.layer-item:hover {
-  border-color: var(--color-border);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .layer-item:hover {
+    border-color: var(--color-border);
+    transform: translateY(-1px);
+  }
 }
 
 .layer-item.selected {
@@ -629,7 +647,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 .layer-thumbnail {
   width: 50px;
   height: 50px;
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -695,6 +713,12 @@ const onDragHandleTouchStart = (event, layer, index) => {
   text-overflow: ellipsis;
 }
 
+.variant-label {
+  font-size: 0.7rem;
+  color: var(--color-warning);
+  font-weight: 400;
+}
+
 .layer-category {
   font-size: 0.7rem;
   color: var(--color-text-secondary);
@@ -714,12 +738,18 @@ const onDragHandleTouchStart = (event, layer, index) => {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s ease;
 }
 
-.layer-item:hover .layer-controls {
-  opacity: 1;
+/* 僅在有 hover 能力的裝置（滑鼠）上隱藏，hover 時顯示 */
+@media (hover: hover) {
+  .layer-controls {
+    opacity: 0;
+  }
+  .layer-item:hover .layer-controls {
+    opacity: 1;
+  }
 }
 
 .layer-btn {
@@ -757,7 +787,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   
   padding: 0;
   border-radius: 10px;
-  opacity: 0;
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   transition: opacity 0.2s ease;
   display: flex;
   align-items: center;
@@ -771,9 +802,16 @@ const onDragHandleTouchStart = (event, layer, index) => {
   cursor: grabbing;
 }
 
-.layer-item:hover .drag-handle {
-  opacity: 1;
-  background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+/* 僅在有 hover 能力的裝置（滑鼠）上隱藏，hover 時顯示 */
+@media (hover: hover) {
+  .drag-handle {
+    opacity: 0;
+    background-color: transparent;
+  }
+  .layer-item:hover .drag-handle {
+    opacity: 1;
+    background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+  }
 }
 
 .layer-item.selected .drag-handle {
@@ -959,12 +997,14 @@ const onDragHandleTouchStart = (event, layer, index) => {
   flex: 1;
   min-height: 0;
   max-height: none;
+  background-color: var(--color-bg-panel);
 }
 
 .layer-panel.mobile-layout .layer-list {
   border-radius: 0;
   padding: 0.4rem 0.6rem;
   gap: 0.4rem;
+  background-color: var(--color-bg-panel);
 }
 
 .layer-panel.mobile-layout .empty-state {

@@ -219,6 +219,9 @@
           <button class="secondary-btn" @click="loadDemoPack" :disabled="isLoadingDemo">
             {{ isLoadingDemo ? '載入中...' : '載入示範圖包' }}
           </button>
+          <button class="secondary-btn" @click="loadDefaultFilters" :disabled="isLoadingFilters">
+            {{ isLoadingFilters ? '載入中...' : '載入默認濾鏡' }}
+          </button>
           <button class="primary-btn" @click="showImporter = true">匯入圖包</button>
           <button class="secondary-btn" @click="exportAllData" :disabled="isExportingAll">
             {{ isExportingAll ? '匯出中...' : '匯出全部資料' }}
@@ -306,6 +309,7 @@ const isExportingAll = ref(false);
 const isGoogleReady = ref(false);
 const isCloudBusy = ref(false);
 const isLoadingDemo = ref(false);
+const isLoadingFilters = ref(false);
 const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
 
 // 顏色管理相關
@@ -1042,6 +1046,76 @@ const blobToDataURL = (blob) => {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+};
+
+// 載入默認濾鏡
+const DEFAULT_FILTERS_PACK_ID = 'default-filters-pack';
+
+const loadDefaultFilters = async () => {
+  if (gameStore.availablePacks.some(p => p.id === DEFAULT_FILTERS_PACK_ID)) {
+    gameStore.showNotification('ℹ️ 默認濾鏡已存在，請先刪除後再重新載入', 'info');
+    return;
+  }
+  
+  isLoadingFilters.value = true;
+  try {
+    const basePath = import.meta.env.BASE_URL;
+    const manifestUrl = `${basePath}default-filters/manifest.json`;
+    const manifestResp = await fetch(manifestUrl);
+    if (!manifestResp.ok) throw new Error('找不到默認濾鏡資料');
+    
+    const manifest = await manifestResp.json();
+    
+    const items = [];
+    for (const item of manifest.items) {
+      // 載入預覽圖
+      let imageData = '';
+      try {
+        const imgResp = await fetch(`${basePath}default-filters/${item.image}`);
+        if (imgResp.ok) {
+          const blob = await imgResp.blob();
+          imageData = await blobToDataURL(blob);
+        }
+      } catch {
+        // 預覽圖載入失敗時使用空白佔位
+        imageData = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#ccc" rx="8"/></svg>');
+      }
+      
+      items.push({
+        id: `${DEFAULT_FILTERS_PACK_ID}-${item.id}`,
+        name: item.name,
+        displayName: item.displayName || item.name,
+        category: item.category,
+        packId: DEFAULT_FILTERS_PACK_ID,
+        imageData,
+        width: item.width || manifest.defaultWidth || 2000,
+        height: item.height || manifest.defaultHeight || 3800,
+        filterEffect: item.filterEffect || null,
+        tags: item.tags || [],
+      });
+    }
+    
+    const packInfo = {
+      id: DEFAULT_FILTERS_PACK_ID,
+      name: manifest.name || 'default-filters',
+      displayName: manifest.displayName || '默認濾鏡',
+      description: manifest.description || '內建 CSS 特效濾鏡',
+      itemCount: items.length,
+      isDefaultFilters: true,
+    };
+    
+    for (const item of items) {
+      await gameStore.addNewItem(item);
+    }
+    await gameStore.addPack(packInfo);
+    
+    gameStore.showNotification(`🎨 已載入默認濾鏡，包含 ${items.length} 種效果`, 'success');
+  } catch (err) {
+    console.error('載入默認濾鏡失敗:', err);
+    gameStore.showNotification('❌ 載入失敗：' + (err.message || '未知錯誤'), 'error');
+  } finally {
+    isLoadingFilters.value = false;
+  }
 };
 </script>
 

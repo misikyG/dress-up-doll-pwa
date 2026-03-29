@@ -1,0 +1,113 @@
+{
+  "name": "default-filters",
+  "displayName": "默認濾鏡",
+  "description": "內建 CSS 特效濾鏡，可疊加於畫布上方",
+  "defaultWidth": 2000,
+  "defaultHeight": 3800,
+  "items": [
+    {
+      "id": "vintage",
+      "name": "vintage",
+      "displayName": "復古",
+      "category": "filter",
+      "image": "previews/vintage.png",
+      "filterEffect": {
+        "type": "css-overlay",
+        "layers": [
+          { "background": "rgba(112, 66, 20, 0.15)", "mixBlendMode": "multiply" },
+          { "background": "rgba(255, 225, 180, 0.1)", "mixBlendMode": "screen" }
+        ]
+      }
+    },
+    {
+      "id": "grayscale",
+      "name": "grayscale",
+      "displayName": "灰階",
+      "category": "filter",
+      "image": "previews/grayscale.png",
+      "filterEffect": {
+        "type": "css-overlay",
+        "layers": [
+          { "background": "rgba(128,128,128,0.5)", "mixBlendMode": "saturation" }
+        ]
+      }
+    },
+    {
+      "id": "nightvision",
+      "name": "nightvision",
+      "displayName": "夜視",
+      "category": "filter",
+      "image": "previews/nightvision.png",
+      "filterEffect": {
+        "type": "css-overlay",
+        "layers": [
+          { "background": "rgba(0, 255, 60, 0.12)", "mixBlendMode": "multiply" },
+          { "background": "rgba(0, 40, 0, 0.25)", "mixBlendMode": "color" }
+        ]
+      }
+    },
+    {
+      "id": "nostalgia",
+      "name": "nostalgia",
+      "displayName": "懷舊",
+      "category": "filter",
+      "image": "previews/nostalgia.png",
+      "filterEffect": {
+        "type": "css-overlay",
+        "layers": [
+          { "background": "rgba(180, 130, 70, 0.18)", "mixBlendMode": "multiply" },
+          { "background": "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.35) 100%)", "mixBlendMode": "normal" }
+        ]
+      }
+    },
+    {
+      "id": "noise",
+      "name": "noise",
+      "displayName": "雜訊",
+      "category": "filter",
+      "image": "previews/noise.png",
+      "filterEffect": {
+        "type": "svg-filter",
+        "svgFilter": "<filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feBlend in='SourceGraphic' mode='multiply'/></filter>",
+        "opacity": 0.12
+      }
+    },
+    {
+      "id": "paper",
+      "name": "paper",
+      "displayName": "紙質",
+      "category": "filter",
+      "image": "previews/paper.png",
+      "filterEffect": {
+        "type": "svg-filter",
+        "svgFilter": "<filter id='paper'><feTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' seed='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feBlend in='SourceGraphic' mode='softLight'/></filter>",
+        "opacity": 0.25
+      }
+    },
+    {
+      "id": "frosted",
+      "name": "frosted",
+      "displayName": "磨砂",
+      "category": "filter",
+      "image": "previews/frosted.png",
+      "filterEffect": {
+        "type": "css-overlay",
+        "layers": [
+          { "backdropFilter": "blur(1.5px) brightness(1.02)", "background": "rgba(255,255,255,0.06)", "mixBlendMode": "normal" }
+        ]
+      }
+    },
+    {
+      "id": "distort",
+      "name": "distort",
+      "displayName": "扭曲",
+      "category": "filter",
+      "image": "previews/distort.png",
+      "filterEffect": {
+        "type": "svg-filter",
+        "svgFilter": "<filter id='distort'><feTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='5' result='turbulence'/><feDisplacementMap in='SourceGraphic' in2='turbulence' scale='8' xChannelSelector='R' yChannelSelector='G'/></filter>",
+        "opacity": 1
+      }
+    }
+  ]
+}

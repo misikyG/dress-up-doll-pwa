@@ -202,9 +202,11 @@ const formatDate = (dateString) => {
   background-color: var(--color-bg-card);
 }
 
-.outfit-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+@media (hover: hover) {
+  .outfit-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 /* ========================================
@@ -215,7 +217,7 @@ const formatDate = (dateString) => {
   position: relative; 
   width: 100%; 
   aspect-ratio: 3/4; 
-  background-color: var(--color-bg-canvas); 
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent); 
   cursor: pointer;
   overflow: hidden;
 }
@@ -238,8 +240,18 @@ const formatDate = (dateString) => {
   transition: opacity 0.2s ease;
 }
 
-.outfit-preview:hover .preview-overlay {
-  opacity: 1;
+/* 僅在有 hover 能力的裝置（滑鼠）上使用 hover 顯示 */
+@media (hover: hover) {
+  .outfit-preview:hover .preview-overlay {
+    opacity: 1;
+  }
+}
+
+/* 觸控裝置使用 :active 替代 :hover */
+@media (hover: none) {
+  .outfit-preview:active .preview-overlay {
+    opacity: 1;
+  }
 }
 
 .load-hint {

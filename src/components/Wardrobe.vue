@@ -702,11 +702,14 @@ const getVariantKey = (variant) => {
 };
 
 // 獲取物品當前選擇的變體
+const slotNameMap = { accessory: 'accessories', carry: 'carries', underwear: 'underwears', other: 'others' };
 const getCurrentVariant = (item) => {
+  if (!item) return null;
   // 檢查是否在穿戴中並有當前變體
-  const slots = gameStore.currentOutfit?.slots;
-  if (slots && item.category) {
-    const equippedItem = slots[item.category]?.find(i => i.id === item.id);
+  const slot = slotNameMap[item.category] || item.category;
+  const items = gameStore.currentOutfit?.[slot];
+  if (Array.isArray(items)) {
+    const equippedItem = items.find(i => i.id === item.id);
     if (equippedItem?.currentVariant) {
       return equippedItem.currentVariant;
     }
@@ -864,6 +867,17 @@ watch(() => gameStore.ui.wardrobeCollapsed, async () => {
 watch(showFilterPanel, async () => {
   await nextTick();
   updateContainerHeight();
+  // 同步滾動位置，避免篩選面板展開/收合後虛擬滾動跳回頂部
+  if (scrollContainer.value) {
+    scrollTop.value = scrollContainer.value.scrollTop;
+  }
+  // 等動畫結束後再次同步
+  setTimeout(() => {
+    updateContainerHeight();
+    if (scrollContainer.value) {
+      scrollTop.value = scrollContainer.value.scrollTop;
+    }
+  }, 250);
 });
 
 // 監聽衣櫃分類切換
@@ -1227,7 +1241,7 @@ watch(characterOptions, (options) => {
   align-items: center;
   gap: 0.25rem;
   padding: 0.2rem 0.45rem;
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1287,6 +1301,25 @@ watch(characterOptions, (options) => {
   min-height: 0;
 }
 
+/* 桌面版垂直滾動條樣式 */
+.items-grid-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.items-grid-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.items-grid-container::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.items-grid-container::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-border) 80%, var(--color-text-primary));
+}
+
 .items-grid-sizer { 
   position: relative; 
   width: 100%; 
@@ -1315,13 +1348,15 @@ watch(characterOptions, (options) => {
   min-height: 0;
 }
 
-.grid-item:hover { 
-  transform: scale(1.05); 
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent); 
+@media (hover: hover) {
+  .grid-item:hover { 
+    transform: scale(1.05); 
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent); 
+  }
 }
 
 .item-card { 
-  background-color: var(--color-bg-canvas); 
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent); 
 }
 
 .item-card.equipped { 
@@ -1516,7 +1551,8 @@ watch(characterOptions, (options) => {
 }
 
 .context-menu-option.variant-option.active {
-  background-color: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  background-color: var(--color-bg-main);
+  font-weight: 600;
 }
 
 .context-menu-option.danger {
@@ -1558,7 +1594,7 @@ watch(characterOptions, (options) => {
 
 /* 手機版物件詳細資訊 */
 .mobile-item-details {
-  background: color-mix(in srgb, var(--color-bg-canvas) 50%, transparent);
+  background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 8px;
   padding: 0.5rem !important;
   margin: 0.25rem 0;
@@ -1649,7 +1685,7 @@ watch(characterOptions, (options) => {
 
 /* 搭配預覽圖樣式 */
 .outfit-preview {
-  background: var(--color-bg-canvas);
+  background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
 }
 
 .outfit-preview img {
@@ -1700,9 +1736,8 @@ watch(characterOptions, (options) => {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transition: max-height 0.25s ease-out;
-  max-height: clamp(140px, 28vh, 260px);
+  max-height: 170px;
   min-height: 0;
-  border-top: 1px solid var(--color-border);
   overflow: hidden;
 }
 
@@ -1768,8 +1803,8 @@ watch(characterOptions, (options) => {
 .mobile-wardrobe-body {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0 0.75rem 0.75rem;
+  gap: 0.35rem;
+  padding: 0 0.75rem 0.5rem;
 }
 
 .mobile-categories {
@@ -1800,9 +1835,11 @@ watch(characterOptions, (options) => {
   flex-shrink: 0;
 }
 
-.mobile-category-tab:hover {
-  border-color: var(--color-primary);
-  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+@media (hover: hover) {
+  .mobile-category-tab:hover {
+    border-color: var(--color-primary);
+    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
 }
 
 .mobile-category-tab.active {
@@ -1834,12 +1871,35 @@ watch(characterOptions, (options) => {
 .mobile-items-scroll {
   display: flex;
   gap: 0.6rem;
-  padding: 0.25rem 0.1rem 0.1rem;
+  padding: 0.25rem 0.1rem 0.5rem;
   overflow-x: auto;
   overflow-y: hidden;
   align-items: center;
   overscroll-behavior: contain;
   touch-action: pan-x;
+}
+
+/* 統一手機版水平滾動條樣式 */
+.mobile-items-scroll::-webkit-scrollbar,
+.categories-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.mobile-items-scroll::-webkit-scrollbar-track,
+.categories-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 2px;
+}
+
+.mobile-items-scroll::-webkit-scrollbar-thumb,
+.categories-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.mobile-items-scroll::-webkit-scrollbar-thumb:hover,
+.categories-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-border) 80%, var(--color-text-primary));
 }
 
 .mobile-wardrobe-empty {
@@ -1854,7 +1914,7 @@ watch(characterOptions, (options) => {
 .mobile-item {
   width: 64px;
   height: 64px;
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 10px;
   cursor: pointer;
   position: relative;
@@ -1864,9 +1924,11 @@ watch(characterOptions, (options) => {
   flex-shrink: 0;
 }
 
-.mobile-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+@media (hover: hover) {
+  .mobile-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  }
 }
 
 .mobile-item.equipped {

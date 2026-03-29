@@ -403,7 +403,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 
 /* 縮圖通用樣式 */
 .thumbnail {
-  background-color: var(--color-bg-canvas);
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;

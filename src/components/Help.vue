@@ -101,6 +101,14 @@
               <li><strong>隱藏物件</strong>：右鍵選擇「隱藏」可暫時隱藏不需要的物件</li>
               <li><strong>重新命名</strong>：右鍵選擇「重新命名」修改物件顯示名稱</li>
             </ul>
+            
+            <h5>變體切換</h5>
+            <p>部分物件提供多種外觀變體，可在同一件物件上切換不同樣式。</p>
+            <ul>
+              <li><span class="variant-diamond">◆</span> 帶有此菱形標記的物件代表<strong>擁有變體</strong></li>
+              <li>在桌面版<strong>右鍵點擊</strong>物件，或在手機版<strong>長按</strong>物件，即可開啟選單並選擇變體</li>
+              <li>物件列表中會顯示目前使用的變體名稱，例如「長辮 (預設)」</li>
+            </ul>
           </div>
         </div>
         
@@ -360,6 +368,21 @@ const tabs = [
 .toolbar-icon :deep(svg) {
   width: 18px;
   height: 18px;
+}
+
+.variant-diamond {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background-color: var(--color-warning);
+  color: var(--color-bg-main);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: bold;
+  margin-right: 0.3rem;
+  vertical-align: middle;
 }
 
 /* ========================================

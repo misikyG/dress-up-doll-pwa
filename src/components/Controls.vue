@@ -293,12 +293,31 @@ const executeDownload = async () => {
     // 轉換為 blob 並下載
     finalCanvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `紙娃娃-${outputWidth}x${outputHeight}-${new Date().getTime()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-      gameStore.showNotification('✅ 圖像已下載', 'success');
+      const filename = `紙娃娃-${outputWidth}x${outputHeight}-${new Date().getTime()}.png`;
+      
+      // iOS Safari 無法透過 a.click() 可靠下載，改用開啟新視窗讓使用者長按儲存
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+      if (isIOS) {
+        // iOS: 開啟新分頁顯示圖片，使用者可長按儲存
+        const newTab = window.open();
+        if (newTab) {
+          newTab.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${filename}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f0f0}img{max-width:100%;max-height:100vh;object-fit:contain}p{text-align:center;color:#666;font-family:sans-serif;padding:1rem}</style></head><body><div><p>長按圖片即可儲存</p><img src="${url}" alt="${filename}"></div></body></html>`);
+          newTab.document.close();
+        } else {
+          // 備用方案：直接在同視窗開啟
+          window.location.href = url;
+        }
+        gameStore.showNotification('📱 長按圖片即可儲存', 'info');
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        gameStore.showNotification('✅ 圖像已下載', 'success');
+      }
     }, 'image/png');
 
   } catch (error) {
@@ -764,7 +783,7 @@ const flipSelected = (axis) => {
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.75rem;
-  background: var(--color-bg-canvas);
+  background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s;

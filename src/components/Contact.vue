@@ -280,7 +280,7 @@ const copyEmail = () => {
   gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-radius: var(--radius-md);
-  background: var(--color-bg-canvas);
+  background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   color: var(--color-text-primary);
   text-decoration: none;
   transition: all 0.2s ease;
@@ -329,7 +329,7 @@ const copyEmail = () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--color-bg-canvas);
+  background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
