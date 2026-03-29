@@ -178,17 +178,22 @@ button,
    7. 動畫效能優化
    =========================================== */
 
-/* 使用硬體加速的轉換 */
-.canvas,
-.canvas-item,
-.layer-item,
-.grid-item,
-.mobile-item {
+/* GPU 加速：僅對畫布容器啟用，不對個別圖層啟用
+   注意：canvas-item 每個都是 2000x3800px，will-change 會為每個
+   元素建立獨立 GPU 圖層 (~30MB/層)，iOS 3 個物件就會崩潰 */
+.canvas {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  will-change: transform;
+}
+
+/* 小型 UI 元素可安全使用 GPU 加速 */
+.layer-item,
+.grid-item,
+.mobile-item {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* ===========================================

@@ -32,9 +32,14 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
   });
 };
 
-// 圖片資料快取 (LRU, 最多 30 項) — 加速 undo/redo
+// 圖片資料快取 (LRU) — 加速 undo/redo
+// iOS Safari 記憶體嚴格受限，降低快取數量以避免 OOM 崩潰
 const imageCache = new Map();
-const MAX_IMAGE_CACHE = 30;
+const isIOS = typeof navigator !== 'undefined' && (
+  /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
+const MAX_IMAGE_CACHE = isIOS ? 8 : 30;
 const resolveImageData = async (itemId, variantKey) => {
   const key = variantKey ? `${itemId}:${variantKey}` : itemId;
   if (imageCache.has(key)) return imageCache.get(key);
@@ -325,7 +330,11 @@ export const useGameStore = defineStore('game', {
       return (state.currentOutfit[slot] || []).some(i => i.id === item.id);
     },
 
-    currentLayers: (state) => buildLayers(state.currentOutfit, state.layerOrder, new Set(state.hiddenLayerIds)),
+    // 快取 hiddenLayerIds 的 Set（Pinia 會根據 state 依賴自動快取 getter）
+    _hiddenSet: (state) => new Set(state.hiddenLayerIds),
+    currentLayers() {
+      return buildLayers(this.currentOutfit, this.layerOrder, this._hiddenSet);
+    },
     canUndo: (state) => state.historyIndex > 0,
     canRedo: (state) => state.historyIndex < state.history.length - 1,
 

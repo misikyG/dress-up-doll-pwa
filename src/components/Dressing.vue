@@ -621,7 +621,7 @@ onUnmounted(() => {
   display: flex; 
   align-items: center; 
   justify-content: center;
-  transition: filter 0.2s ease;
+  /* 移除 transition: filter — 在 iOS 上持續觸發 GPU 合成重繪 */
 }
 
 .canvas-item img {
@@ -629,6 +629,8 @@ onUnmounted(() => {
   height: 100%;
   object-fit: contain;
   pointer-events: auto;
+  /* 避免 iOS 為每張大圖建立獨立 GPU 圖層 */
+  content-visibility: auto;
 }
 
 /* 濾鏡效果層 */
