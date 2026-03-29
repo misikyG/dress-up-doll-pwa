@@ -173,12 +173,7 @@ const baseCanvasScale = computed(() => {
   const scaleX = availableWidth / targetSize.width;
   const scaleY = availableHeight / targetSize.height;
 
-  let base = Math.min(scaleX, scaleY, 1);
-  // 手機版基礎放大 5x，讓 100% 縮放顯示適合手機觀看的大小
-  if (gameStore.ui.isMobile) {
-    base *= 5;
-  }
-  return base;
+  return Math.min(scaleX, scaleY, 1);
 });
 
 const finalCanvasScale = computed(() => {
@@ -228,15 +223,21 @@ watch(
 
 const getContentBoundsStyle = (layerId) => {
   const b = contentBoundsMap[layerId];
-  if (!b || (b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) return {};
+  if (!b || (b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) {
+    return {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+    };
+  }
   return {
     position: 'absolute',
     left: `${b.x * 100}%`,
     top: `${b.y * 100}%`,
     width: `${b.w * 100}%`,
     height: `${b.h * 100}%`,
-    right: 'auto',
-    bottom: 'auto',
   };
 };
 
@@ -661,21 +662,26 @@ onUnmounted(() => {
 }
 
 .free-mode-controls {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   pointer-events: none;
   z-index: 1001;
+  /* position/size 由 inline style 的 getContentBoundsStyle 決定;
+     未設定時 fallback 到全尺寸 */
 }
 
 .selection-border {
   position: absolute;
-  inset: -2px;
-  border: 2px dashed var(--color-primary);
+  left: -3px;
+  top: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2.5px solid var(--color-primary);
+  border-radius: 4px;
   pointer-events: none;
   z-index: 1002;
+  /* rgba fallback for iOS Safari */
+  box-shadow:
+    0 0 8px 2px rgba(139, 92, 75, 0.45),
+    inset 0 0 6px 1px rgba(139, 92, 75, 0.2);
 }
 
 /* 縮放控制把手 */

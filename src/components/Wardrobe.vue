@@ -1877,11 +1877,12 @@ watch(characterOptions, (options) => {
 .mobile-item {
   width: 64px;
   height: 64px;
+  background-color: rgba(var(--color-bg-canvas-rgb, 255, 251, 245), 0.6);
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 10px;
   cursor: pointer;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border: 2px solid transparent;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -1896,6 +1897,7 @@ watch(characterOptions, (options) => {
 
 .mobile-item.equipped {
   border-color: var(--color-primary);
+  background-color: rgba(var(--color-text-primary-rgb, 71, 45, 37), 0.3);
   background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
@@ -1903,6 +1905,7 @@ watch(characterOptions, (options) => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  border-radius: 8px;
 }
 
 .mobile-equipped-badge {
@@ -1940,8 +1943,13 @@ watch(characterOptions, (options) => {
 }
 
 .mobile-item.has-variant {
-  border-color: rgba(245, 158, 11, 0.4);
-  border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  .mobile-item.has-variant {
+    border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
+  }
 }
 
 .mobile-outfit-item {

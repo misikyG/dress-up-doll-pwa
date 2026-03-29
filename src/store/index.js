@@ -1070,13 +1070,13 @@ export const useGameStore = defineStore('game', {
     },
 
     setCanvasZoom(zoom) {
-      const maxZoom = Math.max(5, this.canvasSize.width / 400);
+      const maxZoom = Math.max(this.ui.isMobile ? 25 : 5, this.canvasSize.width / 400);
       this.canvasZoom = Math.max(0.1, Math.min(maxZoom, zoom));
     },
     setCanvasPan(pan) { this.canvasPan = { ...pan }; },
     resetCanvasView() { this.canvasZoom = 1; this.canvasPan = { x: 0, y: 0 }; },
-    zoomIn() { this.setCanvasZoom(this.canvasZoom * 1.1); },
-    zoomOut() { this.setCanvasZoom(this.canvasZoom * 0.9); },
+    zoomIn() { this.setCanvasZoom(this.canvasZoom * 1.2); },
+    zoomOut() { this.setCanvasZoom(this.canvasZoom * 0.8); },
     resetZoom() { this.setCanvasZoom(1); this.setCanvasPan({ x: 0, y: 0 }); },
 
     setCanvasMode(mode) {
