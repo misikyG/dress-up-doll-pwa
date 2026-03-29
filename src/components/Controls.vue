@@ -471,13 +471,15 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn.mode {
+  /* iOS Safari fallback */
+  background: rgba(71, 45, 37, 0.45);
   background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
   font-size: 0.8rem;
 }
 
 .badge-btn.mode.active {
-  background: var(--color-primary);
-  color: var(--color-bg-card);
+  background: var(--color-primary) !important;
+  color: #fff;
 }
 
 .badge-btn.flip {

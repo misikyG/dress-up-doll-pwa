@@ -222,3 +222,45 @@ button,
   max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
   max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
 }
+
+/* ===========================================
+   12. 彈窗內容滾動修正
+   iOS Safari 的 position:fixed body 會阻止子元素滾動，
+   必須明確在滾動容器上啟用 -webkit-overflow-scrolling
+   =========================================== */
+
+.modal-overlay {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-base {
+  /* 防止 modal 本身被溢出截斷，讓內部容器自行滾動 */
+  overflow: hidden;
+  max-height: 100%;
+}
+
+.search-results-wrapper,
+.help-tab-content,
+.help-content,
+.contact-content,
+.settings-content,
+.modal-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* 確保 iOS 可以觸控滾動 */
+  overflow-y: auto !important;
+  touch-action: pan-y;
+}
+
+/* ===========================================
+   13. 畫布區域背景色 (iOS 回退)
+   color-mix() 在舊版 Safari 不支援時需要 fallback
+   =========================================== */
+
+.dressing-container {
+  /* 使用 var 直接引用，確保跟隨主題變化 */
+  background-color: var(--color-bg-canvas);
+  /* 如果需要半透明效果且瀏覽器支援 color-mix */
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
+}

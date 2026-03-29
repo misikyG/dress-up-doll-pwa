@@ -44,7 +44,7 @@
             @touchstart="onItemDragStart($event, layer)"
           />
           
-          <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls">
+          <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls" :style="getContentBoundsStyle(layer.id)">
             <div v-if="gameStore.freeMode.enableFreeScale"
               class="scale-handle"
               @mousedown.stop="onScaleStart($event, layer)"
@@ -67,7 +67,7 @@
             <div v-if="gameStore.selectedItem?.id === layer.id" class="selection-border"></div>
           </div>
 
-          <div v-if="gameStore.selectedItem?.id === layer.id" class="highlight-border"></div>
+          <div v-if="gameStore.selectedItem?.id === layer.id" class="highlight-border" :style="getHighlightBoundsStyle(layer.id)"></div>
         </div>
 
         <template v-for="layer in filterEffectLayers" :key="layer.id">
@@ -118,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
 import LayerPanel from './LayerPanel.vue';
@@ -207,6 +207,46 @@ const filterEffectLayers = computed(() =>
   visibleLayers.value.filter(l => l.item.filterEffect)
 );
 
+// --- 內容邊界：用於自由模式變換框定位 ---
+const contentBoundsMap = reactive({});
+watch(
+  () => gameStore.canvasMode === 'free' ? foregroundLayers.value : [],
+  async (layers) => {
+    for (const layer of layers) {
+      if (layer.category === 'character' || contentBoundsMap[layer.id]) continue;
+      const bounds = await gameStore.getContentBounds(layer.id, layer.item.imageData);
+      contentBoundsMap[layer.id] = bounds;
+    }
+  },
+  { immediate: true }
+);
+
+const getContentBoundsStyle = (layerId) => {
+  const b = contentBoundsMap[layerId];
+  if (!b || (b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) return {};
+  return {
+    position: 'absolute',
+    left: `${b.x * 100}%`,
+    top: `${b.y * 100}%`,
+    width: `${b.w * 100}%`,
+    height: `${b.h * 100}%`,
+  };
+};
+
+const getHighlightBoundsStyle = (layerId) => {
+  const b = contentBoundsMap[layerId];
+  if (!b || gameStore.canvasMode !== 'free' || (b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) return {};
+  const pad = 4; // px, matching the original -4px inset
+  return {
+    position: 'absolute',
+    left: `calc(${b.x * 100}% - ${pad}px)`,
+    top: `calc(${b.y * 100}% - ${pad}px)`,
+    width: `calc(${b.w * 100}% + ${pad * 2}px)`,
+    height: `calc(${b.h * 100}% + ${pad * 2}px)`,
+    inset: 'auto',
+  };
+};
+
 const getSvgFilterId = (svgStr) => {
   const match = svgStr?.match(/id=['"]([^'"]+)['"]/);
   return match ? match[1] : '';
@@ -258,6 +298,10 @@ const touchState = ref({
   isMultiTouch: false,
   initialDistance: 0,
   initialZoom: 1,
+  initialAngle: 0,
+  initialItemScale: 1,
+  initialItemRotation: 0,
+  targetItemId: null, // 非 null 時代表操作選取物件而非畫布
   lastTouchX: 0,
   lastTouchY: 0,
 });
@@ -268,14 +312,31 @@ const getDistance = (touches) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
+const getAngle = (touches) => {
+  return Math.atan2(
+    touches[1].clientY - touches[0].clientY,
+    touches[1].clientX - touches[0].clientX
+  ) * 180 / Math.PI;
+};
+
 const onTouchStart = (e) => {
   if (e.touches.length === 2) {
     e.preventDefault();
     touchState.value.isMultiTouch = true;
     touchState.value.initialDistance = getDistance(e.touches);
-    touchState.value.initialZoom = gameStore.canvasZoom;
-  } else if (e.touches.length === 1) {
+    touchState.value.initialAngle = getAngle(e.touches);
 
+    // 自由模式 + 有選取物件（非角色）→ 操作物件
+    const sel = gameStore.selectedItem;
+    if (gameStore.canvasMode === 'free' && sel && sel.category !== 'character') {
+      touchState.value.targetItemId = sel.id;
+      touchState.value.initialItemScale = gameStore.freeMode.itemScales[sel.id] || 1;
+      touchState.value.initialItemRotation = gameStore.freeMode.itemRotations[sel.id] || 0;
+    } else {
+      touchState.value.targetItemId = null;
+      touchState.value.initialZoom = gameStore.canvasZoom;
+    }
+  } else if (e.touches.length === 1) {
     touchState.value.isMultiTouch = false;
     onCanvasDragStart(e);
   }
@@ -285,15 +346,40 @@ const onTouchMove = (e) => {
   if (touchState.value.isMultiTouch && e.touches.length === 2) {
     e.preventDefault();
     const currentDistance = getDistance(e.touches);
-    const scale = currentDistance / touchState.value.initialDistance;
-    const newZoom = touchState.value.initialZoom * scale;
-    gameStore.setCanvasZoom(newZoom);
+    const scaleRatio = currentDistance / touchState.value.initialDistance;
+
+    if (touchState.value.targetItemId) {
+      // 操作選取的物件
+      const id = touchState.value.targetItemId;
+
+      // 縮放
+      if (gameStore.freeMode.enableFreeScale) {
+        const newScale = Math.max(0.1, Math.min(5, touchState.value.initialItemScale * scaleRatio));
+        gameStore.setItemScale(id, newScale);
+      }
+
+      // 旋轉
+      if (gameStore.freeMode.enableFreeRotation) {
+        const currentAngle = getAngle(e.touches);
+        const angleDelta = currentAngle - touchState.value.initialAngle;
+        const newRotation = ((touchState.value.initialItemRotation + angleDelta) % 360 + 360) % 360;
+        gameStore.setItemRotation(id, newRotation);
+      }
+    } else {
+      // 操作畫布縮放
+      const newZoom = touchState.value.initialZoom * scaleRatio;
+      gameStore.setCanvasZoom(newZoom);
+    }
   }
 };
 
 const onTouchEnd = (e) => {
   if (touchState.value.isMultiTouch) {
+    if (touchState.value.targetItemId) {
+      gameStore.recordHistory();
+    }
     touchState.value.isMultiTouch = false;
+    touchState.value.targetItemId = null;
     if (e.touches.length === 0) {
       if (gameStore.debouncedSaveAppState) gameStore.debouncedSaveAppState();
     }
@@ -523,19 +609,22 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
+  /* iOS Safari fallback: color-mix 不支援時使用 rgba */
+  background: rgba(97, 139, 106, 0.85);
   background: color-mix(in srgb, var(--color-primary) 85%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--color-bg-main);
+  color: #fff;
   border-radius: 999px;
   padding: 5px 12px;
   font-size: 0.8rem;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   max-width: 180px;
   z-index: 51;
+  pointer-events: none;
 }
 
 .selected-label {

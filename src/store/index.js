@@ -76,6 +76,61 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
 
 const imageCache = new Map();
 const MAX_IMAGE_CACHE = 15;
+
+// 快取內容邊界 (normalized 0-1)：用於自由模式的變換框定位
+const contentBoundsCache = new Map();
+
+/**
+ * 計算圖片中非透明像素的最小外接矩形 (normalized 0-1)
+ * 回傳 { x, y, w, h } 相對於原圖尺寸的比例
+ */
+const computeContentBounds = (dataUrl) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 400;
+      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+      const dw = Math.max(1, Math.round(img.width * scale));
+      const dh = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement('canvas');
+      c.width = dw; c.height = dh;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, dw, dh);
+      let minX = dw, minY = dh, maxX = 0, maxY = 0;
+      let found = false;
+      try {
+        const id = ctx.getImageData(0, 0, dw, dh);
+        const px = id.data;
+        for (let y = 0; y < dh; y++) {
+          for (let x = 0; x < dw; x++) {
+            if (px[(y * dw + x) * 4 + 3] > 10) {
+              found = true;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+      } catch { found = false; }
+      c.width = 0; c.height = 0;
+      if (found && maxX >= minX && maxY >= minY) {
+        // 加 3% padding
+        const pad = Math.max((maxX - minX), (maxY - minY)) * 0.03;
+        const bx = Math.max(0, minX - pad) / dw;
+        const by = Math.max(0, minY - pad) / dh;
+        const bw = Math.min(dw, maxX - minX + 1 + pad * 2) / dw;
+        const bh = Math.min(dh, maxY - minY + 1 + pad * 2) / dh;
+        resolve({ x: bx, y: by, w: bw, h: bh });
+      } else {
+        resolve({ x: 0, y: 0, w: 1, h: 1 });
+      }
+    };
+    img.onerror = () => resolve({ x: 0, y: 0, w: 1, h: 1 });
+    img.src = dataUrl;
+  });
+};
+
 const resolveImageData = async (itemId, variantKey) => {
   const key = variantKey ? `${itemId}:${variantKey}` : itemId;
   if (imageCache.has(key)) return imageCache.get(key);
@@ -494,23 +549,24 @@ export const useGameStore = defineStore('game', {
           wardrobeCollapsed: this.ui.wardrobeCollapsed,
           layerPanelCollapsed: this.ui.layerPanelCollapsed,
           hiddenLayerIds: [...this.hiddenLayerIds],
+          _savedAt: Date.now(),
         };
+        // 同步寫入 localStorage（F5/關閉時 IndexedDB 可能來不及完成）
         try { localStorage.setItem('appState-backup', JSON.stringify(appState)); } catch {}
         await DressingCore.setData('settings', 'appState', appState);
       } catch {}
     },
 
     async loadAppState() {
-      let s = null;
+      let dbState = null;
+      let lsState = null;
+      try { dbState = await DressingCore.getData('settings', 'appState'); } catch {}
       try {
-        s = await DressingCore.getData('settings', 'appState');
+        const backup = localStorage.getItem('appState-backup');
+        if (backup) lsState = JSON.parse(backup);
       } catch {}
-      if (!s) {
-        try {
-          const backup = localStorage.getItem('appState-backup');
-          if (backup) s = JSON.parse(backup);
-        } catch {}
-      }
+      // 取最新的狀態（localStorage 是同步的，F5 時更可靠）
+      const s = (lsState?._savedAt || 0) >= (dbState?._savedAt || 0) ? lsState : dbState;
       if (!s) { this.currentOutfit = createEmptyOutfit(); return; }
       try {
         if (s.currentOutfit) {
@@ -681,6 +737,15 @@ export const useGameStore = defineStore('game', {
     setItemScale(itemId, scale) { this.freeMode.itemScales[itemId] = scale; },
     setItemFlip(itemId, flip) { this.freeMode.itemFlips[itemId] = { ...flip }; },
     setItemRotation(itemId, rotation) { this.freeMode.itemRotations[itemId] = rotation; },
+
+    /** 取得物件的內容邊界 (normalized 0-1)，結果會被快取 */
+    async getContentBounds(itemId, imageData) {
+      if (contentBoundsCache.has(itemId)) return contentBoundsCache.get(itemId);
+      if (!imageData) return { x: 0, y: 0, w: 1, h: 1 };
+      const bounds = await computeContentBounds(imageData);
+      contentBoundsCache.set(itemId, bounds);
+      return bounds;
+    },
 
     resetItemTransforms() {
       Object.assign(this.freeMode, { itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {} });
