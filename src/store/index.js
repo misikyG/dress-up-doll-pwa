@@ -83,52 +83,55 @@ const contentBoundsCache = new Map();
 /**
  * 計算圖片中非透明像素的最小外接矩形 (normalized 0-1)
  * 回傳 { x, y, w, h } 相對於原圖尺寸的比例
+ * 使用 img.decode() 確保 iOS Safari 完全解碼後再 getImageData
  */
-const computeContentBounds = (dataUrl) => {
-  return new Promise((resolve) => {
+const computeContentBounds = async (dataUrl) => {
+  const fallback = { x: 0, y: 0, w: 1, h: 1 };
+  try {
     const img = new Image();
-    img.onload = () => {
-      const maxDim = 400;
-      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-      const dw = Math.max(1, Math.round(img.width * scale));
-      const dh = Math.max(1, Math.round(img.height * scale));
-      const c = document.createElement('canvas');
-      c.width = dw; c.height = dh;
-      const ctx = c.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0, dw, dh);
-      let minX = dw, minY = dh, maxX = 0, maxY = 0;
-      let found = false;
-      try {
-        const id = ctx.getImageData(0, 0, dw, dh);
-        const px = id.data;
-        for (let y = 0; y < dh; y++) {
-          for (let x = 0; x < dw; x++) {
-            if (px[(y * dw + x) * 4 + 3] > 10) {
-              found = true;
-              if (x < minX) minX = x;
-              if (x > maxX) maxX = x;
-              if (y < minY) minY = y;
-              if (y > maxY) maxY = y;
-            }
-          }
-        }
-      } catch { found = false; }
-      c.width = 0; c.height = 0;
-      if (found && maxX >= minX && maxY >= minY) {
-        // 加 15% padding，讓手指操作更容易
-        const pad = Math.max((maxX - minX), (maxY - minY)) * 0.15;
-        const x1 = Math.max(0, minX - pad);
-        const y1 = Math.max(0, minY - pad);
-        const x2 = Math.min(dw, maxX + 1 + pad);
-        const y2 = Math.min(dh, maxY + 1 + pad);
-        resolve({ x: x1 / dw, y: y1 / dh, w: (x2 - x1) / dw, h: (y2 - y1) / dh });
-      } else {
-        resolve({ x: 0, y: 0, w: 1, h: 1 });
-      }
-    };
-    img.onerror = () => resolve({ x: 0, y: 0, w: 1, h: 1 });
     img.src = dataUrl;
-  });
+    // decode() 確保圖片完全解碼，解決 iOS Safari getImageData 讀到空白的問題
+    await img.decode();
+
+    const maxDim = 400;
+    const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+    const dw = Math.max(1, Math.round(img.width * scale));
+    const dh = Math.max(1, Math.round(img.height * scale));
+    const c = document.createElement('canvas');
+    c.width = dw; c.height = dh;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, dw, dh);
+
+    let minX = dw, minY = dh, maxX = 0, maxY = 0;
+    let found = false;
+    const id = ctx.getImageData(0, 0, dw, dh);
+    const px = id.data;
+    for (let y = 0; y < dh; y++) {
+      for (let x = 0; x < dw; x++) {
+        if (px[(y * dw + x) * 4 + 3] > 10) {
+          found = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    c.width = 0; c.height = 0;
+
+    if (found && maxX >= minX && maxY >= minY) {
+      // 加 25% padding，讓操作框比內容稍大、手指容易操作
+      const pad = Math.max((maxX - minX), (maxY - minY)) * 0.25;
+      const x1 = Math.max(0, minX - pad);
+      const y1 = Math.max(0, minY - pad);
+      const x2 = Math.min(dw, maxX + 1 + pad);
+      const y2 = Math.min(dh, maxY + 1 + pad);
+      return { x: x1 / dw, y: y1 / dh, w: (x2 - x1) / dw, h: (y2 - y1) / dh };
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
 };
 
 const resolveImageData = async (itemId, variantKey) => {
@@ -1070,8 +1073,8 @@ export const useGameStore = defineStore('game', {
     },
 
     setCanvasZoom(zoom) {
-      const maxZoom = Math.max(this.ui.isMobile ? 25 : 5, this.canvasSize.width / 400);
-      this.canvasZoom = Math.max(0.1, Math.min(maxZoom, zoom));
+      const maxZoom = Math.max(5, this.canvasSize.width / 400);
+      this.canvasZoom = Math.max(0.05, Math.min(maxZoom, zoom));
     },
     setCanvasPan(pan) { this.canvasPan = { ...pan }; },
     resetCanvasView() { this.canvasZoom = 1; this.canvasPan = { x: 0, y: 0 }; },

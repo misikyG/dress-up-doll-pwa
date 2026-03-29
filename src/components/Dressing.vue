@@ -173,7 +173,13 @@ const baseCanvasScale = computed(() => {
   const scaleX = availableWidth / targetSize.width;
   const scaleY = availableHeight / targetSize.height;
 
-  return Math.min(scaleX, scaleY, 1);
+  let base = Math.min(scaleX, scaleY, 1);
+  // 手機版：原始尺寸在手機上極小(2000×3800 → ~0.12 scale)，
+  // 乘以 6.5 使 100% 顯示為舒適觀看大小（約佔螢幕寬度的角色尺寸）
+  if (gameStore.ui.isMobile) {
+    base *= 6.5;
+  }
+  return base;
 });
 
 const finalCanvasScale = computed(() => {
@@ -670,18 +676,19 @@ onUnmounted(() => {
 
 .selection-border {
   position: absolute;
-  left: -3px;
-  top: -3px;
-  right: -3px;
-  bottom: -3px;
-  border: 2.5px solid var(--color-primary);
-  border-radius: 4px;
+  left: -4px;
+  top: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 3px solid var(--color-primary);
+  border-radius: 6px;
   pointer-events: none;
   z-index: 1002;
-  /* rgba fallback for iOS Safari */
+  /* 陰影暈光：使選取框更聚焦明顯，rgba 確保 iOS Safari 相容 */
   box-shadow:
-    0 0 8px 2px rgba(139, 92, 75, 0.45),
-    inset 0 0 6px 1px rgba(139, 92, 75, 0.2);
+    0 0 12px 4px rgba(139, 92, 75, 0.5),
+    0 0 24px 8px rgba(139, 92, 75, 0.2),
+    inset 0 0 8px 2px rgba(139, 92, 75, 0.15);
 }
 
 /* 縮放控制把手 */
