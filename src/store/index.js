@@ -115,8 +115,8 @@ const computeContentBounds = (dataUrl) => {
       } catch { found = false; }
       c.width = 0; c.height = 0;
       if (found && maxX >= minX && maxY >= minY) {
-        // 加 3% padding
-        const pad = Math.max((maxX - minX), (maxY - minY)) * 0.03;
+        // 加 15% padding，讓手指操作更容易
+        const pad = Math.max((maxX - minX), (maxY - minY)) * 0.15;
         const bx = Math.max(0, minX - pad) / dw;
         const by = Math.max(0, minY - pad) / dh;
         const bw = Math.min(dw, maxX - minX + 1 + pad * 2) / dw;

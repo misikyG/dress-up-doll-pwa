@@ -36,9 +36,11 @@ html.scrollable-page,
 html.scrollable-page body {
   position: static !important;
   overflow: auto !important;
+  overscroll-behavior: auto !important;
   height: auto !important;
   min-height: 100vh !important;
   min-height: 100dvh !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 html.scrollable-page #app {
@@ -225,18 +227,16 @@ button,
 
 /* ===========================================
    12. 彈窗內容滾動修正
-   iOS Safari 的 position:fixed body 會阻止子元素滾動，
-   必須明確在滾動容器上啟用 -webkit-overflow-scrolling
-/* ===========================================
-   12. 彈窗內容滾動修正
    iOS Safari 的 position:fixed body 會阻止子元素滾動。
    modal-overlay 本身不應滾動（它是背景遮罩）；
    滾動僅發生在 modal 內部的內容區域。
    =========================================== */
 
 .modal-overlay {
-  /* 遮罩層不滾動，防止與內部滾動衝突 */
+  /* 遮罩層：讓觸控事件能傳遞到子元素 */
   overflow: hidden;
+  touch-action: auto;
+  -webkit-overflow-scrolling: auto;
 }
 
 .modal-base {
@@ -245,6 +245,7 @@ button,
   flex-direction: column;
   /* 在手機全螢幕時確保高度受限 */
   max-height: 100%;
+  touch-action: auto;
 }
 
 /* 所有需要在 modal 內滾動的容器 */
@@ -255,12 +256,17 @@ button,
 .modal-content {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  overflow-y: auto !important;
+  overflow-y: scroll !important;
   overflow-x: hidden;
   touch-action: pan-y;
   /* flex: 1 + min-height: 0 讓 flex 子項在 overflow:hidden 父容器內正確滾動 */
   flex: 1;
   min-height: 0;
+  position: relative;
+  z-index: 1;
+  /* iOS Safari 舊版本中 user-select:none 可能阻擋滾動 */
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 /* 確保 modal 內不可滾動的元素不會壓縮滾動區域 */
@@ -277,6 +283,7 @@ button,
   flex: 1;
   min-height: 0;
   overflow: hidden !important;
+  touch-action: auto;
 }
 
 /* ===========================================

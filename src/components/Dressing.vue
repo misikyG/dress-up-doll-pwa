@@ -60,7 +60,7 @@
               @touchstart.stop.prevent="onRotateStart($event, layer)"
               v-html="icons.rotate"
               :style="{
-                transform: `translateX(50%) scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
+                transform: `translateX(-50%) scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
               }"
             ></div>
             
@@ -255,6 +255,15 @@ const getItemStyle = (layer) => {
     transform += ` scale(${flip.x ? -scale : scale}, ${flip.y ? -scale : scale})`;
     if (gameStore.freeMode.enableFreeRotation) {
       transform += ` rotate(${rotation}deg)`;
+      // 旋轉重心放在內容邊距下緣中間
+      const b = contentBoundsMap[layer.id];
+      if (b && !(b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) {
+        const originX = (b.x + b.w / 2) * 100;
+        const originY = (b.y + b.h) * 100;
+        style.transformOrigin = `${originX}% ${originY}%`;
+      } else {
+        style.transformOrigin = '50% 100%';
+      }
     }
     
     style.transform = transform;
@@ -284,12 +293,6 @@ const touchState = ref({
   isMultiTouch: false,
   initialDistance: 0,
   initialZoom: 1,
-  initialAngle: 0,
-  initialItemScale: 1,
-  initialItemRotation: 0,
-  targetItemId: null, // 非 null 時代表操作選取物件而非畫布
-  lastTouchX: 0,
-  lastTouchY: 0,
 });
 
 const getDistance = (touches) => {
@@ -298,30 +301,12 @@ const getDistance = (touches) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-const getAngle = (touches) => {
-  return Math.atan2(
-    touches[1].clientY - touches[0].clientY,
-    touches[1].clientX - touches[0].clientX
-  ) * 180 / Math.PI;
-};
-
 const onTouchStart = (e) => {
   if (e.touches.length === 2) {
     e.preventDefault();
     touchState.value.isMultiTouch = true;
     touchState.value.initialDistance = getDistance(e.touches);
-    touchState.value.initialAngle = getAngle(e.touches);
-
-    // 自由模式 + 有選取物件（非角色）→ 操作物件
-    const sel = gameStore.selectedItem;
-    if (gameStore.canvasMode === 'free' && sel && sel.category !== 'character') {
-      touchState.value.targetItemId = sel.id;
-      touchState.value.initialItemScale = gameStore.freeMode.itemScales[sel.id] || 1;
-      touchState.value.initialItemRotation = gameStore.freeMode.itemRotations[sel.id] || 0;
-    } else {
-      touchState.value.targetItemId = null;
-      touchState.value.initialZoom = gameStore.canvasZoom;
-    }
+    touchState.value.initialZoom = gameStore.canvasZoom;
   } else if (e.touches.length === 1) {
     touchState.value.isMultiTouch = false;
     onCanvasDragStart(e);
@@ -333,39 +318,14 @@ const onTouchMove = (e) => {
     e.preventDefault();
     const currentDistance = getDistance(e.touches);
     const scaleRatio = currentDistance / touchState.value.initialDistance;
-
-    if (touchState.value.targetItemId) {
-      // 操作選取的物件
-      const id = touchState.value.targetItemId;
-
-      // 縮放
-      if (gameStore.freeMode.enableFreeScale) {
-        const newScale = Math.max(0.1, Math.min(5, touchState.value.initialItemScale * scaleRatio));
-        gameStore.setItemScale(id, newScale);
-      }
-
-      // 旋轉
-      if (gameStore.freeMode.enableFreeRotation) {
-        const currentAngle = getAngle(e.touches);
-        const angleDelta = currentAngle - touchState.value.initialAngle;
-        const newRotation = ((touchState.value.initialItemRotation + angleDelta) % 360 + 360) % 360;
-        gameStore.setItemRotation(id, newRotation);
-      }
-    } else {
-      // 操作畫布縮放
-      const newZoom = touchState.value.initialZoom * scaleRatio;
-      gameStore.setCanvasZoom(newZoom);
-    }
+    const newZoom = touchState.value.initialZoom * scaleRatio;
+    gameStore.setCanvasZoom(newZoom);
   }
 };
 
 const onTouchEnd = (e) => {
   if (touchState.value.isMultiTouch) {
-    if (touchState.value.targetItemId) {
-      gameStore.recordHistory();
-    }
     touchState.value.isMultiTouch = false;
-    touchState.value.targetItemId = null;
     if (e.touches.length === 0) {
       if (gameStore.debouncedSaveAppState) gameStore.debouncedSaveAppState();
     }
@@ -486,9 +446,19 @@ const onRotateStart = (e, layer) => {
   if (!gameStore.freeMode.enableFreeRotation) return;
   e.stopPropagation();
   
-  const rect = e.target.closest('.canvas-item').getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
+  const itemEl = e.target.closest('.canvas-item');
+  const rect = itemEl.getBoundingClientRect();
+  
+  // 使用內容邊距下緣中間作為旋轉中心
+  const b = contentBoundsMap[layer.id];
+  let centerX, centerY;
+  if (b && !(b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) {
+    centerX = rect.left + (b.x + b.w / 2) * rect.width;
+    centerY = rect.top + (b.y + b.h) * rect.height;
+  } else {
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height;
+  }
   
   const pos = getClientPos(e);
   
@@ -727,7 +697,7 @@ onUnmounted(() => {
 /* 旋轉控制把手 */
 .rotate-handle {
   position: absolute;
-  top: -8px; right: 50%;
+  bottom: -8px; left: 50%;
   width: 44px; height: 44px;
   background: radial-gradient(circle at 30% 30%, var(--color-accent-gold), var(--color-accent-gold-dark));
   border: 2px solid var(--color-bg-card);
