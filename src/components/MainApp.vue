@@ -107,17 +107,9 @@ const pageComponents = {
 const activePageComponent = computed(() => pageComponents[gameStore.ui.currentPage])
 
 const layoutClass = computed(() => {
-  const isLeftCollapsed = gameStore.ui.wardrobeCollapsed;
-  const isDressingPage = gameStore.ui.currentPage === 'dressing';
-  
   if (gameStore.ui.isMobile) return 'layout-mobile';
   if (gameStore.ui.isTablet) return 'layout-tablet';
-  
-  if (isDressingPage) {
-    return isLeftCollapsed ? 'layout-center-only' : 'layout-left-center';
-  } else {
-    return isLeftCollapsed ? 'layout-center-only' : 'layout-left-center';
-  }
+  return gameStore.ui.wardrobeCollapsed ? 'layout-center-only' : 'layout-left-center';
 });
 
 // 響應式設計處理

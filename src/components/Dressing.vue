@@ -145,7 +145,6 @@ const canvasViewport = ref(null);
 const canvas = ref(null);
 const controlsRef = ref(null);
 
-// --- 手型工具模式 ---
 const panModeActive = ref(false);
 const middleButtonDragging = ref(false);
 
@@ -153,13 +152,11 @@ const onPanModeChange = (active) => {
   panModeActive.value = active;
 };
 
-// --- 互動狀態 ---
 const dragState = ref({ isDragging: false, dragItem: null, startX: 0, startY: 0, startPos: { x: 0, y: 0 } });
 const scaleState = ref({ isScaling: false, scaleItem: null, startY: 0, startScale: 1 });
 const rotateState = ref({ isRotating: false, rotateItem: null, startAngle: 0, startRotation: 0, centerX: 0, centerY: 0 });
 const canvasDragState = ref({ isDragging: false, startX: 0, startY: 0, startPan: { x: 0, y: 0 } });
 
-// --- 共用輔助函式 ---
 const getClientPos = (e) => ({
   x: e.touches ? e.touches[0].clientX : e.clientX,
   y: e.touches ? e.touches[0].clientY : e.clientY
@@ -179,7 +176,6 @@ const removeGlobalListeners = (moveHandler, endHandler) => {
   window.removeEventListener('touchend', endHandler);
 };
 
-// --- Computed: 核心邏輯 ---
 const baseCanvasScale = computed(() => {
   if (!canvasViewport.value) return 1;
   const rect = canvasViewport.value.getBoundingClientRect();
@@ -213,7 +209,6 @@ const canvasStyle = computed(() => {
   };
 });
 
-// **使用 store 中的 currentLayers getter**
 const orderedLayers = computed(() => gameStore.currentLayers);
 
 const visibleLayers = computed(() => orderedLayers.value.filter(l => !gameStore.isLayerHidden(l.id)));
@@ -228,13 +223,11 @@ const filterEffectLayers = computed(() =>
   visibleLayers.value.filter(l => l.item.filterEffect)
 );
 
-// 從 SVG filter 字串擷取 filter id
 const getSvgFilterId = (svgStr) => {
   const match = svgStr?.match(/id=['"]([^'"]+)['"]/);
   return match ? match[1] : '';
 };
 
-// --- 樣式計算方法 ---
 const getItemStyle = (layer) => {
   const style = { zIndex: layer.zIndex };
 
@@ -261,27 +254,22 @@ const getItemStyle = (layer) => {
   return style;
 };
 
-// --- **物件選擇** ---
 const selectItem = (layer) => {
   gameStore.selectItem(layer);
 };
 
-// **畫布點擊處理**
 const handleCanvasClick = (e) => {
   if (e.target === canvasViewport.value || e.target === canvas.value) {
     gameStore.clearSelection();
   }
 };
 
-// --- 畫布滾輪縮放 ---
 const handleWheel = (e) => {
-  // 滑鼠滾輪縮放，不需要按 Ctrl
   e.preventDefault();
   const delta = e.deltaY > 0 ? 0.9 : 1.1;
   gameStore.setCanvasZoom(gameStore.canvasZoom * delta);
 };
 
-// --- 觸控手勢縮放 ---
 const touchState = ref({
   isMultiTouch: false,
   initialDistance: 0,
@@ -298,13 +286,12 @@ const getDistance = (touches) => {
 
 const onTouchStart = (e) => {
   if (e.touches.length === 2) {
-    // 雙指觸控 - 準備縮放
     e.preventDefault();
     touchState.value.isMultiTouch = true;
     touchState.value.initialDistance = getDistance(e.touches);
     touchState.value.initialZoom = gameStore.canvasZoom;
   } else if (e.touches.length === 1) {
-    // 單指觸控 - 拖拽
+
     touchState.value.isMultiTouch = false;
     onCanvasDragStart(e);
   }
@@ -329,7 +316,7 @@ const onTouchEnd = (e) => {
   }
 };
 
-// --- 畫布拖拽 ---
+
 const onCanvasDragStart = (e) => {
   // 中鍵點擊 (button === 1) 或手型工具模式時，強制啟用拖曳
   const isMiddleButton = e.button === 1;
@@ -340,7 +327,6 @@ const onCanvasDragStart = (e) => {
     middleButtonDragging.value = true;
   }
   
-  // 如果不是中鍵或手型模式，使用原本的邏輯
   if (!isMiddleButton && !isPanMode) {
     if (gameStore.canvasZoom <= 1 || e.target.tagName === 'IMG') return;
   }
@@ -373,7 +359,7 @@ const onCanvasDragEnd = () => {
   removeGlobalListeners(onCanvasDragging, onCanvasDragEnd);
 };
 
-// --- 物件拖拽 ---
+
 const onItemDragStart = (e, layer) => {
   // 手型模式或中鍵點擊時，交給畫布拖曳處理
   if (panModeActive.value || e.button === 1) {
@@ -415,7 +401,6 @@ const onItemDragEnd = () => {
   removeGlobalListeners(onItemDragging, onItemDragEnd);
 };
 
-// --- 縮放控制 ---
 const onScaleStart = (e, layer) => {
   if (!gameStore.freeMode.enableFreeScale) return;
   e.stopPropagation();
@@ -444,7 +429,6 @@ const onScaleEnd = () => {
   removeGlobalListeners(onScaling, onScaleEnd);
 };
 
-// --- 旋轉控制 ---
 const onRotateStart = (e, layer) => {
   if (!gameStore.freeMode.enableFreeRotation) return;
   e.stopPropagation();
@@ -453,7 +437,6 @@ const onRotateStart = (e, layer) => {
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
   
-  // 使用 getClientPos 統一處理滑鼠和觸控事件
   const pos = getClientPos(e);
   
   rotateState.value = {
@@ -469,7 +452,6 @@ const onRotating = (e) => {
   if (!rotateState.value.isRotating) return;
   e.preventDefault();
   
-  // 使用 getClientPos 統一處理滑鼠和觸控事件
   const pos = getClientPos(e);
   const currentAngle = Math.atan2(
     pos.y - rotateState.value.centerY,
@@ -486,7 +468,6 @@ const onRotateEnd = () => {
   removeGlobalListeners(onRotating, onRotateEnd);
 };
 
-// --- 鍵盤快捷鍵 ---
 const handleKeyDown = (e) => {
   if (e.ctrlKey || e.metaKey) {
     switch (e.key) {
@@ -499,12 +480,10 @@ const handleKeyDown = (e) => {
   if (e.key === 'Escape') gameStore.clearSelection();
 };
 
-// --- 生命週期 ---
 onMounted(() => window.addEventListener('keydown', handleKeyDown));
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
-  // 清理所有可能的事件監聽器
   removeGlobalListeners(onItemDragging, onItemDragEnd);
   removeGlobalListeners(onCanvasDragging, onCanvasDragEnd);
   removeGlobalListeners(onScaling, onScaleEnd);
@@ -513,25 +492,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ========================================
-   Dressing.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 基礎結構
-   2. 畫布容器
-   3. 選取物件顯示
-   4. 物件圖層
-   5. 高亮效果
-   6. 自由模式控制
-   7. 內嵌物件選單
-   8. 空狀態提示
-   9. 響應式設計 - 平板版
-   10. 響應式設計 - 手機版
-   ======================================== */
-
-/* ========================================
-   1. 基礎結構
-   ======================================== */
 .dressing-container {
   width: 100%; 
   height: 100%; 
@@ -545,9 +505,6 @@ onUnmounted(() => {
   min-height: 0;
 }
 
-/* ========================================
-   2. 畫布容器
-   ======================================== */
 .canvas-viewport { 
   flex: 1 1 0;
   min-height: 0;
@@ -564,7 +521,6 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
-/* 手型工具模式 */
 .canvas-viewport.pan-mode {
   cursor: grab;
 }
@@ -582,9 +538,6 @@ onUnmounted(() => {
   touch-action: none;
 }
 
-/* ========================================
-   3. 選取物件顯示
-   ======================================== */
 .selected-item-badge {
   position: absolute;
   top: 10px;
@@ -616,9 +569,6 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-/* ========================================
-   4. 物件圖層
-   ======================================== */
 .canvas-item {
   position: absolute;
   inset: 0;
@@ -637,7 +587,6 @@ onUnmounted(() => {
   content-visibility: auto;
 }
 
-/* 濾鏡效果層 */
 .filter-effect-layer {
   pointer-events: none;
   border-radius: inherit;
@@ -650,12 +599,10 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 手型模式下物件不可互動 */
 .canvas-item.pan-mode-active {
   pointer-events: none;
 }
 
-/* 背景層 */
 .background-layer {
   z-index: 1;
 }
@@ -664,36 +611,32 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-/* 拖拽狀態 */
+
 .canvas-item.is-dragging { 
   opacity: 0.7; 
   z-index: 9999 !important; 
 }
 
-/* 選取狀態 */
 .canvas-item.is-selected {
   z-index: 9998 !important;
 }
 
-/* ========================================
-   5. 高亮效果
-   ======================================== */
 .canvas-item.is-highlighted {
-  filter: drop-shadow(0 0 8px var(--color-primary));
+  /* 移除 filter: drop-shadow() — 在 2000×3800 元素上觸發完整 GPU 圖層重組，
+     iOS 上每次選取變更都佔用 ~30MB GPU 記憶體，多次點擊後崩潰。
+     改用 .highlight-border div 提供視覺回饋 */
 }
 
 .highlight-border {
   position: absolute;
   inset: -4px;
-  border: 2px solid var(--color-primary);
+  border: 3px solid var(--color-primary);
   border-radius: var(--radius-md);
   pointer-events: none;
-  animation: pulse 2s infinite;
+  /* 使用簡單的 opacity 動畫取代 pulse，避免持續觸發 GPU 重繪 */
+  opacity: 0.85;
 }
 
-/* ========================================
-   6. 自由模式控制
-   ======================================== */
 .free-mode-controls {
   position: absolute;
   inset: 0;
@@ -701,7 +644,6 @@ onUnmounted(() => {
   z-index: 1001;
 }
 
-/* 選中邊框 */
 .selection-border {
   position: absolute;
   inset: -2px;
@@ -761,9 +703,6 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
-/* ========================================
-   7. 內嵌物件選單
-   ======================================== */
 .embedded-layer-panel {
   position: relative;
   z-index: 89;
@@ -773,20 +712,16 @@ onUnmounted(() => {
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   transition: all 0.3s ease;
-  max-height: clamp(130px, 20vh, 200px);
+  max-height: clamp(170px, 24vh, 240px);
   flex-shrink: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
-  /* 确保底缘是直角，不是圓角 */
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
-/* ========================================
-   8. 空狀態提示
-   ======================================== */
 .empty-state {
   position: absolute;
   top: 50%;
@@ -797,20 +732,13 @@ onUnmounted(() => {
   z-index: 100;
 }
 
-/* ========================================
-   9. 響應式設計 - 平板版
-   ======================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
   .embedded-layer-panel {
-    max-height: clamp(180px, 24vh, 220px);
+    max-height: clamp(200px, 28vh, 260px);
   }
 }
 
-/* ========================================
-   10. 響應式設計 - 手機版
-   ======================================== */
 @media (max-width: 767px) {
-  /* 選取物件顯示 */
   .selected-item-badge {
     top: 8px;
     left: 8px;
@@ -823,13 +751,11 @@ onUnmounted(() => {
     font-size: 0.7rem;
   }
 
-  /* 內嵌物件選單 */
   .embedded-layer-panel {
-    max-height: clamp(100px, 18vh, 160px);
+    max-height: clamp(140px, 22vh, 200px);
     min-height: 0;
   }
   
-  /* 高亮效果 */
   .highlight-border {
     border-width: 2px;
   }

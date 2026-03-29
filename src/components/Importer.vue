@@ -265,32 +265,12 @@ const cleanup = () => {
 </script>
 
 <style scoped>
-/* ========================================
-   Importer.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 內容容器
-   2. 拖放區域
-   3. 處理中狀態
-   4. 訊息樣式
-   5. 響應式設計
-   ======================================== */
-
-/* 繼承全局 modal-base, modal-header 樣式 */
-
-/* ========================================
-   1. 內容容器
-   ======================================== */
 
 .importer-content { 
   padding: 1.5rem; 
   flex: 1;
   overflow-y: auto;
 }
-
-/* ========================================
-   1.5. 附贈圖包區域
-   ======================================== */
 
 .bundled-packs-section {
   margin-bottom: 1rem;
@@ -370,10 +350,6 @@ const cleanup = () => {
   cursor: not-allowed;
 }
 
-/* ========================================
-   2. 拖放區域
-   ======================================== */
-
 .drop-zone {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-lg);
@@ -448,10 +424,6 @@ const cleanup = () => {
   font-family: 'Monaco', 'Consolas', monospace;
 }
 
-/* ========================================
-   3. 處理中狀態
-   ======================================== */
-
 .processing-view {
   display: flex;
   flex-direction: column;
@@ -503,10 +475,6 @@ const cleanup = () => {
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
 }
-
-/* ========================================
-   4. 訊息樣式
-   ======================================== */
 
 .error-message,
 .success-message { 
@@ -578,10 +546,6 @@ const cleanup = () => {
 .retry-btn:hover {
   background-color: color-mix(in srgb, var(--color-error) 85%, transparent);
 }
-
-/* ========================================
-   5. 響應式設計
-   ======================================== */
 
 @media (max-width: 767px) {
   .importer-content {

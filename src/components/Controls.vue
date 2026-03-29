@@ -124,15 +124,12 @@ const gameStore = useGameStore();
 const collapsed = ref(false);
 const panMode = ref(false);
 
-// 下載對話框相關
 const showDownloadDialog = ref(false);
 const downloadSize = ref('original');
 const useWatermark = ref(false);
 
-// 浮水印圖片 (預設為內聯路徑，實際圖片待用戶提供)
 const watermarkSrc = new URL('../assets/watermark.png', import.meta.url).href;
 
-// 發送自定義事件供Dressing組件監聯
 const emit = defineEmits(['pan-mode-change']);
 
 const hasSelectedItem = computed(() => gameStore.selectedItem !== null);
@@ -142,7 +139,6 @@ const togglePanMode = () => {
   emit('pan-mode-change', panMode.value);
 };
 
-// 公開panMode給父組件使用
 defineExpose({
   panMode
 });
@@ -159,7 +155,6 @@ const resetPositions = () => {
   }
 };
 
-// 執行下載
 const executeDownload = async () => {
   showDownloadDialog.value = false;
   
@@ -176,11 +171,9 @@ const executeDownload = async () => {
       return;
     }
 
-    // 原始尺寸
     const originalWidth = 2000;
     const originalHeight = 3800;
     
-    // 根據選擇的尺寸計算輸出尺寸
     let outputWidth, outputHeight;
     switch (downloadSize.value) {
       case 'medium':
@@ -196,7 +189,6 @@ const executeDownload = async () => {
         outputHeight = originalHeight;
     }
 
-    // 創建 canvas 來合成圖像 (先用原始尺寸繪製)
     const hasBackground = (gameStore.currentOutfit.background?.length || 0) > 0;
     const canvasSize = hasBackground ? gameStore.backgroundSize : gameStore.canvasSize;
     
@@ -205,20 +197,17 @@ const executeDownload = async () => {
     exportCanvas.height = canvasSize.height;
     const ctx = exportCanvas.getContext('2d');
 
-    // 如果沒有背景，填充背景色
     if (!hasBackground) {
       ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-bg-card').trim() || '#ffffff';
       ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
     }
 
-    // 依序繪製所有圖層
     for (const layer of layers) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
       await new Promise((resolve) => {
         img.onload = () => {
-          // 檢查是否在自由模式且有變換
           if (gameStore.canvasMode === 'free' && gameStore.freeMode.itemPositions[layer.id]) {
             const pos = gameStore.freeMode.itemPositions[layer.id];
             const scale = gameStore.freeMode.itemScales[layer.id] || 1;
@@ -235,7 +224,6 @@ const executeDownload = async () => {
             ctx.drawImage(img, -canvasSize.width / 2, -canvasSize.height / 2, canvasSize.width, canvasSize.height);
             ctx.restore();
           } else {
-            // 固定模式，直接繪製
             ctx.drawImage(img, 0, 0, canvasSize.width, canvasSize.height);
           }
           resolve();
@@ -248,7 +236,6 @@ const executeDownload = async () => {
       });
     }
 
-    // 如果需要浮水印，加入浮水印
     if (useWatermark.value) {
       try {
         const watermarkImg = new Image();
@@ -263,7 +250,6 @@ const executeDownload = async () => {
         });
         
         if (watermarkImg.complete && watermarkImg.naturalWidth > 0) {
-          // 浮水印放置在右下角，大小為畫布的 15%
           const wmSize = Math.min(canvasSize.width, canvasSize.height) * 0.15;
           const wmAspect = watermarkImg.naturalWidth / watermarkImg.naturalHeight;
           const wmWidth = wmAspect >= 1 ? wmSize : wmSize * wmAspect;
@@ -280,7 +266,6 @@ const executeDownload = async () => {
       }
     }
 
-    // 如果需要縮小，創建縮小後的 canvas
     let finalCanvas = exportCanvas;
     if (outputWidth !== canvasSize.width || outputHeight !== canvasSize.height) {
       finalCanvas = document.createElement('canvas');
@@ -290,7 +275,6 @@ const executeDownload = async () => {
       finalCtx.drawImage(exportCanvas, 0, 0, outputWidth, outputHeight);
     }
 
-    // 轉換為 blob 並下載
     finalCanvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const filename = `紙娃娃-${outputWidth}x${outputHeight}-${new Date().getTime()}.png`;
@@ -326,29 +310,24 @@ const executeDownload = async () => {
   }
 };
 
-// 生成預覽圖
 const generatePreviewImage = async () => {
   try {
     const canvas = document.querySelector('.canvas');
     if (!canvas) return null;
 
-    // 創建一個 canvas 來合成預覽圖
     const previewCanvas = document.createElement('canvas');
     const previewSize = 200; // 預覽圖尺寸
     previewCanvas.width = previewSize;
     previewCanvas.height = previewSize;
     const ctx = previewCanvas.getContext('2d');
 
-    // 填充背景
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-bg-main').trim() || '#f8f5ea';
     ctx.fillRect(0, 0, previewSize, previewSize);
 
-    // 取得畫布實際尺寸
     const hasBackground = (gameStore.currentOutfit.background?.length || 0) > 0;
     const canvasSize = hasBackground ? gameStore.backgroundSize : gameStore.canvasSize;
     const scale = previewSize / Math.max(canvasSize.width, canvasSize.height);
 
-    // 繪製所有圖層
     const layers = gameStore.currentLayers;
     for (const layer of layers) {
       const img = new Image();
@@ -379,7 +358,6 @@ const generatePreviewImage = async () => {
 const saveOutfit = async () => {
   const name = prompt('請為您的搭配取個名字：', `我的搭配 ${gameStore.savedOutfits.length + 1}`);
   if (name) {
-    // 生成預覽圖
     const previewImage = await generatePreviewImage();
     gameStore.saveCurrentOutfit(name, previewImage);
   }
@@ -398,26 +376,6 @@ const flipSelected = (axis) => {
 </script>
 
 <style scoped>
-/* ========================================
-   Controls.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 基礎結構
-   2. 圖標按鈕
-   3. 控制按鈕（badge-btn）
-   4. 縮放控制
-   5. 自由模式區塊
-   6. 收合切換按鈕
-   7. 過渡動畫
-   8. 下載對話框
-   9. 響應式設計 - 手機版
-   10. 響應式設計 - 平板版
-   11. 響應式設計 - 下載對話框手機版
-   ======================================== */
-
-/* ========================================
-   1. 基礎結構
-   ======================================== */
 .floating-controls {
   position: absolute;
   top: 10px;
@@ -450,9 +408,6 @@ const flipSelected = (axis) => {
   gap: 6px;
 }
 
-/* ========================================
-   2. 圖標按鈕
-   ======================================== */
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
@@ -487,9 +442,6 @@ const flipSelected = (axis) => {
   stroke-width: 2.5;
 }
 
-/* ========================================
-   3. 控制按鈕（badge-btn）
-   ======================================== */
 .badge-btn {
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
@@ -518,7 +470,6 @@ const flipSelected = (axis) => {
   cursor: not-allowed;
 }
 
-/* 模式切換按鈕 */
 .badge-btn.mode {
   background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
   font-size: 0.8rem;
@@ -529,14 +480,12 @@ const flipSelected = (axis) => {
   color: var(--color-bg-card);
 }
 
-/* 翻轉按鈕 */
 .badge-btn.flip {
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   padding: 7px 12px;
   font-size: 0.8rem;
 }
 
-/* 圓形按鈕（上一步/下一步） */
 .badge-btn.round {
   width: 36px;
   height: 36px;
@@ -547,7 +496,6 @@ const flipSelected = (axis) => {
   flex: 0 0 36px;
 }
 
-/* 儲存搭配按鈕 */
 .badge-btn.save {
   background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent));
   color: var(--color-text-primary);
@@ -558,9 +506,6 @@ const flipSelected = (axis) => {
   background: var(--color-warning);
 }
 
-/* ========================================
-   4. 縮放控制
-   ======================================== */
 .zoom-badge {
   background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
@@ -605,16 +550,12 @@ const flipSelected = (axis) => {
   text-align: center;
 }
 
-/* ========================================
-   5. 自由模式區塊
-   ======================================== */
 .free-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-/* 勾選徽章（旋轉/縮放選項） */
 .check-badge {
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
@@ -639,9 +580,6 @@ const flipSelected = (axis) => {
 
 /* checkbox 樣式由 App.vue 全局管理 */
 
-/* ========================================
-   6. 收合切換按鈕
-   ======================================== */
 .toggle-btn {
   width: 36px;
   height: 36px;
@@ -665,10 +603,6 @@ const flipSelected = (axis) => {
   transform: scale(1.05);
 }
 
-/* ========================================
-   7. 過渡動畫
-   ======================================== */
-/* 滑動淡入淡出動畫 */
 .slide-fade-enter-active {
   transition: all 0.3s ease;
 }
@@ -687,7 +621,6 @@ const flipSelected = (axis) => {
   transform: translateY(-10px);
 }
 
-/* 展開動畫 */
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.25s ease;
@@ -707,10 +640,6 @@ const flipSelected = (axis) => {
   max-height: 200px;
 }
 
-/* ========================================
-   8. 下載對話框
-   ======================================== */
-/* 對話框遮罩層 */
 .download-dialog-overlay {
   position: fixed;
   top: 0;
@@ -724,7 +653,6 @@ const flipSelected = (axis) => {
   z-index: 10000;
 }
 
-/* 對話框容器 */
 .download-dialog {
   background: var(--color-bg-card);
   border-radius: 12px;
@@ -734,7 +662,6 @@ const flipSelected = (axis) => {
   overflow: hidden;
 }
 
-/* 對話框標題列 */
 .download-dialog-header {
   display: flex;
   justify-content: space-between;
@@ -765,12 +692,10 @@ const flipSelected = (axis) => {
   opacity: 1;
 }
 
-/* 對話框內容區 */
 .download-dialog-body {
   padding: 1rem;
 }
 
-/* 尺寸選項 */
 .size-options {
   display: flex;
   flex-direction: column;
@@ -820,7 +745,6 @@ const flipSelected = (axis) => {
   border-radius: 50%;
 }
 
-/* 浮水印選項 */
 .watermark-option {
   display: flex;
   align-items: center;
@@ -868,7 +792,6 @@ const flipSelected = (axis) => {
   color: var(--color-text-primary);
 }
 
-/* 對話框底部按鈕區 */
 .download-dialog-footer {
   display: flex;
   gap: 0.5rem;
@@ -904,9 +827,6 @@ const flipSelected = (axis) => {
   background: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 
-/* ========================================
-   9. 響應式設計 - 手機版
-   ======================================== */
 @media (max-width: 767px) {
   .floating-controls {
     top: 8px;
@@ -992,9 +912,6 @@ const flipSelected = (axis) => {
   }
 }
 
-/* ========================================
-   10. 響應式設計 - 平板版
-   ======================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
   .floating-controls {
     top: 10px;
@@ -1032,9 +949,6 @@ const flipSelected = (axis) => {
   }
 }
 
-/* ========================================
-   11. 響應式設計 - 下載對話框手機版
-   ======================================== */
 @media (max-width: 767px) {
   .download-dialog {
     min-width: 260px;

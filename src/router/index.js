@@ -17,7 +17,6 @@ const router = createRouter({
   ]
 })
 
-// 路由切換時更新頁面標題
 router.afterEach((to) => {
   if (to.meta.title) {
     document.title = to.meta.title

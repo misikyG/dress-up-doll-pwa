@@ -131,22 +131,6 @@ const copyEmail = () => {
 </script>
 
 <style scoped>
-/* ========================================
-   Contact.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 內容容器
-   2. 作者資訊
-   3. 區塊標題
-   4. 社交連結
-   5. 電子信箱
-   6. 意見回饋
-   7. 響應式設計
-   ======================================== */
-
-/* ========================================
-   1. 內容容器
-   ======================================== */
 
 .contact-content {
   padding: 1.25rem 1.5rem;
@@ -154,7 +138,6 @@ const copyEmail = () => {
   max-height: calc(85vh - 60px);
 }
 
-/* 自訂滾動條 */
 .contact-content::-webkit-scrollbar {
   width: 4px;
 }
@@ -182,10 +165,6 @@ const copyEmail = () => {
   border-bottom: none;
   margin-bottom: 0;
 }
-
-/* ========================================
-   2. 作者資訊
-   ======================================== */
 
 .author-section {
   display: flex;
@@ -243,10 +222,6 @@ const copyEmail = () => {
   line-height: 1.5;
 }
 
-/* ========================================
-   3. 區塊標題
-   ======================================== */
-
 .section-title {
   margin: 0 0 0.75rem 0;
   font-size: 0.95rem;
@@ -263,10 +238,6 @@ const copyEmail = () => {
   justify-content: center;
   color: var(--color-primary);
 }
-
-/* ========================================
-   4. 社交連結
-   ======================================== */
 
 .social-links {
   display: flex;
@@ -321,10 +292,6 @@ const copyEmail = () => {
   font-weight: 500;
 }
 
-/* ========================================
-   5. 電子信箱
-   ======================================== */
-
 .email-container {
   display: flex;
   align-items: center;
@@ -376,10 +343,6 @@ const copyEmail = () => {
   color: var(--color-primary);
 }
 
-/* ========================================
-   6. 意見回饋
-   ======================================== */
-
 .feedback-desc {
   margin: 0 0 0.75rem 0;
   font-size: 0.85rem;
@@ -417,10 +380,6 @@ const copyEmail = () => {
   background: color-mix(in srgb, var(--color-primary) 85%, transparent);
   transform: translateY(-1px);
 }
-
-/* ========================================
-   7. 響應式設計
-   ======================================== */
 
 @media (max-width: 767px) {
   .contact-content {

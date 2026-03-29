@@ -312,22 +312,15 @@
             <!-- 物件操作 -->
             <div class="context-menu-section">
               <button class="context-menu-option" @click="toggleHideItem(contextMenu.item)">
-                <span class="option-icon">
-                  <svg v-if="isItemHidden(contextMenu.item)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                </span>
+                <span class="option-icon" v-html="isItemHidden(contextMenu.item) ? icons.eyeShow : icons.eyeHide"></span>
                 <span class="option-name">{{ isItemHidden(contextMenu.item) ? '取消隱藏' : '隱藏' }}</span>
               </button>
               <button class="context-menu-option" @click="renameItem(contextMenu.item)">
-                <span class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </span>
+                <span class="option-icon" v-html="icons.rename"></span>
                 <span class="option-name">重新命名</span>
               </button>
               <button class="context-menu-option danger" @click="deleteItem(contextMenu.item)">
-                <span class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </span>
+                <span class="option-icon" v-html="icons.trash"></span>
                 <span class="option-name">刪除</span>
               </button>
             </div>
@@ -356,9 +349,7 @@
                 <span class="option-name">重新命名</span>
               </button>
               <button class="context-menu-option danger" @click="deleteOutfit(outfitContextMenu.outfit)">
-                <span class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </span>
+                <span class="option-icon" v-html="icons.trash"></span>
                 <span class="option-name">刪除搭配</span>
               </button>
             </div>
@@ -409,14 +400,12 @@ let longPressTimer = null;
 // 圖示
 const filterIcon = icons.filter;
 
-// --- 虛擬滾動設定 ---
 const ITEM_WIDTH = 120;
 const ITEM_HEIGHT = 130;
 const INFO_HEIGHT = 58;
 const GAP = 12;
 let resizeObserver = null;
 
-// --- Computed: 資料處理 ---
 const availablePacks = computed(() => gameStore.availablePacks);
 
 const characterOptions = computed(() => {
@@ -554,7 +543,6 @@ const onMobileItemsScroll = () => {
   }
 };
 
-// --- Computed: 虛擬滾動計算 ---
 const itemsPerRow = computed(() => {
   if (!scrollContainer.value || gameStore.ui.wardrobeCollapsed) return 1;
   return Math.max(1, Math.floor(scrollContainer.value.clientWidth / (ITEM_WIDTH + GAP)));
@@ -593,7 +581,6 @@ const currentCategoryIcon = computed(() => {
   return gameStore.categories.find(c => c.key === activeCategory.value)?.svg || icons.other;
 });
 
-// --- 方法 ---
 const setActiveCategory = (categoryKey) => {
   activeCategory.value = categoryKey;
   // 切換分類時重置 tag 篩選
@@ -634,7 +621,6 @@ const isExpressionAvailable = (item) => {
 // 使用 store 中的共用方法
 const formatDate = (dateString) => gameStore.formatDate(dateString);
 
-// --- 上下文選單處理 ---
 const showContextMenu = (item, event) => {
   event.preventDefault();
   event.stopPropagation();
@@ -835,14 +821,12 @@ const renameOutfit = async (outfit) => {
   }, 100);
 };
 
-// --- 虛擬滾動處理 ---
 const handleScroll = () => {
   if (scrollContainer.value) {
     scrollTop.value = scrollContainer.value.scrollTop;
   }
 };
 
-// --- 手機版衣櫃滾輪轉橫向滾動 ---
 const onMobileItemsWheel = (e) => {
   const container = e.currentTarget;
   if (container) {
@@ -863,14 +847,12 @@ const updateContainerHeight = () => {
   }
 };
 
-// --- ResizeObserver 防抖保護 ---
 let resizeDebounceTimer = null;
 const debouncedUpdateContainerHeight = () => {
   if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
   resizeDebounceTimer = setTimeout(updateContainerHeight, 100);
 };
 
-// --- 生命週期 ---
 onMounted(() => {
   updateContainerHeight();
   if (scrollContainer.value) {
@@ -941,26 +923,6 @@ watch(characterOptions, (options) => {
 </script>
 
 <style scoped>
-/* ========================================
-   Wardrobe.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 基礎結構
-   2. 桌面版佈局
-   3. 分類側邊欄
-   4. 物件顯示區域
-   5. 篩選與排序面板
-   6. 物件格線
-   7. 右鍵選單
-   8. 手機版佈局：底部抽屜
-   9. 響應式設計 - 手機版
-   10. 響應式設計 - 平板版
-   11. 平板版特定樣式
-   ======================================== */
-
-/* ========================================
-   1. 基礎結構
-   ======================================== */
 .wardrobe { 
   position: relative;
   background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent); 
@@ -986,9 +948,6 @@ watch(characterOptions, (options) => {
   min-height: 0; 
 }
 
-/* ========================================
-   2. 桌面版佈局
-   ======================================== */
 .desktop-wardrobe { 
   height: 100%; 
   width: 100%;
@@ -997,7 +956,6 @@ watch(characterOptions, (options) => {
   min-height: 0;
 }
 
-/* 衣櫃收合把手 */
 .panel-toggle-handle {
   position: absolute;
   top: 50%;
@@ -1043,7 +1001,6 @@ watch(characterOptions, (options) => {
   }
 }
 
-/* 桌面版衣櫃收起時 */
 .wardrobe.collapsed .items-display {
   opacity: 0;
   visibility: hidden;
@@ -1058,9 +1015,6 @@ watch(characterOptions, (options) => {
   max-width: none;
 }
 
-/* ========================================
-   3. 分類側邊欄
-   ======================================== */
 .category-sidebar { 
   background-color: var(--color-bg-panel); 
   display: flex; 
@@ -1139,9 +1093,6 @@ watch(characterOptions, (options) => {
   display: block;
 }
 
-/* ========================================
-   4. 物件顯示區域
-   ======================================== */
 .items-display { 
   flex: 1; 
   display: flex; 
@@ -1162,11 +1113,6 @@ watch(characterOptions, (options) => {
   align-items: center;
 }
 
-/* ========================================
-   5. 篩選與排序面板
-   ======================================== */
-
-/* 篩選器按鈕 */
 .filter-toggle-btn {
   display: flex;
   align-items: center;
@@ -1218,7 +1164,6 @@ watch(characterOptions, (options) => {
   max-width: 80px;
 }
 
-/* 篩選面板 */
 .filter-panel {
   background-color: var(--color-bg-card);
   border-bottom: 1px solid var(--color-border);
@@ -1292,7 +1237,6 @@ watch(characterOptions, (options) => {
   background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent);
 }
 
-/* 篩選面板動畫 */
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition: all 0.2s ease;
@@ -1331,7 +1275,6 @@ watch(characterOptions, (options) => {
   min-height: 0;
 }
 
-/* 桌面版垂直滾動條樣式 */
 .items-grid-container::-webkit-scrollbar {
   width: 5px;
 }
@@ -1355,9 +1298,6 @@ watch(characterOptions, (options) => {
   width: 100%; 
 }
 
-/* ========================================
-   6. 物件格線
-   ======================================== */
 .items-grid { 
   display: grid; 
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
@@ -1435,7 +1375,6 @@ watch(characterOptions, (options) => {
   font-weight: bold; 
 }
 
-/* 變體指示器 */
 .variant-indicator {
   position: absolute;
   bottom: 4px;
@@ -1457,7 +1396,6 @@ watch(characterOptions, (options) => {
   border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
 }
 
-/* 搜尋跳轉高亮閃爍效果 */
 .item-card.highlighted {
   animation: highlight-flash 0.6s ease-in-out 5;
   border-color: var(--color-success);
@@ -1475,9 +1413,6 @@ watch(characterOptions, (options) => {
   }
 }
 
-/* ========================================
-   7. 右鍵選單
-   ======================================== */
 .context-menu-overlay {
   position: fixed;
   top: 0;
@@ -1601,6 +1536,11 @@ watch(characterOptions, (options) => {
   flex-shrink: 0;
 }
 
+.context-menu-option .option-icon :deep(svg) {
+  width: 14px;
+  height: 14px;
+}
+
 .context-menu-option .option-name {
   flex: 1;
   color: var(--color-text-primary);
@@ -1622,7 +1562,6 @@ watch(characterOptions, (options) => {
   color: color-mix(in srgb, var(--color-warning) 90%, transparent);
 }
 
-/* 手機版物件詳細資訊 */
 .mobile-item-details {
   background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: 8px;
@@ -1673,14 +1612,12 @@ watch(characterOptions, (options) => {
   min-height: 58px;
 }
 
-/* 物件 meta 行 */
 .item-meta-row {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
-/* 物件標籤 */
 .item-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1713,7 +1650,6 @@ watch(characterOptions, (options) => {
   line-height: 1; 
 }
 
-/* 搭配預覽圖樣式 */
 .outfit-preview {
   background: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
 }
@@ -1745,9 +1681,6 @@ watch(characterOptions, (options) => {
   opacity: 0.5; 
 }
 
-/* ========================================
-   8. 手機版佈局：底部抽屜
-   ======================================== */
 .mobile-bottom-sheet {
   z-index: 90;
   border-radius: 16px 16px 0 0;
@@ -1909,7 +1842,6 @@ watch(characterOptions, (options) => {
   touch-action: pan-x;
 }
 
-/* 統一手機版水平滾動條樣式 */
 .mobile-items-scroll::-webkit-scrollbar,
 .categories-scroll::-webkit-scrollbar {
   height: 4px;
@@ -1988,7 +1920,6 @@ watch(characterOptions, (options) => {
   font-weight: bold;
 }
 
-/* 手機版搭配項目樣式 */
 .mobile-outfit-item {
   display: flex;
   flex-direction: column;
@@ -2031,9 +1962,6 @@ watch(characterOptions, (options) => {
   display: none;
 }
 
-/* ========================================
-   9. 響應式設計 - 手機版
-   ======================================== */
 @media (max-width: 767px) {
   .wardrobe {
     min-width: unset;
@@ -2078,9 +2006,6 @@ watch(characterOptions, (options) => {
   }
 }
 
-/* ========================================
-   10. 響應式設計 - 平板版
-   ======================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
   .left-panel {
     width: clamp(160px, 22vw, 220px);
@@ -2152,7 +2077,6 @@ watch(characterOptions, (options) => {
     gap: 12px; 
   }
 
-  /* 平板版選取框縮小，避免被裁切感 */
   .items-grid .grid-item {
     border-width: 1.5px;
     border-radius: 6px;
@@ -2214,9 +2138,6 @@ watch(characterOptions, (options) => {
   }
 }
 
-/* ========================================
-   11. 平板版特定樣式
-   ======================================== */
 .tablet-style {
   height: 100%;
   transition: width 0.2s ease-out, min-width 0.2s ease-out, max-width 0.2s ease-out;
@@ -2293,7 +2214,6 @@ watch(characterOptions, (options) => {
   max-width: 64px;
 }
 
-/* 平板版衣櫃內容貼合底部 */
 .tablet-style .wardrobe-content {
   flex: 1;
   display: flex;
@@ -2315,7 +2235,6 @@ watch(characterOptions, (options) => {
   flex: 1;
 }
 
-/* 平板版收合把手修正 */
 .tablet-style .panel-toggle-handle--right {
   display: flex;
 }

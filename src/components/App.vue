@@ -7,27 +7,6 @@
 </script>
 
 <style>
-/* ========================================
-   App.vue 全局樣式
-   ----------------------------------------
-   目錄：
-   1. 全局動畫與基礎
-   2. 全局共用元件
-   3. 載入畫面
-   4. 主應用佈局
-   5. 內容區域佈局
-   6. 彈出視窗
-   7. 通知系統
-   8. 過渡動畫
-   9. 響應式設計 - 平板版
-   10. 響應式設計 - 手機版
-   ======================================== */
-
-/* ========================================
-   1. 全局動畫與基礎
-   ======================================== */
-
-/* 動畫定義 */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -37,7 +16,6 @@
   50% { opacity: 1; }
 }
 
-/* SVG 圖標通用樣式 */
 .icon-btn svg,
 .title-icon svg,
 .panel-icon svg,
@@ -50,7 +28,6 @@ button svg {
   vertical-align: middle;
 }
 
-/* 禁止文字反白選取 */
 *,
 *::before,
 *::after {
@@ -62,7 +39,6 @@ button svg {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 允許輸入框選取文字 */
 input,
 textarea,
 [contenteditable="true"] {
@@ -72,7 +48,6 @@ textarea,
   user-select: text;
 }
 
-/* 無障礙螢幕閱讀器專用 (visually-hidden) */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -85,7 +60,6 @@ textarea,
   border: 0;
 }
 
-/* 基礎佈局 */
 body {
   margin: 0;
   font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -105,11 +79,6 @@ body {
   box-sizing: border-box;
 }
 
-/* ========================================
-   2. 全局共用元件
-   ======================================== */
-
-/* Modal 基礎樣式 */
 .modal-base {
   max-width: 90vw;
   background: var(--color-bg-card);
@@ -125,7 +94,6 @@ body {
 .modal-md { width: 500px; }
 .modal-lg { width: 600px; }
 
-/* Modal 頭部 */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -142,14 +110,12 @@ body {
   font-weight: 600;
 }
 
-/* Modal 內容區 */
 .modal-content {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
 }
 
-/* 關閉按鈕 */
 .btn-close {
   background: none;
   border: none;
@@ -171,7 +137,6 @@ body {
   color: var(--color-text-primary);
 }
 
-/* close-btn 通用關閉按鈕 */
 .close-btn {
   background: none;
   border: none;
@@ -192,7 +157,6 @@ body {
   color: var(--color-primary);
 }
 
-/* 空狀態樣式 */
 .empty-state {
   text-align: center;
   color: var(--color-text-secondary);
@@ -220,7 +184,6 @@ body {
   color: var(--color-text-secondary);
 }
 
-/* 載入動畫 */
 .spinner {
   border: 3px solid color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   border-top-color: var(--color-primary);
@@ -232,7 +195,6 @@ body {
 .spinner-md { width: 32px; height: 32px; }
 .spinner-lg { width: 48px; height: 48px; }
 
-/* 按鈕通用樣式 */
 .btn {
   border: none;
   border-radius: var(--radius-sm);
@@ -287,11 +249,6 @@ body {
   cursor: not-allowed;
 }
 
-/* ========================================
-   全局勾選樣式（統一管理）
-   ======================================== */
-
-/* 隱藏原生 checkbox */
 .checkbox-custom-container input[type="checkbox"],
 .filter-checkbox-item input[type="checkbox"],
 .check-badge input[type="checkbox"],
@@ -299,7 +256,6 @@ body {
   display: none;
 }
 
-/* 自訂勾選框基礎樣式 - 圓形主題色 */
 .checkbox-custom,
 .equipped-badge,
 .selected-indicator {
@@ -318,7 +274,6 @@ body {
   justify-content: center;
 }
 
-/* 篩選器用較小的勾選框 */
 .filter-checkbox-item .checkbox-custom {
   width: 14px;
   height: 14px;
@@ -327,7 +282,6 @@ body {
   border-width: 1.5px;
 }
 
-/* Controls check-badge 的勾選指示器 */
 .check-badge .checkbox-indicator {
   width: 16px;
   height: 16px;
@@ -344,7 +298,6 @@ body {
   justify-content: center;
 }
 
-/* 勾選狀態 - 圓形主題色底 */
 input[type="checkbox"]:checked + .checkbox-custom,
 .equipped-badge,
 .selected-indicator {
@@ -357,7 +310,6 @@ input[type="checkbox"]:checked + .checkbox-custom,
   border-color: var(--color-primary);
 }
 
-/* 勾勾符號 - 主背景色 */
 input[type="checkbox"]:checked + .checkbox-custom::after,
 .equipped-badge::after,
 .selected-indicator::after {
@@ -372,7 +324,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   transform: rotate(45deg);
 }
 
-/* 篩選器較小勾勾 */
 .filter-checkbox-item input[type="checkbox"]:checked + .checkbox-custom::after {
   left: 3.5px;
   top: 1px;
@@ -381,7 +332,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   border-width: 0 1.5px 1.5px 0;
 }
 
-/* check-badge 勾勾 */
 .check-badge input[type="checkbox"]:checked + .checkbox-indicator::after {
   content: '';
   position: absolute;
@@ -394,14 +344,12 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   transform: rotate(45deg);
 }
 
-/* equipped-badge 和 selected-indicator 的內容覆蓋 */
 .equipped-badge,
 .selected-indicator {
   font-size: 0;
   color: transparent;
 }
 
-/* 縮圖通用樣式 */
 .thumbnail {
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: var(--radius-sm);
@@ -422,9 +370,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .thumbnail-md { width: 50px; height: 50px; }
 .thumbnail-lg { width: 70px; height: 70px; }
 
-/* ========================================
-   3. 載入畫面
-   ======================================== */
 .loading-overlay {
   display: flex;
   flex-direction: column;
@@ -445,9 +390,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   margin-bottom: 1rem;
 }
 
-/* ========================================
-   4. 主應用佈局
-   ======================================== */
 .main-app {
   display: flex;
   flex-direction: column;
@@ -530,9 +472,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   color: var(--color-text-primary);
 }
 
-/* ========================================
-   5. 內容區域佈局
-   ======================================== */
 .content-wrapper {
   flex: 1;
   display: grid;
@@ -543,7 +482,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   position: relative;
 }
 
-/* 桌面版布局 */
 .layout-left-center {
   grid-template-columns: var(--wardrobe-width) 1fr;
 }
@@ -552,7 +490,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   grid-template-columns: 68px 1fr;
 }
 
-/* 平板布局 */
 .layout-tablet {
   display: flex;
   flex-direction: row;
@@ -567,7 +504,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   transition: width 0.3s ease, min-width 0.3s ease;
 }
 
-/* 平板版衣櫃收起時 - 畫布彈性變化 */
 .layout-tablet .left-panel.collapsed {
   width: 68px;
   min-width: 68px;
@@ -580,7 +516,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   transition: flex 0.3s ease;
 }
 
-/* 手機布局 */
 .layout-mobile {
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr;
@@ -588,7 +523,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   gap: 0.5rem;
 }
 
-/* 面板通用樣式 */
 .panel {
   background-color: var(--color-bg-panel);
   border-radius: var(--radius-lg);
@@ -623,9 +557,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   overflow: hidden;
 }
 
-/* ========================================
-   6. 彈出視窗 (Modal)
-   ======================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -640,9 +571,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   padding: 1rem;
 }
 
-/* ========================================
-   7. 通知系統
-   ======================================== */
 .notification {
   position: fixed;
   bottom: 20px;
@@ -661,9 +589,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .notification.warning { background-color: var(--color-warning); }
 .notification.info { background-color: var(--color-info); }
 
-/* ========================================
-   8. 過渡動畫
-   ======================================== */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--transition-normal);
@@ -685,9 +610,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   opacity: 0;
 }
 
-/* ========================================
-   9. 響應式設計 - 平板版 (768px - 1024px)
-   ======================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
   .app-header {
     padding: 0 1rem;
@@ -710,9 +632,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   }
 }
 
-/* ========================================
-   10. 響應式設計 - 手機版 (< 768px)
-   ======================================== */
 @media (max-width: 767px) {
   .app-header {
     padding: 0 0.5rem;
@@ -777,7 +696,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
     transition: all 0.3s ease;
   }
 
-  /* 手機版的衣櫃面板樣式 */
   .left-panel {
     order: 2;
     flex: 0 1 auto;
@@ -794,8 +712,6 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
     width: 100%;
     min-height: 36px;
   }
-
-  
 
 /* 平板視圖覆寫：保持收合時與分類列一致的寬度 */
 .tablet-view .left-panel.collapsed {

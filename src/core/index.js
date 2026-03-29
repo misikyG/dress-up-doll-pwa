@@ -1,4 +1,3 @@
-// core/index.js - IndexedDB 資料庫封裝層
 class DressingCore {
   constructor() {
     this.db = null;

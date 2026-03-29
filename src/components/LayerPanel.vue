@@ -160,7 +160,6 @@ const layerList = ref(null);
 const contextMenu = ref({ visible: false, layer: null, x: 0, y: 0 });
 let longPressTimer = null;
 
-// 滾輪橫向滾動
 const handleHorizontalScroll = (event) => {
   if (layerList.value) {
     event.preventDefault();
@@ -172,7 +171,6 @@ const layers = computed(() => {
   return [...gameStore.currentLayers].reverse();
 });
 
-// 可變動的圖層列表（用於 draggable）
 const layersList = computed({
   get: () => layers.value,
   set: (newLayers) => {
@@ -192,7 +190,6 @@ const getCategoryName = (category) => {
   return gameStore.getCategoryName(category);
 };
 
-// 獲取變體標籤文字
 const getVariantLabel = (layer) => {
   const item = layer.item;
   if (!item?.hasVariant && !item?.variants?.length) return null;
@@ -279,7 +276,6 @@ onUnmounted(() => {
   }
 });
 
-// Draggable 事件處理
 const onDragStart = () => {
   // vuedraggable 會處理實際拖曳，這裡僅保留掛鉤
 };
@@ -287,14 +283,9 @@ const onDragStart = () => {
 const onDragEnd = () => {
   // v-model 會自動更新，觸發 computed setter
 };
-
-// 物件刪除改由右鍵/長按選單處理
 </script>
 
 <style scoped>
-/* ========================================
-   1. 基礎結構
-   ======================================== */
 .layer-panel {
   background-color: transparent; 
   transition: all 0.3s ease;
@@ -304,11 +295,6 @@ const onDragEnd = () => {
   overflow: visible;
 }
 
-/* ========================================
-   2. 收合/展開控制
-   ======================================== */
-
-/* 頂部收合把手 (桌面版和平板版) */
 .panel-toggle-handle--top {
   position: absolute;
   left: 50%;
@@ -347,12 +333,10 @@ const onDragEnd = () => {
   transform: rotate(180deg);
 }
 
-/* 收起狀態時把手仍然顯示 */
 .layer-panel.is-collapsed .panel-toggle-handle--top {
   display: flex;
 }
 
-/* 手機版物件列表收合把手 */
 .panel-toggle-handle--bottom {
   position: absolute;
   top: -20px;
@@ -386,9 +370,6 @@ const onDragEnd = () => {
   transition: transform 0.2s ease;
 }
 
-/* ========================================
-   3. 底部控制欄
-   ======================================== */
 .layer-panel-footer {
   display: flex;
   align-items: center;
@@ -397,7 +378,6 @@ const onDragEnd = () => {
   background-color: var(--color-bg-panel);
   position: relative;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  /* 確保底部無圓角 */
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -407,7 +387,6 @@ const onDragEnd = () => {
   background-color: transparent;
 }
 
-/* 物件列表標題 */
 .layer-panel-title {
   display: flex;
   align-items: center;
@@ -431,7 +410,6 @@ const onDragEnd = () => {
   color: var(--color-text-secondary);
 }
 
-/* 操作按鈕 */
 .layer-actions {
   display: flex;
   align-items: center;
@@ -469,16 +447,13 @@ const onDragEnd = () => {
   background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
 }
 
-/* ========================================
-   4. 空狀態樣式
-   ======================================== */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: clamp(100px, 20vh, 120px);
-  max-height: clamp(130px, 22vh, 280px);
+  min-height: clamp(120px, 22vh, 160px);
+  max-height: clamp(170px, 28vh, 320px);
   color: var(--color-text-secondary);
   font-size: 0.9rem;
   background-color: var(--color-bg-card);
@@ -492,7 +467,6 @@ const onDragEnd = () => {
   margin-bottom: 0.5rem;
 }
 
-/* empty-state 收合手把 */
 .empty-state-toggle-handle {
   position: absolute;
   top: 0;
@@ -528,12 +502,9 @@ const onDragEnd = () => {
   transition: transform 0.2s ease;
 }
 
-/* ========================================
-   5. 圖層列表
-   ======================================== */
 .layer-list-container {
-  min-height: clamp(100px, 20vh, 120px);
-  max-height: clamp(130px, 22vh, 280px);
+  min-height: clamp(120px, 22vh, 160px);
+  max-height: clamp(170px, 28vh, 320px);
   border-radius: 0;
   background-color: var(--color-bg-card);
   position: relative;
@@ -555,7 +526,6 @@ const onDragEnd = () => {
   touch-action: pan-x;
 }
 
-/* Draggable 容器 */
 .layer-draggable-container {
   display: flex;
   gap: 0.5rem;
@@ -563,7 +533,6 @@ const onDragEnd = () => {
   width: 100%;
 }
 
-/* 自訂滾動條 */
 .layer-list::-webkit-scrollbar {
   height: 6px;
 }
@@ -582,9 +551,6 @@ const onDragEnd = () => {
   background: var(--color-text-secondary);
 }
 
-/* ========================================
-   6. 圖層項目
-   ======================================== */
 .layer-item {
   display: flex;
   flex-direction: column;
@@ -597,7 +563,7 @@ const onDragEnd = () => {
   cursor: grab;
   /* 避免 transition: all — 會對 transform/layout 觸發 GPU 合成 */
   transition: border-color 0.2s ease, background-color 0.2s ease;
-  min-width: 70px;
+  min-width: 80px;
   position: relative;
   -webkit-user-select: none;
   user-select: none;
@@ -619,7 +585,6 @@ const onDragEnd = () => {
   background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
 }
 
-/* Vuedraggable 拖曳樣式 */
 .layer-item-ghost {
   opacity: 0.4;
   background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
@@ -636,24 +601,30 @@ const onDragEnd = () => {
   cursor: grabbing !important;
 }
 
-/* ========================================
-   7. 縮圖樣式
-   ======================================== */
 .layer-thumbnail {
-  width: 50px;
-  height: 50px;
-  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
+  width: 64px;
+  height: 64px;
+  /* 棋盤格背景讓透明圖片清晰可見，避免瀏覽器預設透明區看起來像空白 */
+  background-color: var(--color-bg-canvas);
+  background-image:
+    linear-gradient(45deg, rgba(0,0,0,0.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0,0,0,0.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.06) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .layer-thumbnail img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 
@@ -688,9 +659,6 @@ const onDragEnd = () => {
   box-shadow: 0 2px 6px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 
-/* ========================================
-   8. 圖層資訊
-   ======================================== */
 .layer-info {
   display: flex;
   flex-direction: column;
@@ -702,7 +670,7 @@ const onDragEnd = () => {
 .layer-name {
   font-size: 0.8rem;
   font-weight: 500;
-  max-width: 70px;
+  max-width: 80px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -723,9 +691,6 @@ const onDragEnd = () => {
   text-overflow: ellipsis;
 }
 
-/* ========================================
-   9. 層級控制按鈕
-   ======================================== */
 .layer-controls {
   position: absolute;
   top: 2px;
@@ -737,7 +702,6 @@ const onDragEnd = () => {
   transition: opacity 0.2s ease;
 }
 
-/* 僅在有 hover 能力的裝置（滑鼠）上隱藏，hover 時顯示 */
 @media (hover: hover) {
   .layer-controls {
     opacity: 0;
@@ -770,9 +734,6 @@ const onDragEnd = () => {
   cursor: not-allowed;
 }
 
-/* ========================================
-   10. 拖曳控制
-   ======================================== */
 .drag-handle {
   position: absolute;
   bottom: 2px;
@@ -800,7 +761,6 @@ const onDragEnd = () => {
   cursor: grabbing;
 }
 
-/* 僅在有 hover 能力的裝置（滑鼠）上隱藏，hover 時顯示 */
 @media (hover: hover) {
   .drag-handle {
     opacity: 0;
@@ -816,9 +776,6 @@ const onDragEnd = () => {
   background-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
-/* ========================================
-   11. 右鍵/長按選單
-   ======================================== */
 .layer-context-overlay {
   position: fixed;
   inset: 0;
@@ -919,7 +876,6 @@ const onDragEnd = () => {
   filter: grayscale(0.4);
 }
 
-/* 手機版收起狀態 */
 .layer-panel.mobile-collapsed {
   overflow: visible;
 }
@@ -932,7 +888,6 @@ const onDragEnd = () => {
   display: none;
 }
 
-/* 手機版佈局 */
 .layer-panel.mobile-layout {
   display: flex;
   flex-direction: column;
@@ -948,7 +903,6 @@ const onDragEnd = () => {
   max-height: 48px;
 }
 
-/* 手機版頂部控制欄 */
 .mobile-layer-header {
   display: flex;
   flex-direction: column;
@@ -989,7 +943,6 @@ const onDragEnd = () => {
   font-size: 0.7rem;
 }
 
-/* 手機版物件列表容器 */
 .layer-panel.mobile-layout .layer-list-container {
   border-radius: 0;
   flex: 1;
@@ -1021,11 +974,7 @@ const onDragEnd = () => {
   font-size: 0.7rem;
 }
 
-/* ========================================
-   11. 響應式設計 - 手機版
-   ======================================== */
 @media (max-width: 767px) {
-  /* 收合把手 */
   .panel-toggle-handle--bottom {
     display: flex;
     width: 46px;
@@ -1038,7 +987,6 @@ const onDragEnd = () => {
     height: 24px;
   }
   
-  /* 底部控制欄 */
   .layer-panel-footer {
     padding: 0.35rem 0.75rem;
   }
@@ -1061,7 +1009,6 @@ const onDragEnd = () => {
     font-size: 0.75rem;
   }
   
-  /* 圖層列表 */
   .layer-list-container {
     min-height: clamp(70px, 12vh, 100px);
     max-height: clamp(70px, 12vh, 100px);
@@ -1073,7 +1020,6 @@ const onDragEnd = () => {
     border-radius: 12px 12px 0 0;
   }
   
-  /* 圖層項目 */
   .layer-item {
     min-width: 60px;
     padding: 0.35rem;
@@ -1084,14 +1030,12 @@ const onDragEnd = () => {
     padding: 0.35rem;
   }
   
-  /* 縮圖 */
   .layer-thumbnail {
     width: 36px;
     height: 36px;
     border-radius: 4px;
   }
   
-  /* 圖層資訊 */
   .layer-name {
     font-size: 0.7rem;
     max-width: 58px;
@@ -1102,7 +1046,6 @@ const onDragEnd = () => {
     max-width: 58px;
   }
   
-  /* 控制按鈕 */
   .layer-controls {
     opacity: 1;
   }
@@ -1113,7 +1056,6 @@ const onDragEnd = () => {
     font-size: 0.65rem;
   }
   
-  /* 拖曳控制 */
   .drag-handle {
     opacity: 1;
     font-size: 1rem;
@@ -1138,7 +1080,6 @@ const onDragEnd = () => {
     right: -2px;
   }
   
-  /* 空狀態 */
   .empty-state {
     font-size: 0.8rem;
     padding: 0.4rem 0.75rem;
@@ -1156,11 +1097,7 @@ const onDragEnd = () => {
   }
 }
 
-/* ========================================
-   12. 響應式設計 - 平板版
-   ======================================== */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* 基礎結構 */
   .layer-panel {
     position: relative;
     display: flex;
@@ -1168,12 +1105,10 @@ const onDragEnd = () => {
     min-height: 0;
   }
   
-  /* 收合把手 */
   .panel-toggle-handle--top {
     display: flex;
   }
   
-  /* 底部控制欄 */
   .layer-panel-footer {
     padding: 0.4rem 0.85rem;
     position: relative;
@@ -1190,7 +1125,6 @@ const onDragEnd = () => {
     display: flex !important;
   }
   
-  /* 圖層列表 */
   .layer-list-container {
     min-height: clamp(110px, 18vh, 140px);
     max-height: clamp(120px, 20vh, 150px);
@@ -1205,7 +1139,6 @@ const onDragEnd = () => {
     border-radius: 12px 12px 0 0;
   }
   
-  /* 圖層項目 */
   .layer-item {
     min-width: 70px;
     min-height: auto;
@@ -1217,7 +1150,6 @@ const onDragEnd = () => {
     padding: 0.4rem;
   }
 
-  /* 拖曳把手 */
   .drag-handle {
     opacity: 1;
     padding: 0;
@@ -1231,13 +1163,11 @@ const onDragEnd = () => {
     cursor: grabbing;
   }
   
-  /* 縮圖 */
   .layer-thumbnail {
     width: 36px;
     height: 36px;
   }
   
-  /* 圖層資訊 */
   .layer-name {
     font-size: 0.75rem;
     max-width: 60px;

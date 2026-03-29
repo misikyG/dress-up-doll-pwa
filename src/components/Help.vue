@@ -114,7 +114,7 @@
         
         <!-- 常見問題 -->
         <div v-if="activeTab === 'faq'" class="help-section">
-          <h4><span class="section-icon" v-html="icons.questionCircle"></span> 常見問題</h4>
+          <h4><span class="section-icon" v-html="icons.help"></span> 常見問題</h4>
           <div class="help-text">
             <div class="faq-item">
               <p class="faq-question">Q: 如何製作自己的圖包？</p>
@@ -178,27 +178,12 @@ const tabs = [
   { id: 'controls', name: '操作說明', icon: icons.gamepad },
   { id: 'modes', name: '模式說明', icon: icons.sliders },
   { id: 'wardrobe', name: '衣櫃功能', icon: icons.closet },
-  { id: 'faq', name: '常見問題', icon: icons.questionCircle },
+  { id: 'faq', name: '常見問題', icon: icons.help },
   { id: 'privacy', name: '隱私權政策', icon: icons.shield },
 ];
 </script>
 
 <style scoped>
-/* ========================================
-   Help.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 內容容器
-   2. Tab 標籤列
-   3. Tab 內容區
-   4. 說明文字
-   5. FAQ 樣式
-   6. 響應式設計
-   ======================================== */
-
-/* ========================================
-   1. 內容容器
-   ======================================== */
 
 .help-content {
   display: flex;
@@ -206,10 +191,6 @@ const tabs = [
   flex: 1;
   overflow: hidden;
 }
-
-/* ========================================
-   2. Tab 標籤列
-   ======================================== */
 
 .help-tabs {
   display: flex;
@@ -220,7 +201,6 @@ const tabs = [
   flex-shrink: 0;
 }
 
-/* 自訂橫向滾動條（與物件列表同粗細） */
 .help-tabs::-webkit-scrollbar {
   height: 6px;
 }
@@ -276,10 +256,6 @@ const tabs = [
   height: 1em;
 }
 
-/* ========================================
-   3. Tab 內容區
-   ======================================== */
-
 .help-tab-content {
   flex: 1;
   overflow-y: auto;
@@ -307,10 +283,6 @@ const tabs = [
   width: 1.2em;
   height: 1.2em;
 }
-
-/* ========================================
-   4. 說明文字
-   ======================================== */
 
 .help-text {
   color: var(--color-text-primary);
@@ -340,7 +312,6 @@ const tabs = [
   color: var(--color-primary);
 }
 
-/* 工具列按鈕說明樣式 */
 .toolbar-list {
   list-style: none;
   padding-left: 0;
@@ -385,10 +356,6 @@ const tabs = [
   vertical-align: middle;
 }
 
-/* ========================================
-   5. FAQ 樣式
-   ======================================== */
-
 .faq-item {
   margin-bottom: 1.25rem;
   padding: 1rem;
@@ -407,10 +374,6 @@ const tabs = [
   color: var(--color-text-secondary);
   margin: 0;
 }
-
-/* ========================================
-   6. 隱私權連結樣式
-   ======================================== */
 
 .privacy-full-link {
   margin-top: 1.25rem;
@@ -432,10 +395,6 @@ const tabs = [
 .privacy-full-link a:hover {
   color: var(--color-primary);
 }
-
-/* ========================================
-   7. 響應式設計
-   ======================================== */
 
 @media (max-width: 767px) {
   .help-tabs {

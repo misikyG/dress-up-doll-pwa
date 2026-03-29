@@ -256,25 +256,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ========================================
-   Search.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 搜尋輸入區
-   2. 結果容器
-   3. 搜尋指示器
-   4. 結果區塊
-   5. 物件項目
-   6. 操作按鈕
-   7. 無結果與提示
-   8. 響應式設計
-   ======================================== */
-
-/* 繼承全局 modal-base, modal-header 樣式 */
-
-/* ========================================
-   1. 搜尋輸入區
-   ======================================== */
 
 .search-input-wrapper { 
   padding: 1rem 1.5rem; 
@@ -331,19 +312,11 @@ onMounted(() => {
   background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
 
-/* ========================================
-   2. 結果容器
-   ======================================== */
-
 .search-results-wrapper { 
   flex: 1; 
   overflow-y: auto; 
   padding: 1rem 1.5rem; 
 }
-
-/* ========================================
-   3. 搜尋指示器
-   ======================================== */
 
 .searching-indicator {
   display: flex;
@@ -362,10 +335,6 @@ onMounted(() => {
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
 }
-
-/* ========================================
-   4. 結果區塊
-   ======================================== */
 
 .result-section { 
   margin-bottom: 1.5rem; 
@@ -394,10 +363,6 @@ onMounted(() => {
   flex-direction: column; 
   gap: 0.5rem; 
 }
-
-/* ========================================
-   5. 物件項目
-   ======================================== */
 
 .result-item { 
   display: flex; 
@@ -482,10 +447,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* ========================================
-   6. 操作按鈕
-   ======================================== */
-
 .action-btn { 
   padding: 0.5rem 0.9rem; 
   border: 1px solid var(--color-border); 
@@ -508,19 +469,6 @@ onMounted(() => {
   border-color: var(--color-primary);
 }
 
-.goto-btn {
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.goto-btn:hover {
-  background-color: var(--color-primary);
-  color: var(--color-bg-card);
-  border-color: var(--color-primary);
-}
-
 .pack-action {
   background-color: var(--color-warning);
   color: var(--color-bg-main);
@@ -530,10 +478,6 @@ onMounted(() => {
 .pack-action:hover {
   background-color: color-mix(in srgb, var(--color-warning) 85%, transparent);
 }
-
-/* ========================================
-   7. 無結果與提示
-   ======================================== */
 
 .no-results { 
   text-align: center; 
@@ -576,10 +520,6 @@ onMounted(() => {
   padding-left: 1.5rem;
   line-height: 1.6;
 }
-
-/* ========================================
-   8. 響應式設計
-   ======================================== */
 
 @media (max-width: 767px) {
   .search-modal {

@@ -294,11 +294,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, watch, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, reactive, nextTick, onUnmounted } from 'vue';
 import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
-import { ensureGoogleClient, ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, listBackupFiles, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
+import { ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 
 defineEmits(['close']);
@@ -312,7 +312,6 @@ const isLoadingDemo = ref(false);
 const isLoadingFilters = ref(false);
 const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
 
-// 顏色管理相關
 const showColorEditor = ref(false);
 const showCustomCSS = ref(false);
 const showFontSettings = ref(false);
@@ -322,10 +321,8 @@ const cssFileInput = ref(null);
 const customCSS = ref('');
 const activeColorKey = ref(null);
 
-// 預設主題列表
 const presetThemesList = presetThemes;
 
-// 字體設定
 const editingFontSize = ref(16);
 const editingFontFamily = ref('');
 const fontOptions = [
@@ -387,7 +384,6 @@ const colorLabels = {
 
 const editingColors = reactive({ ...defaultColors });
 
-// iro.js 色彩選取器相關
 const iroPickerContainer = ref(null);
 let iroColorPicker = null;
 
@@ -451,7 +447,6 @@ const getCurrentRgb = () => {
   return `${r}, ${g}, ${b}`;
 };
 
-// 處理 HEX 輸入
 const handleHexInput = (event) => {
   let value = event.target.value;
   // 確保以 # 開頭
@@ -487,7 +482,6 @@ const validateHexInput = (event) => {
   }
 };
 
-// 處理 RGB 輸入
 const handleRgbInput = (channel, event) => {
   if (!activeColorKey.value) return;
   
@@ -550,7 +544,6 @@ onUnmounted(() => {
   }
 });
 
-// 主題相關函數
 const handleThemeClick = (themeId) => {
   if (themeId === gameStore.theme.currentTheme) {
     showColorEditor.value = !showColorEditor.value;
@@ -646,7 +639,6 @@ const saveCurrentTheme = async () => {
   gameStore.showNotification('✅ 已儲存並套用主題', 'success');
 };
 
-// 顏色匯出/匯入
 const exportColors = () => {
   const config = {
     type: 'colors-only',
@@ -695,7 +687,6 @@ const handleColorImport = async (event) => {
   event.target.value = '';
 };
 
-// CSS 匯出/匯入
 const exportCSS = () => {
   const config = {
     type: 'css-only',
@@ -734,7 +725,6 @@ const handleCSSImport = async (event) => {
   event.target.value = '';
 };
 
-// 自定義 CSS 相關
 const applyCustomCSS = async () => {
   await gameStore.setCustomCSS(customCSS.value);
   gameStore.showNotification('✅ 已套用自定義 CSS', 'success');
@@ -751,7 +741,6 @@ const clearCustomCSS = async () => {
   gameStore.showNotification('🗑️ 已清除自定義 CSS', 'success');
 };
 
-// 字體設定相關
 const increaseFontSize = () => {
   if (editingFontSize.value < 24) {
     editingFontSize.value++;
@@ -770,7 +759,6 @@ const applyFontSettings = async () => {
   await gameStore.setFontSettings(editingFontFamily.value, editingFontSize.value);
 };
 
-// 圖包管理相關函數
 const deleteSelectedPack = async () => {
   const pack = gameStore.availablePacks.find(p => p.id === selectedPackId.value);
   if (!pack) return;
@@ -832,7 +820,6 @@ const downloadJson = (data, filename) => {
   URL.revokeObjectURL(url);
 };
 
-// Google Drive 同步
 const BACKUP_FILENAME = 'doll-backup.json';
 
 const connectGoogle = async () => {
@@ -980,7 +967,6 @@ const clearAllData = () => {
   }
 };
 
-// 載入示範圖包
 const DEMO_PACK_ID = 'demo-sample-pack';
 
 const loadDemoPack = async () => {
@@ -1055,7 +1041,6 @@ const blobToDataURL = (blob) => {
   });
 };
 
-// 載入默認濾鏡
 const DEFAULT_FILTERS_PACK_ID = 'default-filters-pack';
 
 const loadDefaultFilters = async () => {
@@ -1127,26 +1112,6 @@ const loadDefaultFilters = async () => {
 </script>
 
 <style scoped>
-/* ========================================
-   Settings.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 基礎結構
-   2. 主題選擇器
-   3. 子區塊樣式
-   4. 顏色編輯器
-   5. 顏色選擇彈窗
-   6. 自定義 CSS
-   7. 按鈕樣式
-   8. 圖包管理
-   9. 雲端同步
-   10. 表單元素
-   11. 響應式設計
-   ======================================== */
-
-/* ========================================
-   1. 基礎結構
-   ======================================== */
 .settings-modal {
   width: 600px;
   max-width: 90vw;
@@ -1179,7 +1144,6 @@ const loadDefaultFilters = async () => {
   flex: 1;
 }
 
-/* 自訂滾動條 */
 .settings-content::-webkit-scrollbar {
   width: 4px;
 }
@@ -1217,9 +1181,6 @@ const loadDefaultFilters = async () => {
   gap: 0.5rem;
 }
 
-/* ========================================
-   2. 主題選擇器
-   ======================================== */
 .theme-selector {
   margin-bottom: 1rem;
 }
@@ -1298,9 +1259,6 @@ const loadDefaultFilters = async () => {
   opacity: 1;
 }
 
-/* ========================================
-   3. 子區塊樣式
-   ======================================== */
 .subsection {
   margin-top: 0.5rem;
 }
@@ -1344,10 +1302,6 @@ const loadDefaultFilters = async () => {
   box-sizing: border-box;
 }
 
-/* ========================================
-   4. 顏色編輯器
-   ======================================== */
-/* 顏色網格 */
 .color-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1355,7 +1309,6 @@ const loadDefaultFilters = async () => {
   margin-bottom: 0.75rem;
 }
 
-/* 色塊顯示樣式 */
 .color-swatches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
@@ -1399,9 +1352,6 @@ const loadDefaultFilters = async () => {
   word-break: keep-all;
 }
 
-/* ========================================
-   5. 顏色選擇彈窗
-   ======================================== */
 .color-picker-popup {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
@@ -1438,14 +1388,12 @@ const loadDefaultFilters = async () => {
   align-items: center;
 }
 
-/* iro.js 色彩選取器容器 */
 .iro-picker-container {
   display: flex;
   justify-content: center;
   margin-bottom: 0.5rem;
 }
 
-/* 顏色輸入區塊 */
 .color-input-section {
   width: 100%;
   display: flex;
@@ -1652,9 +1600,6 @@ const loadDefaultFilters = async () => {
   flex-shrink: 0;
 }
 
-/* ========================================
-   6. 自定義 CSS
-   ======================================== */
 .css-editor {
   width: 100%;
   min-height: 150px;
@@ -1676,9 +1621,6 @@ const loadDefaultFilters = async () => {
   border-color: var(--color-primary);
 }
 
-/* ========================================
-   6.5 字體設定
-   ======================================== */
 .font-setting-row {
   display: flex;
   align-items: center;
@@ -1754,9 +1696,6 @@ const loadDefaultFilters = async () => {
   border-color: var(--color-primary);
 }
 
-/* ========================================
-   7. 按鈕樣式
-   ======================================== */
 .primary-btn {
   background-color: var(--color-primary);
   color: var(--color-bg-card);
@@ -1839,9 +1778,6 @@ const loadDefaultFilters = async () => {
   background-color: color-mix(in srgb, var(--color-error) 85%, transparent);
 }
 
-/* ========================================
-   8. 圖包管理
-   ======================================== */
 .pack-actions {
   display: flex;
   gap: 0.5rem;
@@ -1866,9 +1802,6 @@ const loadDefaultFilters = async () => {
   align-items: center;
 }
 
-/* ========================================
-   9. 雲端同步
-   ======================================== */
 .cloud-status {
   display: flex;
   align-items: center;
@@ -1915,9 +1848,6 @@ const loadDefaultFilters = async () => {
   font-size: 0.78rem;
 }
 
-/* ========================================
-   10. 表單元素
-   ======================================== */
 select {
   flex: 1;
   padding: 0.6rem;
@@ -1948,10 +1878,6 @@ select:focus {
   font-size: 0.9rem;
 }
 
-/* ========================================
-   11. 響應式設計
-   ======================================== */
-/* 手機版響應式 */
 @media (max-width: 767px) {
   .settings-modal {
     width: 100vw;
@@ -2148,7 +2074,6 @@ select:focus {
   }
 }
 
-/* 平板版響應式 */
 @media (min-width: 768px) and (max-width: 1024px) {
   .settings-modal {
     width: 90vw;

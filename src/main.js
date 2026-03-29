@@ -4,7 +4,6 @@ import router from './router/index.js'
 import App from './components/App.vue'
 import './assets/ios-safari-compat.css'
 
-// iOS Safari 相容性檢測與修復
 const applyIOSSafariFixes = () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -145,7 +144,6 @@ const applyIOSSafariFixes = () => {
   }
 };
 
-// 在 DOM 準備好後執行
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', applyIOSSafariFixes);
 } else {

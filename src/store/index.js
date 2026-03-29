@@ -1,29 +1,75 @@
-// store/index.js - 紙娃娃遊戲核心狀態管理
 import { defineStore } from 'pinia'
 import DressingCore from '../core/index.js'
 import { icons } from '../icons.js'
 
-// 工具函式
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
-const cloneSimple = deepClone; // 用於小型非圖片資料
 const generateId = () => crypto?.randomUUID?.() || `outfit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-// 圖片縮圖生成 (用於衣櫃瀏覽，畫布仍使用完整解析度)
 const generateThumbnail = (dataUrl, maxDimension = 300) => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1);
+      // 1. 縮小到偵測尺寸以節省記憶體，找出非透明內容的邊界框
+      const detectMax = 400;
+      const detectScale = Math.min(detectMax / img.width, detectMax / img.height, 1);
+      const dw = Math.max(1, Math.round(img.width * detectScale));
+      const dh = Math.max(1, Math.round(img.height * detectScale));
+
+      const detectCanvas = document.createElement('canvas');
+      detectCanvas.width = dw;
+      detectCanvas.height = dh;
+      const dCtx = detectCanvas.getContext('2d', { willReadFrequently: true });
+      dCtx.drawImage(img, 0, 0, dw, dh);
+
+      let minX = dw, minY = dh, maxX = 0, maxY = 0;
+      let hasContent = false;
+      try {
+        const id = dCtx.getImageData(0, 0, dw, dh);
+        const px = id.data;
+        for (let y = 0; y < dh; y++) {
+          for (let x = 0; x < dw; x++) {
+            if (px[(y * dw + x) * 4 + 3] > 10) {
+              hasContent = true;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+      } catch { hasContent = false; }
+      detectCanvas.width = 0; detectCanvas.height = 0;
+
+      // 2. 將偵測座標映射回原圖座標並加上內距
+      let srcX, srcY, srcW, srcH;
+      if (hasContent && maxX >= minX && maxY >= minY) {
+        const ox = minX / detectScale;
+        const oy = minY / detectScale;
+        const ow = (maxX - minX + 1) / detectScale;
+        const oh = (maxY - minY + 1) / detectScale;
+        const pad = Math.max(ow, oh) * 0.06;
+        srcX = Math.max(0, Math.floor(ox - pad));
+        srcY = Math.max(0, Math.floor(oy - pad));
+        srcW = Math.min(img.width - srcX, Math.ceil(ow + pad * 2));
+        srcH = Math.min(img.height - srcY, Math.ceil(oh + pad * 2));
+      } else {
+        srcX = 0; srcY = 0; srcW = img.width; srcH = img.height;
+      }
+
+      // 3. 裁切 + 縮放到目標尺寸
+      const scale = Math.min(maxDimension / srcW, maxDimension / srcH, 1);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(img.width * scale));
-      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.width = Math.max(1, Math.round(srcW * scale));
+      canvas.height = Math.max(1, Math.round(srcH * scale));
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+
       let result;
       try {
-        result = canvas.toDataURL('image/webp', 0.75);
-        if (!result.startsWith('data:image/webp')) result = canvas.toDataURL('image/jpeg', 0.75);
-      } catch { result = canvas.toDataURL('image/jpeg', 0.75); }
+        result = canvas.toDataURL('image/webp', 0.85);
+        // 不支援 webp 時改用 png（非 jpeg）以保留透明度
+        if (!result.startsWith('data:image/webp')) result = canvas.toDataURL('image/png');
+      } catch { result = canvas.toDataURL('image/png'); }
       canvas.width = 0; canvas.height = 0;
       resolve(result);
     };
@@ -32,7 +78,6 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
   });
 };
 
-// 圖片資料快取 (LRU) — 加速 undo/redo
 // iOS Safari 記憶體嚴格受限，降低快取數量以避免 OOM 崩潰
 const imageCache = new Map();
 const isIOS = typeof navigator !== 'undefined' && (
@@ -52,7 +97,6 @@ const resolveImageData = async (itemId, variantKey) => {
   return data;
 };
 
-// 建立無圖片的穿搭快照 (用於歷史記錄和 appState 儲存)
 const createOutfitSnapshot = (outfit) => {
   const snapshot = {};
   for (const [slot, items] of Object.entries(outfit)) {
@@ -62,7 +106,6 @@ const createOutfitSnapshot = (outfit) => {
   return snapshot;
 };
 
-// 從快照還原完整圖片資料
 const resolveOutfitImages = async (outfit) => {
   const resolved = {};
   for (const [slot, items] of Object.entries(outfit)) {
@@ -79,7 +122,6 @@ const resolveOutfitImages = async (outfit) => {
   return resolved;
 };
 
-// 常數與映射
 const slotNameMap = { accessory: 'accessories', carry: 'carries', underwear: 'underwears', other: 'others' };
 const getSlotName = (category) => slotNameMap[category] || category;
 
@@ -96,7 +138,6 @@ const defaultZIndexMap = {
 
 const singleSlotCategories = new Set(['filter', 'background', 'character', 'expression']);
 
-// 主題 CSS 預設值
 const hardcodedDefaultThemeCSS = `
 :root {
   --color-primary: #618b6a;
@@ -131,7 +172,6 @@ const hardcodedDefaultThemeCSS = `
 }
 `;
 
-// 預設主題配色
 export const presetThemes = [
   {
     id: 'preset-crimson',
@@ -178,7 +218,6 @@ const captureInitialThemeCSS = () => {
   if (el) initialThemeCSS = el.innerHTML;
 };
 
-// 穿搭資料結構
 const createEmptyOutfit = () => ({
   filter: [],
   background: [],
@@ -208,7 +247,6 @@ const normalizeOutfit = (outfit) => {
   return normalized;
 };
 
-// 圖層構建
 const buildLayers = (outfit, layerOrder, hiddenSet = new Set()) => {
   const layers = [];
   categoryOrder.forEach((category) => {
@@ -230,7 +268,6 @@ const buildLayers = (outfit, layerOrder, hiddenSet = new Set()) => {
   return layers.sort((a, b) => a.zIndex - b.zIndex);
 };
 
-// Store 定義
 export const useGameStore = defineStore('game', {
   state: () => ({
     isInitialized: false,
@@ -259,7 +296,6 @@ export const useGameStore = defineStore('game', {
     history: [],
     historyIndex: -1,
     isRestoring: false,
-    // UI 狀態
     ui: {
       currentPage: 'dressing',
       loading: true,
@@ -271,10 +307,9 @@ export const useGameStore = defineStore('game', {
       isMobile: false,
       isTablet: false,
       layerPanelCollapsed: false,
-      highlightedItemId: null, // 搜尋跳轉高亮物件
+      highlightedItemId: null,
     },
 
-    // 分類定義 (順序：星號→濾鏡→背景→人物→表情→髮型→內衣→上衣→下身→外套→套裝→鞋子→配飾→攜帶品→其他)
     categories: [
       { key: 'starred', name: '已儲存搭配', icon: '⭐', svg: icons.starred },
       { key: 'filter', name: '濾鏡', icon: '🎛', svg: icons.filterLayer },
@@ -293,10 +328,8 @@ export const useGameStore = defineStore('game', {
       { key: 'other', name: '其他', icon: '📦', svg: icons.other }
     ],
 
-    // Tag 定義
     categoryTags: {},
 
-    // 主題與自定義樣式
     theme: {
       currentTheme: 'default',
       customThemes: [],
@@ -305,15 +338,10 @@ export const useGameStore = defineStore('game', {
       fontSize: 16,
     },
 
-    // 已刪除的附贈圖包 ID 列表
     dismissedBundledPacks: [],
   }),
 
-  /* ----------------------------------------
-     Getters - 計算屬性
-     ---------------------------------------- */
   getters: {
-    // 物件查詢
     getItemsByCategory: (state) => (category) => {
       if (category === 'starred') return state.savedOutfits;
       if (category === 'expression' && state.selectedCharacterId) {
@@ -330,7 +358,6 @@ export const useGameStore = defineStore('game', {
       return (state.currentOutfit[slot] || []).some(i => i.id === item.id);
     },
 
-    // 快取 hiddenLayerIds 的 Set（Pinia 會根據 state 依賴自動快取 getter）
     _hiddenSet: (state) => new Set(state.hiddenLayerIds),
     currentLayers() {
       return buildLayers(this.currentOutfit, this.layerOrder, this._hiddenSet);
@@ -347,13 +374,11 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    // 初始化
     async initializeApp() {
       this.ui.loading = true;
       try {
         await DressingCore.init();
 
-        // 輕量載入衣櫃 (不含 imageData/variantImages，大幅降低記憶體)
         let items;
         try {
           items = await DressingCore.getAllItemsLightweight();
@@ -362,19 +387,29 @@ export const useGameStore = defineStore('game', {
           items = fullItems.map(({ imageData, variantImages, ...rest }) => rest);
         }
 
-        // 縮圖遷移：為沒有 thumbnailData 的項目生成縮圖 (僅首次執行)
-        const needsThumbnail = items.some(i => !i.thumbnailData);
+        // 檢查是否需要生成或重新生成縮圖（v2: 內容感知裁切 + PNG 回退）
+        const thumbVersionData = await DressingCore.getData('settings', 'thumbnailVersion').catch(() => null);
+        const currentThumbVersion = thumbVersionData?.version || 0;
+        const needsThumbnail = items.some(i => !i.thumbnailData) || currentThumbVersion < 2;
         if (needsThumbnail) {
           const ids = await DressingCore.getAllKeys('items');
           for (const id of ids) {
             const fullItem = await DressingCore.getData('items', id);
-            if (fullItem && !fullItem.thumbnailData && fullItem.imageData) {
-              fullItem.thumbnailData = await generateThumbnail(fullItem.imageData);
-              await DressingCore.saveData('items', fullItem);
-              const memItem = items.find(i => i.id === id);
-              if (memItem) memItem.thumbnailData = fullItem.thumbnailData;
+            if (fullItem?.imageData) {
+              const needsRegen = !fullItem.thumbnailData ||
+                fullItem.thumbnailData.startsWith('data:image/jpeg') ||
+                currentThumbVersion < 2;
+              if (needsRegen) {
+                fullItem.thumbnailData = await generateThumbnail(fullItem.imageData);
+                await DressingCore.saveData('items', fullItem);
+                const memItem = items.find(i => i.id === id);
+                if (memItem) memItem.thumbnailData = fullItem.thumbnailData;
+                // 讓出主線程以避免阻塞 UI
+                await new Promise(r => setTimeout(r, 50));
+              }
             }
           }
+          await DressingCore.setData('settings', 'thumbnailVersion', { version: 2 });
         }
 
         const [outfits, packs] = await Promise.all([
@@ -391,7 +426,6 @@ export const useGameStore = defineStore('game', {
         }
 
         this.wardrobeItems = items;
-        // savedOutfits 僅保留元資料 + previewImage，不載入完整穿搭圖片
         this.savedOutfits = outfits.map(o => ({
           id: o.id,
           name: o.name,
@@ -452,18 +486,14 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    /* ========================================
-       應用程式狀態快取
-       ======================================== */
-
     async saveAppState() {
       try {
         const appState = {
           currentOutfit: createOutfitSnapshot(this.currentOutfit),
           selectedCharacterId: this.selectedCharacterId,
-          layerOrder: cloneSimple(this.layerOrder),
+          layerOrder: deepClone(this.layerOrder),
           canvasMode: this.canvasMode,
-          freeMode: cloneSimple(this.freeMode),
+          freeMode: deepClone(this.freeMode),
           canvasZoom: this.canvasZoom,
           canvasPan: { ...this.canvasPan },
           currentPage: this.ui.currentPage,
@@ -471,13 +501,22 @@ export const useGameStore = defineStore('game', {
           layerPanelCollapsed: this.ui.layerPanelCollapsed,
           hiddenLayerIds: [...this.hiddenLayerIds],
         };
+        // 同步寫入 localStorage 作為備份（iOS 可能在 IndexedDB 寫入完成前殺進程）
+        try { localStorage.setItem('appState-backup', JSON.stringify(appState)); } catch {}
         await DressingCore.setData('settings', 'appState', appState);
       } catch {}
     },
 
     async loadAppState() {
       try {
-        const s = await DressingCore.getData('settings', 'appState');
+        let s = await DressingCore.getData('settings', 'appState');
+        // IndexedDB 無資料時嘗試從 localStorage 回退
+        if (!s) {
+          try {
+            const backup = localStorage.getItem('appState-backup');
+            if (backup) s = JSON.parse(backup);
+          } catch {}
+        }
         if (s) {
           if (s.currentOutfit) {
             const normalized = normalizeOutfit(s.currentOutfit);
@@ -503,10 +542,11 @@ export const useGameStore = defineStore('game', {
 
     debouncedSaveAppState() {
       if (this._saveAppStateTimer) clearTimeout(this._saveAppStateTimer);
-      this._saveAppStateTimer = setTimeout(() => this.saveAppState(), 1000);
+      // iOS 上使用較短的延遲，減少因進程被殺而丟失資料的機率
+      const delay = isIOS ? 500 : 1000;
+      this._saveAppStateTimer = setTimeout(() => this.saveAppState(), delay);
     },
 
-    // 核心換裝操作
     async wearItem(item, variantKey = null) {
       if (!item) return;
       const slot = getSlotName(item.category);
@@ -514,7 +554,6 @@ export const useGameStore = defineStore('game', {
 
       if (currentItems.some(i => i.id === item.id)) return;
 
-      // 從 IndexedDB 載入完整圖片資料 (畫布需要原始解析度)
       const imgData = await resolveImageData(item.id, variantKey);
       if (!imgData) return;
 
@@ -570,7 +609,6 @@ export const useGameStore = defineStore('game', {
       const filtered = (this.currentOutfit[slot] || []).filter(i => i.id !== item.id);
       this.currentOutfit[slot] = filtered;
       this.hiddenLayerIds = this.hiddenLayerIds.filter(id => !id.startsWith(`${item.id}-`));
-      // 釋放圖片快取以降低記憶體壓力
       imageCache.delete(item.id);
       if (item.currentVariant) imageCache.delete(`${item.id}:${item.currentVariant}`);
       if (item.category === 'character' && this.selectedCharacterId === item.id) {
@@ -597,7 +635,6 @@ export const useGameStore = defineStore('game', {
       this.layerOrder = [];
       Object.assign(this.freeMode, { itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {} });
       this.hiddenLayerIds = [];
-      // 清空時釋放所有圖片快取
       imageCache.clear();
       if (!this.isRestoring) {
         this.recordHistory();
@@ -605,7 +642,6 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    // 圖層管理
     moveLayerUp(layerId) {
       const layers = this.currentLayers;
       const idx = layers.findIndex(l => l.id === layerId);
@@ -651,7 +687,6 @@ export const useGameStore = defineStore('game', {
       this.recordHistory();
     },
 
-    // 自由模式變換
     setItemPosition(itemId, position) { this.freeMode.itemPositions[itemId] = { ...position }; },
     setItemScale(itemId, scale) { this.freeMode.itemScales[itemId] = scale; },
     setItemFlip(itemId, flip) { this.freeMode.itemFlips[itemId] = { ...flip }; },
@@ -664,14 +699,13 @@ export const useGameStore = defineStore('game', {
       this.showNotification('🔄 已重置所有變換', 'info');
     },
 
-    // 歷史記錄 (Undo/Redo) — 快照不含 imageData，節省記憶體
     recordHistory() {
       if (this.isRestoring) return;
       const currentState = {
         outfit: createOutfitSnapshot(this.currentOutfit),
         selectedCharacterId: this.selectedCharacterId,
-        freeMode: cloneSimple(this.freeMode),
-        layerOrder: cloneSimple(this.layerOrder),
+        freeMode: deepClone(this.freeMode),
+        layerOrder: deepClone(this.layerOrder),
         canvasMode: this.canvasMode,
         hiddenLayerIds: [...this.hiddenLayerIds]
       };
@@ -700,14 +734,13 @@ export const useGameStore = defineStore('game', {
       if (this.historyIndex !== targetIndex) { this.isRestoring = false; return; }
       this.currentOutfit = resolvedOutfit;
       this.selectedCharacterId = s.selectedCharacterId;
-      this.freeMode = cloneSimple(s.freeMode);
+      this.freeMode = deepClone(s.freeMode);
       this.layerOrder = [...(s.layerOrder || [])];
       this.canvasMode = s.canvasMode || this.canvasMode;
       this.hiddenLayerIds = [...(s.hiddenLayerIds || [])];
       this.isRestoring = false;
     },
 
-    // 穿搭儲存管理
     async saveCurrentOutfit(name, previewImage = null) {
       const trimmedName = name?.trim();
       if (!trimmedName) { this.showNotification('❌ 請輸入穿搭名稱', 'error'); return; }
@@ -729,8 +762,8 @@ export const useGameStore = defineStore('game', {
         id: existing?.id || generateId(),
         name: trimmedName,
         outfit: outfitCopy,
-        layerOrder: cloneSimple(this.layerOrder),
-        freeMode: cloneSimple(this.freeMode),
+        layerOrder: deepClone(this.layerOrder),
+        freeMode: deepClone(this.freeMode),
         canvasZoom: this.canvasZoom,
         canvasPan: { ...this.canvasPan },
         canvasMode: this.canvasMode,
@@ -808,7 +841,6 @@ export const useGameStore = defineStore('game', {
     async loadOutfit(outfit) {
       this.isRestoring = true;
       try {
-        // 從 IndexedDB 載入完整穿搭資料 (含 imageData)
         const fullData = await DressingCore.getData('outfits', outfit.id);
         if (!fullData?.outfit) {
           this.showNotification('❌ 無法載入穿搭', 'error');
@@ -817,7 +849,7 @@ export const useGameStore = defineStore('game', {
         }
         const normalized = normalizeOutfit(fullData.outfit);
         this.currentOutfit = normalized;
-        this.freeMode = cloneSimple(fullData.freeMode || {
+        this.freeMode = deepClone(fullData.freeMode || {
           itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {},
           enableFreeScale: true, enableFreeRotation: false
         });
@@ -835,7 +867,6 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    // 匯出用：從 IndexedDB 載入完整資料 (含 imageData)
     async getFullExportData() {
       const [items, outfits] = await Promise.all([
         DressingCore.getAllData('items'),
@@ -844,9 +875,7 @@ export const useGameStore = defineStore('game', {
       return { items, outfits };
     },
 
-    // 圖包管理
     async addNewItem(itemData) {
-      // 自動生成縮圖
       if (!itemData.thumbnailData && itemData.imageData) {
         itemData.thumbnailData = await generateThumbnail(itemData.imageData);
       }
@@ -899,7 +928,6 @@ export const useGameStore = defineStore('game', {
         this.hiddenItems = [];
         this.clearCurrentOutfit();
         this.clearHistory();
-        // 同步清除 IDB 中的隱藏物件記錄
         await this.saveHiddenItems();
         this.showNotification('🗑️ 所有資料已清空', 'info');
       } catch {
@@ -907,7 +935,6 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    // 物件管理
     async toggleHideItem(itemId) {
       const idx = this.hiddenItems.indexOf(itemId);
       idx === -1 ? this.hiddenItems.push(itemId) : this.hiddenItems.splice(idx, 1);
@@ -950,7 +977,6 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    // 畫布控制
     setCanvasZoom(zoom) {
       const maxZoom = Math.max(5, this.canvasSize.width / 400);
       this.canvasZoom = Math.max(0.1, Math.min(maxZoom, zoom));
@@ -971,7 +997,6 @@ export const useGameStore = defineStore('game', {
       this.recordHistory();
     },
 
-    // UI 狀態管理
     setCurrentPage(page) { this.ui.currentPage = page; },
     toggleWardrobe() { this.ui.wardrobeCollapsed = !this.ui.wardrobeCollapsed; },
     toggleControls() { this.ui.controlsCollapsed = !this.ui.controlsCollapsed; },
@@ -992,15 +1017,12 @@ export const useGameStore = defineStore('game', {
       setTimeout(() => this.ui.notification = null, 3000);
     },
 
-    // 工具函式
     formatDate(dateString, options = {}) {
       if (!dateString) return '未知時間';
       return new Date(dateString).toLocaleDateString('zh-TW', {
         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', ...options
       });
     },
-
-    // 主題管理
 
     async saveThemeSettings() {
       const themeData = deepClone({
@@ -1148,9 +1170,6 @@ export const useGameStore = defineStore('game', {
       await this.saveThemeSettings();
     },
 
-    /**
-     * 從備份資料完整還原主題設定（覆蓋現有）。
-     */
     async restoreThemeFromBackup(themeData) {
       if (!themeData) return;
       this.theme.currentTheme = themeData.currentTheme || 'default';
@@ -1165,7 +1184,6 @@ export const useGameStore = defineStore('game', {
       await this.saveThemeSettings();
     },
 
-    // 附贈圖包管理
     async loadDismissedBundledPacks() {
       try {
         const data = await DressingCore.getData('settings', 'dismissedBundledPacks');

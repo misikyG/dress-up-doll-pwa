@@ -82,22 +82,6 @@ const formatDate = (dateString) => {
 </script>
 
 <style scoped>
-/* ========================================
-   Room.vue 樣式
-   ----------------------------------------
-   目錄：
-   1. 容器結構
-   2. 標頭區域
-   3. 搭配卡片
-   4. 預覽區域
-   5. 搭配資訊
-   6. 空狀態
-   7. 響應式設計
-   ======================================== */
-
-/* ========================================
-   1. 容器結構
-   ======================================== */
 
 .room-container { 
   height: 100%; 
@@ -105,10 +89,6 @@ const formatDate = (dateString) => {
   flex-direction: column; 
   background-color: var(--color-bg-panel);
 }
-
-/* ========================================
-   2. 標頭區域
-   ======================================== */
 
 .room-header { 
   padding: 1rem 1.5rem; 
@@ -146,10 +126,6 @@ const formatDate = (dateString) => {
   gap: 1.25rem; 
 }
 
-/* ========================================
-   3. 搭配卡片
-   ======================================== */
-
 .outfit-card { 
   border-radius: var(--radius-lg); 
   overflow: hidden; 
@@ -164,10 +140,6 @@ const formatDate = (dateString) => {
     box-shadow: var(--shadow-lg);
   }
 }
-
-/* ========================================
-   4. 預覽區域
-   ======================================== */
 
 .outfit-preview { 
   position: relative; 
@@ -204,14 +176,12 @@ const formatDate = (dateString) => {
   transition: opacity 0.2s ease;
 }
 
-/* 僅在有 hover 能力的裝置（滑鼠）上使用 hover 顯示 */
 @media (hover: hover) {
   .outfit-preview:hover .preview-overlay {
     opacity: 1;
   }
 }
 
-/* 觸控裝置使用 :active 替代 :hover */
 @media (hover: none) {
   .outfit-preview:active .preview-overlay {
     opacity: 1;
@@ -226,10 +196,6 @@ const formatDate = (dateString) => {
   border-radius: var(--radius-full);
   font-size: 0.85rem;
 }
-
-/* ========================================
-   5. 搭配資訊
-   ======================================== */
 
 .outfit-info { 
   display: flex; 
@@ -286,10 +252,6 @@ const formatDate = (dateString) => {
   background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
 }
 
-/* ========================================
-   6. 空狀態
-   ======================================== */
-
 .empty-state { 
   text-align: center; 
   color: var(--color-text-secondary); 
@@ -320,10 +282,6 @@ const formatDate = (dateString) => {
 .go-dressing-btn:hover {
   background-color: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
-
-/* ========================================
-   7. 響應式設計
-   ======================================== */
 
 @media (min-width: 768px) and (max-width: 1024px) {
   .room-grid {
