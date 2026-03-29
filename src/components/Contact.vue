@@ -135,7 +135,11 @@ const copyEmail = () => {
 .contact-content {
   padding: 1.25rem 1.5rem;
   overflow-y: auto;
-  max-height: calc(85vh - 60px);
+  flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .contact-content::-webkit-scrollbar {
@@ -384,7 +388,6 @@ const copyEmail = () => {
 @media (max-width: 767px) {
   .contact-content {
     padding: 1rem;
-    max-height: calc(100vh - 56px);
   }
 
   .author-section {

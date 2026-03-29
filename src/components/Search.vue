@@ -260,6 +260,7 @@ onMounted(() => {
 .search-input-wrapper { 
   padding: 1rem 1.5rem; 
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .search-input-container {
@@ -314,8 +315,12 @@ onMounted(() => {
 
 .search-results-wrapper { 
   flex: 1; 
+  min-height: 0;
   overflow-y: auto; 
-  padding: 1rem 1.5rem; 
+  padding: 1rem 1.5rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .searching-indicator {

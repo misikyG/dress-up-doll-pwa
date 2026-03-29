@@ -562,6 +562,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   min-height: 0;
   position: relative;
   overflow: hidden;
+  /* 確保畫布區域底色為 canvas 而非 panel，
+     讓 dressing-container 的半透明 color-bg-canvas 正確疊加 */
+  background-color: var(--color-bg-canvas);
 }
 
 .modal-overlay {

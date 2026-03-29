@@ -258,8 +258,12 @@ const tabs = [
 
 .help-tab-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.25rem 1.5rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .help-section h4 {

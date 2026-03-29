@@ -237,7 +237,6 @@ button,
 .modal-overlay {
   /* 遮罩層不滾動，防止與內部滾動衝突 */
   overflow: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 .modal-base {
@@ -264,8 +263,17 @@ button,
   min-height: 0;
 }
 
+/* 確保 modal 內不可滾動的元素不會壓縮滾動區域 */
+.modal-header,
+.search-input-wrapper,
+.help-tabs {
+  flex-shrink: 0 !important;
+}
+
 /* help-content 是 tabs + tab-content 的容器，本身不應滾動 */
 .help-content {
+  display: flex !important;
+  flex-direction: column !important;
   flex: 1;
   min-height: 0;
   overflow: hidden !important;
@@ -273,14 +281,15 @@ button,
 
 /* ===========================================
    13. 畫布區域背景色 (iOS 回退)
-   color-mix() 在舊版 Safari 不支援時需要 fallback
+   已在 App.vue .main-content 設定 background-color: var(--color-bg-canvas)
+   作為半透明 dressing-container 的底色，
+   以下規則僅作為額外保障
    =========================================== */
 
 .dressing-container {
-  /* 使用 var 直接引用，確保跟隨主題變化 */
-  background-color: var(--color-bg-canvas);
-  /* 如果需要半透明效果且瀏覽器支援 color-mix */
-  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
+  /* 回退到不透明，然後讓支援 color-mix 的瀏覽器使用半透明 */
+  background-color: var(--color-bg-canvas) !important;
+  background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent) !important;
 }
 
 /* ===========================================
@@ -377,8 +386,8 @@ button,
 
 /* --- 選取物件顯示 badge --- */
 .selected-item-badge {
-  background: rgba(97, 139, 106, 0.85);
-  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
+  /* 使用完全不透明的 primary 色，避免與背景融為一體 */
+  background: var(--color-primary) !important;
   color: #fff;
 }
 

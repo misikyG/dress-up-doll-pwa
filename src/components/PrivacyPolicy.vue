@@ -140,8 +140,8 @@ onUnmounted(() => {
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
   font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /* 不設定 overflow-y: auto，改由 body 處理滾動，
+     避免 iOS 建立空滾動容器捕獲觸控事件 */
 }
 
 /* Header */

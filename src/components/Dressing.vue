@@ -552,8 +552,8 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative; 
   overflow: hidden;
-  /* iOS Safari fallback: 先給 rgba 回退，再用 color-mix 覆蓋 */
-  background-color: rgba(240, 242, 245, 0.6);
+  /* 回退到不透明 canvas 色，再用 color-mix 覆蓋為半透明 */
+  background-color: var(--color-bg-canvas);
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   min-height: 0;
 }
@@ -595,11 +595,8 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
-  /* iOS Safari fallback: color-mix 不支援時使用 rgba */
-  background: rgba(97, 139, 106, 0.85);
-  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* 使用完全不透明的 primary 色，避免在 iOS 上因半透明 + backdrop-filter 與背景融合 */
+  background: var(--color-primary);
   color: #fff;
   border-radius: 999px;
   padding: 5px 12px;
@@ -757,7 +754,7 @@ onUnmounted(() => {
   background-color: var(--color-bg-card);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px 16px var(--radius-lg) var(--radius-lg);
   box-shadow: 0 -8px 20px rgba(71, 45, 37, 0.12);
   box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   transition: all 0.3s ease;
@@ -767,8 +764,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: visible;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
 }
 
 .empty-state {

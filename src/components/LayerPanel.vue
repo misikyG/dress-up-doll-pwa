@@ -893,7 +893,7 @@ const onDragEnd = () => {
   flex-direction: column;
   background: transparent;
   max-height: none;
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px 16px var(--radius-lg) var(--radius-lg);
   overflow: hidden;
   width: 100%;
   transition: max-height 0.25s ease;
@@ -944,7 +944,7 @@ const onDragEnd = () => {
 }
 
 .layer-panel.mobile-layout .layer-list-container {
-  border-radius: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   flex: 1;
   min-height: 0;
   max-height: none;
@@ -952,14 +952,14 @@ const onDragEnd = () => {
 }
 
 .layer-panel.mobile-layout .layer-list {
-  border-radius: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   padding: 0.4rem 0.6rem;
   gap: 0.4rem;
   background-color: var(--color-bg-panel);
 }
 
 .layer-panel.mobile-layout .empty-state {
-  border-radius: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   min-height: 40px;
   padding: 0.3rem 0.75rem;
   gap: 0.3rem;
