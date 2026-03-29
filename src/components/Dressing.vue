@@ -24,7 +24,7 @@
         
         <!-- 背景層 -->
         <div v-for="layer in backgroundLayers" :key="layer.id" class="canvas-item background-layer">
-          <img :src="layer.item.imageData" :alt="layer.item.displayName" draggable="false" />
+          <img :src="layer.item.imageData" :alt="layer.item.displayName" draggable="false" decoding="async" />
         </div>
 
         <!-- 所有非背景圖層 -->
@@ -45,8 +45,9 @@
             :src="layer.item.imageData" 
             :alt="layer.item.displayName"
             draggable="false"
+            decoding="async"
             @mousedown="onItemDragStart($event, layer)"
-            @touchstart.prevent="onItemDragStart($event, layer)"
+            @touchstart="onItemDragStart($event, layer)"
           />
           
           <!-- 自由模式下的控制項 -->
@@ -380,14 +381,17 @@ const onItemDragStart = (e, layer) => {
     return;
   }
   
+  // 無論模式都選取物件（iOS 上 touchstart 會阻止 click 合成，所以這裡直接選取）
+  gameStore.selectItem(layer);
+  
   if (gameStore.canvasMode !== 'free' || layer.category === 'character') return;
+  e.preventDefault(); // 僅在自由模式實際拖拽時阻止預設行為
   e.stopPropagation();
   
   const pos = getClientPos(e);
   const itemPos = gameStore.freeMode.itemPositions[layer.id] || { x: 0, y: 0 };
   dragState.value = { isDragging: true, dragItem: layer, startX: pos.x, startY: pos.y, startPos: { ...itemPos } };
   
-  gameStore.selectItem(layer);
   addGlobalListeners(onItemDragging, onItemDragEnd);
 };
 

@@ -429,6 +429,20 @@ export const useGameStore = defineStore('game', {
         this.clearHistory();
         this.recordHistory();
         this.isInitialized = true;
+
+        // 頁面隱藏或關閉時立即寫入狀態（iOS Safari 可能隨時殺進程）
+        const flushSave = () => {
+          if (this._saveAppStateTimer) {
+            clearTimeout(this._saveAppStateTimer);
+            this._saveAppStateTimer = null;
+          }
+          this.saveAppState();
+        };
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') flushSave();
+        });
+        window.addEventListener('pagehide', flushSave);
+
         this.showNotification('✅ 系統準備就緒', 'success');
       } catch (error) {
         console.error("初始化失敗", error);
@@ -556,6 +570,9 @@ export const useGameStore = defineStore('game', {
       const filtered = (this.currentOutfit[slot] || []).filter(i => i.id !== item.id);
       this.currentOutfit[slot] = filtered;
       this.hiddenLayerIds = this.hiddenLayerIds.filter(id => !id.startsWith(`${item.id}-`));
+      // 釋放圖片快取以降低記憶體壓力
+      imageCache.delete(item.id);
+      if (item.currentVariant) imageCache.delete(`${item.id}:${item.currentVariant}`);
       if (item.category === 'character' && this.selectedCharacterId === item.id) {
         this.selectedCharacterId = filtered[0]?.id || null;
       }
@@ -580,6 +597,8 @@ export const useGameStore = defineStore('game', {
       this.layerOrder = [];
       Object.assign(this.freeMode, { itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {} });
       this.hiddenLayerIds = [];
+      // 清空時釋放所有圖片快取
+      imageCache.clear();
       if (!this.isRestoring) {
         this.recordHistory();
         this.showNotification('🗑️ 已清空穿搭', 'info');
@@ -660,7 +679,8 @@ export const useGameStore = defineStore('game', {
       this.history = this.history.slice(0, this.historyIndex + 1);
       this.history.push(currentState);
 
-      if (this.history.length > 50) this.history = this.history.slice(-50);
+      const maxHistory = isIOS ? 20 : 50;
+      if (this.history.length > maxHistory) this.history = this.history.slice(-maxHistory);
       this.historyIndex = this.history.length - 1;
       this.debouncedSaveAppState();
     },
@@ -698,10 +718,17 @@ export const useGameStore = defineStore('game', {
         return;
       }
 
+      // 淺複製穿搭資料（共享 imageData 字串引用，避免 JSON序列化/反序列化
+      // 造成數十 MB 的暫存記憶體高峰）
+      const outfitCopy = {};
+      for (const [slot, items] of Object.entries(this.currentOutfit)) {
+        outfitCopy[slot] = Array.isArray(items) ? items.map(item => ({ ...item })) : [];
+      }
+
       const outfitData = {
         id: existing?.id || generateId(),
         name: trimmedName,
-        outfit: deepClone(this.currentOutfit),
+        outfit: outfitCopy,
         layerOrder: cloneSimple(this.layerOrder),
         freeMode: cloneSimple(this.freeMode),
         canvasZoom: this.canvasZoom,

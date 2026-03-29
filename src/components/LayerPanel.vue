@@ -72,9 +72,9 @@
               @touchend="onLayerTouchEnd"
               @touchcancel="onLayerTouchEnd"
             >
-          <!-- 物件縮圖 -->
+          <!-- 物件縮圖 (使用縮圖而非完整圖片，避免解碼 2000×3800 原圖佔用 ~30MB/張) -->
           <div class="layer-thumbnail">
-            <img :src="layer.item.imageData" :alt="layer.item.displayName" />
+            <img :src="layer.item.thumbnailData || layer.item.imageData" :alt="layer.item.displayName" loading="lazy" decoding="async" />
             <div v-if="gameStore.selectedItem?.id === layer.id" class="selected-indicator">✓</div>
             <div v-if="isLayerHidden(layer.id)" class="hidden-indicator" title="已隱藏">👁‍🗨</div>
           </div>
