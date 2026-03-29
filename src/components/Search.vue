@@ -38,7 +38,7 @@
                class="result-item" 
                @click="handleItemClick(item)">
             <div class="item-thumbnail">
-              <img :src="item.imageData" :alt="item.displayName" />
+              <img :src="item.thumbnailData || item.imageData" :alt="item.displayName" />
               <div v-if="gameStore.isItemInCurrentOutfit(item)" class="equipped-indicator">✓</div>
             </div>
             <div class="item-details">

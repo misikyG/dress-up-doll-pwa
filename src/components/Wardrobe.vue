@@ -151,7 +151,7 @@
                   @touchend="handleItemTouchEnd"
                   @touchcancel="handleItemTouchEnd">
                   <div class="item-thumbnail">
-                    <img :src="item.imageData" :alt="item.displayName" loading="lazy" />
+                    <img :src="item.thumbnailData || item.imageData" :alt="item.displayName" loading="lazy" />
                     <div v-if="gameStore.isItemInCurrentOutfit(item)" class="equipped-badge"></div>
                     <div v-if="item.hasVariant" class="variant-indicator" title="右鍵或長按選擇變體">◆</div>
                   </div>
@@ -241,7 +241,7 @@
                 @touchcancel="handleItemTouchEnd"
                 @contextmenu="handleItemContextMenu(item, $event)"
               >
-                <img :src="item.imageData" :alt="item.displayName" loading="lazy" />
+                <img :src="item.thumbnailData || item.imageData" :alt="item.displayName" loading="lazy" />
                 <div v-if="gameStore.isItemInCurrentOutfit(item)" class="mobile-equipped-badge">✓</div>
               </div>
             </template>
@@ -593,8 +593,8 @@ const handleItemClick = (item) => {
   }
 };
 
-const loadOutfit = (outfit) => {
-  gameStore.loadOutfit(outfit);
+const loadOutfit = async (outfit) => {
+  await gameStore.loadOutfit(outfit);
   gameStore.setCurrentPage('dressing');
 };
 

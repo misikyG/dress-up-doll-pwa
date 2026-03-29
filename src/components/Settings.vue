@@ -794,26 +794,32 @@ const exportSelectedPack = () => {
   gameStore.showNotification(`📦 已匯出圖包：${pack.displayName || pack.name}`, 'success');
 };
 
-const exportAllData = () => {
+const exportAllData = async () => {
   isExportingAll.value = true;
-  const payload = {
-    type: 'full-backup',
-    exportedAt: new Date().toISOString(),
-    packs: gameStore.availablePacks,
-    items: gameStore.wardrobeItems,
-    outfits: gameStore.savedOutfits,
-    theme: {
-      currentTheme: gameStore.theme.currentTheme,
-      customThemes: gameStore.theme.customThemes,
-      customCSS: gameStore.theme.customCSS,
-    },
-    hiddenItems: gameStore.hiddenItems,
-    dismissedBundledPacks: gameStore.dismissedBundledPacks,
-    schemaVersion: 2,
-  };
-  downloadJson(payload, `doll-backup-${Date.now()}.json`);
-  gameStore.showNotification('💾 全部資料已匯出', 'success');
-  isExportingAll.value = false;
+  try {
+    const { items, outfits } = await gameStore.getFullExportData();
+    const payload = {
+      type: 'full-backup',
+      exportedAt: new Date().toISOString(),
+      packs: gameStore.availablePacks,
+      items,
+      outfits,
+      theme: {
+        currentTheme: gameStore.theme.currentTheme,
+        customThemes: gameStore.theme.customThemes,
+        customCSS: gameStore.theme.customCSS,
+      },
+      hiddenItems: gameStore.hiddenItems,
+      dismissedBundledPacks: gameStore.dismissedBundledPacks,
+      schemaVersion: 2,
+    };
+    downloadJson(payload, `doll-backup-${Date.now()}.json`);
+    gameStore.showNotification('💾 全部資料已匯出', 'success');
+  } catch {
+    gameStore.showNotification('❌ 匯出失敗', 'error');
+  } finally {
+    isExportingAll.value = false;
+  }
 };
 
 const downloadJson = (data, filename) => {
@@ -869,12 +875,13 @@ const uploadToDrive = async () => {
   isCloudBusy.value = true;
   try {
     await ensureAccessToken();
+    const { items, outfits } = await gameStore.getFullExportData();
     const payload = {
       type: 'full-backup',
       exportedAt: new Date().toISOString(),
       packs: gameStore.availablePacks,
-      items: gameStore.wardrobeItems,
-      outfits: gameStore.savedOutfits,
+      items,
+      outfits,
       theme: {
         currentTheme: gameStore.theme.currentTheme,
         customThemes: gameStore.theme.customThemes,

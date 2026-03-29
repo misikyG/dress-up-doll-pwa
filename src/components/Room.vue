@@ -14,39 +14,8 @@
       <div v-else class="room-grid">
         <div v-for="outfit in gameStore.savedOutfits" :key="outfit.id" class="outfit-card">
           <div class="outfit-preview" @click="loadAndGo(outfit)">
-            <!-- 背景層 -->
-            <img v-for="(bg, i) in getOutfitSlot(outfit, 'background')" :key="`bg-${i}`"
-                 :src="bg.imageData" class="preview-layer" :style="{ zIndex: 1 + i, objectFit: 'cover' }"/>
-            <!-- 人物層 -->
-            <img v-for="(char, i) in getOutfitSlot(outfit, 'character')" :key="`char-${i}`"
-                 :src="char.imageData" class="preview-layer" :style="{ zIndex: 10 + i }"/>
-            <!-- 下身 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'bottom')" :key="`bot-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 20 + i }"/>
-            <!-- 套裝 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'dress')" :key="`drs-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 25 + i }"/>
-            <!-- 上衣 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'top')" :key="`top-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 30 + i }"/>
-            <!-- 外套 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'outer')" :key="`out-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 40 + i }"/>
-            <!-- 髮型 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'hair')" :key="`hair-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 50 + i }"/>
-            <!-- 表情 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'expression')" :key="`exp-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 55 + i }"/>
-            <!-- 鞋子 -->
-            <img v-for="(item, i) in getOutfitSlot(outfit, 'shoes')" :key="`shoe-${i}`"
-                 :src="item.imageData" class="preview-layer" :style="{ zIndex: 5 + i }"/>
-            <!-- 配件 -->
-            <img v-for="(acc, i) in getOutfitSlot(outfit, 'accessories')" :key="`acc-${i}`"
-                 :src="acc.imageData" class="preview-layer" :style="{ zIndex: 60 + i }"/>
-            <!-- 其他 -->
-            <img v-for="(other, i) in getOutfitSlot(outfit, 'others')" :key="`oth-${i}`"
-                 :src="other.imageData" class="preview-layer" :style="{ zIndex: 70 + i }"/>
+            <img v-if="outfit.previewImage" :src="outfit.previewImage" class="preview-layer" style="z-index: 1" />
+            <span v-else class="outfit-fallback-icon" v-html="icons.dress"></span>
                  
             <!-- 載入提示 -->
             <div class="preview-overlay">
@@ -74,15 +43,8 @@ import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
 const gameStore = useGameStore();
 
-// 輔助函式：安全取得 outfit 槽位陣列
-const getOutfitSlot = (outfit, key) => {
-  const slot = outfit.outfit?.[key];
-  if (!slot) return [];
-  return Array.isArray(slot) ? slot : [slot];
-};
-
-const loadAndGo = (outfit) => {
-  gameStore.loadOutfit(outfit);
+const loadAndGo = async (outfit) => {
+  await gameStore.loadOutfit(outfit);
   gameStore.setCurrentPage('dressing');
 };
 
@@ -95,18 +57,12 @@ const deleteOutfit = (outfitId) => {
 const duplicateOutfit = async (outfit) => {
   const newName = prompt('請為複製的搭配取個名字：', `${outfit.name} - 副本`);
   if (newName) {
-    const duplicatedOutfit = {
-      ...outfit,
-      name: newName,
-      createdAt: new Date().toISOString(),
-    };
-
     const currentOutfit = { ...gameStore.currentOutfit };
     const currentFreeMode = { ...gameStore.freeMode };
     const currentZoom = gameStore.canvasZoom;
     const currentPan = { ...gameStore.canvasPan };
     
-    gameStore.loadOutfit(outfit);
+    await gameStore.loadOutfit(outfit);
     await gameStore.saveCurrentOutfit(newName);
     
     gameStore.currentOutfit = currentOutfit;
@@ -227,6 +183,14 @@ const formatDate = (dateString) => {
   top: 0; left: 0; 
   width: 100%; height: 100%; 
   object-fit: contain; 
+}
+
+.outfit-fallback-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+  font-size: 3rem;
 }
 
 .preview-overlay {

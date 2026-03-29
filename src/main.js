@@ -88,6 +88,36 @@ const applyIOSSafariFixes = () => {
       }
     `;
     document.head.appendChild(style);
+
+    // Controls.vue color-mix() 回退 — 針對不支援 color-mix 的舊版 iOS Safari
+    const ctrlFallback = document.createElement('style');
+    ctrlFallback.id = 'ios-controls-color-fallback';
+    ctrlFallback.textContent = `
+      /* 預設主題色 #472d25 = rgb(71,45,37) 的 rgba 回退 */
+      .icon-btn-ctrl { background: rgba(71,45,37,0.7) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
+      .badge-btn { background: rgba(71,45,37,0.7) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
+      .badge-btn.mode { background: rgba(71,45,37,0.45) !important; }
+      .badge-btn.flip { background: rgba(71,45,37,0.7) !important; }
+      .badge-btn.save { background: linear-gradient(135deg, var(--color-warning), rgba(245,187,100,0.8)) !important; }
+      .zoom-badge { background: rgba(71,45,37,0.75) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
+      .check-badge { background: rgba(71,45,37,0.7) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
+      .toggle-btn { background: rgba(71,45,37,0.75) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
+      .download-dialog-overlay { background: rgba(71,45,37,0.5) !important; }
+
+      /* 若瀏覽器支援 color-mix，覆蓋為主題色感知版本 */
+      @supports (background: color-mix(in srgb, red 50%, transparent)) {
+        .icon-btn-ctrl { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
+        .badge-btn { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
+        .badge-btn.mode { background: color-mix(in srgb, var(--color-text-primary) 45%, transparent) !important; }
+        .badge-btn.flip { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; }
+        .badge-btn.save { background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent)) !important; }
+        .zoom-badge { background: color-mix(in srgb, var(--color-text-primary) 75%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
+        .check-badge { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
+        .toggle-btn { background: color-mix(in srgb, var(--color-text-primary) 75%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
+        .download-dialog-overlay { background: color-mix(in srgb, var(--color-text-primary) 50%, transparent) !important; }
+      }
+    `;
+    document.head.appendChild(ctrlFallback);
     
     // 修復 iOS Safari 的 100vh 問題
     const setViewportHeight = () => {

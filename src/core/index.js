@@ -79,6 +79,29 @@ class DressingCore {
     });
   }
 
+  async getAllKeys(storeName) {
+    return this._wrapRequest(this._getStore(storeName).getAllKeys());
+  }
+
+  async getAllItemsLightweight() {
+    const store = this._getStore('items');
+    return new Promise((resolve, reject) => {
+      const items = [];
+      const request = store.openCursor();
+      request.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          const { imageData, variantImages, ...lightweight } = cursor.value;
+          items.push(lightweight);
+          cursor.continue();
+        } else {
+          resolve(items);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   async clearAllData() {
     const stores = ['items', 'outfits', 'packs'];
     const tx = this.db.transaction(stores, 'readwrite');

@@ -5,7 +5,74 @@ import { icons } from '../icons.js'
 
 // 工具函式
 const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+const cloneSimple = deepClone; // 用於小型非圖片資料
 const generateId = () => crypto?.randomUUID?.() || `outfit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+// 圖片縮圖生成 (用於衣櫃瀏覽，畫布仍使用完整解析度)
+const generateThumbnail = (dataUrl, maxDimension = 300) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxDimension / img.width, maxDimension / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      let result;
+      try {
+        result = canvas.toDataURL('image/webp', 0.75);
+        if (!result.startsWith('data:image/webp')) result = canvas.toDataURL('image/jpeg', 0.75);
+      } catch { result = canvas.toDataURL('image/jpeg', 0.75); }
+      canvas.width = 0; canvas.height = 0;
+      resolve(result);
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+};
+
+// 圖片資料快取 (LRU, 最多 30 項) — 加速 undo/redo
+const imageCache = new Map();
+const MAX_IMAGE_CACHE = 30;
+const resolveImageData = async (itemId, variantKey) => {
+  const key = variantKey ? `${itemId}:${variantKey}` : itemId;
+  if (imageCache.has(key)) return imageCache.get(key);
+  const fullItem = await DressingCore.getData('items', itemId);
+  if (!fullItem) return null;
+  const data = variantKey && fullItem.variantImages?.[variantKey]
+    ? fullItem.variantImages[variantKey] : fullItem.imageData;
+  imageCache.set(key, data);
+  if (imageCache.size > MAX_IMAGE_CACHE) imageCache.delete(imageCache.keys().next().value);
+  return data;
+};
+
+// 建立無圖片的穿搭快照 (用於歷史記錄和 appState 儲存)
+const createOutfitSnapshot = (outfit) => {
+  const snapshot = {};
+  for (const [slot, items] of Object.entries(outfit)) {
+    if (!items || !Array.isArray(items)) { snapshot[slot] = []; continue; }
+    snapshot[slot] = items.map(({ imageData, variantImages, ...rest }) => ({ ...rest }));
+  }
+  return snapshot;
+};
+
+// 從快照還原完整圖片資料
+const resolveOutfitImages = async (outfit) => {
+  const resolved = {};
+  for (const [slot, items] of Object.entries(outfit)) {
+    if (!items) { resolved[slot] = []; continue; }
+    const arr = Array.isArray(items) ? items : [items];
+    resolved[slot] = [];
+    for (const item of arr) {
+      if (!item?.id) continue;
+      if (item.imageData) { resolved[slot].push({ ...item }); continue; }
+      const imgData = await resolveImageData(item.id, item.currentVariant);
+      if (imgData) resolved[slot].push({ ...item, imageData: imgData });
+    }
+  }
+  return resolved;
+};
 
 // 常數與映射
 const slotNameMap = { accessory: 'accessories', carry: 'carries', underwear: 'underwears', other: 'others' };
@@ -130,7 +197,8 @@ const normalizeOutfit = (outfit) => {
   Object.keys(normalized).forEach((key) => {
     const value = outfit[key];
     if (!value) return;
-    normalized[key] = Array.isArray(value) ? deepClone(value) : [deepClone(value)];
+    const arr = Array.isArray(value) ? value : [value];
+    normalized[key] = arr.map(item => ({ ...item }));
   });
   return normalized;
 };
@@ -275,8 +343,32 @@ export const useGameStore = defineStore('game', {
       this.ui.loading = true;
       try {
         await DressingCore.init();
-        const [items, outfits, packs] = await Promise.all([
-          DressingCore.getAllData('items'),
+
+        // 輕量載入衣櫃 (不含 imageData/variantImages，大幅降低記憶體)
+        let items;
+        try {
+          items = await DressingCore.getAllItemsLightweight();
+        } catch {
+          const fullItems = await DressingCore.getAllData('items');
+          items = fullItems.map(({ imageData, variantImages, ...rest }) => rest);
+        }
+
+        // 縮圖遷移：為沒有 thumbnailData 的項目生成縮圖 (僅首次執行)
+        const needsThumbnail = items.some(i => !i.thumbnailData);
+        if (needsThumbnail) {
+          const ids = await DressingCore.getAllKeys('items');
+          for (const id of ids) {
+            const fullItem = await DressingCore.getData('items', id);
+            if (fullItem && !fullItem.thumbnailData && fullItem.imageData) {
+              fullItem.thumbnailData = await generateThumbnail(fullItem.imageData);
+              await DressingCore.saveData('items', fullItem);
+              const memItem = items.find(i => i.id === id);
+              if (memItem) memItem.thumbnailData = fullItem.thumbnailData;
+            }
+          }
+        }
+
+        const [outfits, packs] = await Promise.all([
           DressingCore.getAllData('outfits'),
           DressingCore.getAllData('packs'),
         ]);
@@ -290,10 +382,13 @@ export const useGameStore = defineStore('game', {
         }
 
         this.wardrobeItems = items;
+        // savedOutfits 僅保留元資料 + previewImage，不載入完整穿搭圖片
         this.savedOutfits = outfits.map(o => ({
-          ...o,
-          outfit: normalizeOutfit(o.outfit),
-          layerOrder: deepClone(o.layerOrder || [])
+          id: o.id,
+          name: o.name,
+          previewImage: o.previewImage,
+          createdAt: o.createdAt,
+          layerOrder: o.layerOrder || [],
         }));
         this.availablePacks = packs;
 
@@ -341,17 +436,17 @@ export const useGameStore = defineStore('game', {
     async saveAppState() {
       try {
         const appState = {
-          currentOutfit: deepClone(this.currentOutfit),
+          currentOutfit: createOutfitSnapshot(this.currentOutfit),
           selectedCharacterId: this.selectedCharacterId,
-          layerOrder: deepClone(this.layerOrder),
+          layerOrder: cloneSimple(this.layerOrder),
           canvasMode: this.canvasMode,
-          freeMode: deepClone(this.freeMode),
+          freeMode: cloneSimple(this.freeMode),
           canvasZoom: this.canvasZoom,
-          canvasPan: deepClone(this.canvasPan),
+          canvasPan: { ...this.canvasPan },
           currentPage: this.ui.currentPage,
           wardrobeCollapsed: this.ui.wardrobeCollapsed,
           layerPanelCollapsed: this.ui.layerPanelCollapsed,
-          hiddenLayerIds: deepClone(this.hiddenLayerIds),
+          hiddenLayerIds: [...this.hiddenLayerIds],
         };
         await DressingCore.setData('settings', 'appState', appState);
       } catch {}
@@ -361,7 +456,10 @@ export const useGameStore = defineStore('game', {
       try {
         const s = await DressingCore.getData('settings', 'appState');
         if (s) {
-          if (s.currentOutfit) this.currentOutfit = normalizeOutfit(s.currentOutfit);
+          if (s.currentOutfit) {
+            const normalized = normalizeOutfit(s.currentOutfit);
+            this.currentOutfit = await resolveOutfitImages(normalized);
+          }
           if (s.selectedCharacterId) this.selectedCharacterId = s.selectedCharacterId;
           if (s.layerOrder) this.layerOrder = s.layerOrder;
           if (s.canvasMode) this.canvasMode = s.canvasMode;
@@ -386,18 +484,19 @@ export const useGameStore = defineStore('game', {
     },
 
     // 核心換裝操作
-    wearItem(item, variantKey = null) {
+    async wearItem(item, variantKey = null) {
       if (!item) return;
       const slot = getSlotName(item.category);
       const currentItems = this.currentOutfit[slot] || [];
 
-      let itemToWear = deepClone(item);
-      if (variantKey && item.variants && item.variantImages?.[variantKey]) {
-        itemToWear.currentVariant = variantKey;
-        itemToWear.imageData = item.variantImages[variantKey];
-      }
-
       if (currentItems.some(i => i.id === item.id)) return;
+
+      // 從 IndexedDB 載入完整圖片資料 (畫布需要原始解析度)
+      const imgData = await resolveImageData(item.id, variantKey);
+      if (!imgData) return;
+
+      const itemToWear = { ...item, imageData: imgData };
+      if (variantKey) itemToWear.currentVariant = variantKey;
 
       this.currentOutfit[slot] = singleSlotCategories.has(item.category) 
         ? [itemToWear] 
@@ -419,7 +518,7 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    switchItemVariant(itemId, variantKey) {
+    async switchItemVariant(itemId, variantKey) {
       for (const slotKey of Object.keys(this.currentOutfit)) {
         const items = this.currentOutfit[slotKey];
         if (!Array.isArray(items)) continue;
@@ -429,9 +528,10 @@ export const useGameStore = defineStore('game', {
           const item = items[itemIndex];
           const originalItem = this.wardrobeItems.find(w => w.id === itemId);
           if (originalItem && originalItem.variants) {
-            item.currentVariant = variantKey;
-            if (originalItem.variantImages && originalItem.variantImages[variantKey]) {
-              item.imageData = originalItem.variantImages[variantKey];
+            const imgData = await resolveImageData(itemId, variantKey);
+            if (imgData) {
+              item.currentVariant = variantKey;
+              item.imageData = imgData;
             }
             this.recordHistory();
             this.showNotification(`🔄 已切換變體：${originalItem.variants.find(v => v.key === variantKey)?.name || variantKey}`, 'info');
@@ -536,16 +636,16 @@ export const useGameStore = defineStore('game', {
       this.showNotification('🔄 已重置所有變換', 'info');
     },
 
-    // 歷史記錄 (Undo/Redo)
+    // 歷史記錄 (Undo/Redo) — 快照不含 imageData，節省記憶體
     recordHistory() {
       if (this.isRestoring) return;
       const currentState = {
-        outfit: deepClone(this.currentOutfit),
+        outfit: createOutfitSnapshot(this.currentOutfit),
         selectedCharacterId: this.selectedCharacterId,
-        freeMode: deepClone(this.freeMode),
-        layerOrder: deepClone(this.layerOrder),
+        freeMode: cloneSimple(this.freeMode),
+        layerOrder: cloneSimple(this.layerOrder),
         canvasMode: this.canvasMode,
-        hiddenLayerIds: deepClone(this.hiddenLayerIds)
+        hiddenLayerIds: [...this.hiddenLayerIds]
       };
 
       this.history = this.history.slice(0, this.historyIndex + 1);
@@ -560,16 +660,21 @@ export const useGameStore = defineStore('game', {
     undo() { if (this.historyIndex > 0) { this.historyIndex--; this.restoreFromHistory(); } },
     redo() { if (this.historyIndex < this.history.length - 1) { this.historyIndex++; this.restoreFromHistory(); } },
 
-    restoreFromHistory() {
+    async restoreFromHistory() {
       if (this.historyIndex < 0 || this.historyIndex >= this.history.length) return;
+      const targetIndex = this.historyIndex;
       this.isRestoring = true;
-      const s = this.history[this.historyIndex];
-      this.currentOutfit = deepClone(s.outfit);
+      const s = this.history[targetIndex];
+      // 先還原圖片資料再更新 state，避免畫布閃爍
+      const resolvedOutfit = await resolveOutfitImages(s.outfit);
+      // 若使用者在等待期間再次操作，放棄此次還原
+      if (this.historyIndex !== targetIndex) { this.isRestoring = false; return; }
+      this.currentOutfit = resolvedOutfit;
       this.selectedCharacterId = s.selectedCharacterId;
-      this.freeMode = deepClone(s.freeMode);
-      this.layerOrder = deepClone(s.layerOrder || []);
+      this.freeMode = cloneSimple(s.freeMode);
+      this.layerOrder = [...(s.layerOrder || [])];
       this.canvasMode = s.canvasMode || this.canvasMode;
-      this.hiddenLayerIds = deepClone(s.hiddenLayerIds || []);
+      this.hiddenLayerIds = [...(s.hiddenLayerIds || [])];
       this.isRestoring = false;
     },
 
@@ -588,10 +693,10 @@ export const useGameStore = defineStore('game', {
         id: existing?.id || generateId(),
         name: trimmedName,
         outfit: deepClone(this.currentOutfit),
-        layerOrder: deepClone(this.layerOrder),
-        freeMode: deepClone(this.freeMode),
+        layerOrder: cloneSimple(this.layerOrder),
+        freeMode: cloneSimple(this.freeMode),
         canvasZoom: this.canvasZoom,
-        canvasPan: deepClone(this.canvasPan),
+        canvasPan: { ...this.canvasPan },
         canvasMode: this.canvasMode,
         previewImage,
         createdAt: existing?.createdAt || new Date().toISOString()
@@ -609,7 +714,11 @@ export const useGameStore = defineStore('game', {
     async _reloadOutfits() {
       const outfits = await DressingCore.getAllData('outfits');
       this.savedOutfits = outfits.map(o => ({
-        ...o, outfit: normalizeOutfit(o.outfit), layerOrder: deepClone(o.layerOrder || [])
+        id: o.id,
+        name: o.name,
+        previewImage: o.previewImage,
+        createdAt: o.createdAt,
+        layerOrder: o.layerOrder || [],
       }));
     },
 
@@ -619,7 +728,7 @@ export const useGameStore = defineStore('game', {
         ...outfitData,
         id: outfitData.id || generateId(),
         outfit: normalizeOutfit(outfitData.outfit),
-        layerOrder: deepClone(outfitData.layerOrder || [])
+        layerOrder: outfitData.layerOrder || []
       };
       try {
         await DressingCore.saveData('outfits', normalized);
@@ -660,28 +769,58 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    loadOutfit(outfit) {
+    async loadOutfit(outfit) {
       this.isRestoring = true;
-      const normalized = normalizeOutfit(outfit.outfit);
-      this.currentOutfit = normalized;
-      this.freeMode = deepClone(outfit.freeMode || {
-        itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {},
-        enableFreeScale: true, enableFreeRotation: false
-      });
-      this.layerOrder = deepClone(outfit.layerOrder || []);
-      this.canvasZoom = outfit.canvasZoom || 1;
-      this.canvasPan = deepClone(outfit.canvasPan || { x: 0, y: 0 });
-      this.canvasMode = outfit.canvasMode || 'fixed';
-      this.selectedCharacterId = normalized.character[0]?.id || null;
-      this.isRestoring = false;
-      this.recordHistory();
-      this.showNotification(`📷 已載入穿搭: ${outfit.name}`, 'success');
+      try {
+        // 從 IndexedDB 載入完整穿搭資料 (含 imageData)
+        const fullData = await DressingCore.getData('outfits', outfit.id);
+        if (!fullData?.outfit) {
+          this.showNotification('❌ 無法載入穿搭', 'error');
+          this.isRestoring = false;
+          return;
+        }
+        const normalized = normalizeOutfit(fullData.outfit);
+        this.currentOutfit = normalized;
+        this.freeMode = cloneSimple(fullData.freeMode || {
+          itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {},
+          enableFreeScale: true, enableFreeRotation: false
+        });
+        this.layerOrder = [...(fullData.layerOrder || [])];
+        this.canvasZoom = fullData.canvasZoom || 1;
+        this.canvasPan = fullData.canvasPan ? { ...fullData.canvasPan } : { x: 0, y: 0 };
+        this.canvasMode = fullData.canvasMode || 'fixed';
+        this.selectedCharacterId = normalized.character[0]?.id || null;
+        this.isRestoring = false;
+        this.recordHistory();
+        this.showNotification(`📷 已載入穿搭: ${outfit.name}`, 'success');
+      } catch {
+        this.isRestoring = false;
+        this.showNotification('❌ 載入穿搭失敗', 'error');
+      }
+    },
+
+    // 匯出用：從 IndexedDB 載入完整資料 (含 imageData)
+    async getFullExportData() {
+      const [items, outfits] = await Promise.all([
+        DressingCore.getAllData('items'),
+        DressingCore.getAllData('outfits'),
+      ]);
+      return { items, outfits };
     },
 
     // 圖包管理
     async addNewItem(itemData) {
+      // 自動生成縮圖
+      if (!itemData.thumbnailData && itemData.imageData) {
+        itemData.thumbnailData = await generateThumbnail(itemData.imageData);
+      }
       await DressingCore.saveData('items', itemData);
-      this.wardrobeItems = await DressingCore.getAllData('items');
+      try {
+        this.wardrobeItems = await DressingCore.getAllItemsLightweight();
+      } catch {
+        const items = await DressingCore.getAllData('items');
+        this.wardrobeItems = items.map(({ imageData, variantImages, ...rest }) => rest);
+      }
       return itemData;
     },
 
@@ -757,7 +896,12 @@ export const useGameStore = defineStore('game', {
       const item = this.wardrobeItems.find(i => i.id === itemId);
       if (!item) return;
       item.displayName = newName;
-      await DressingCore.saveData('items', item);
+      // 從 DB 載入完整資料再存回，避免覆蓋 imageData
+      const fullItem = await DressingCore.getData('items', itemId);
+      if (fullItem) {
+        fullItem.displayName = newName;
+        await DressingCore.saveData('items', fullItem);
+      }
     },
 
     async deleteItem(itemId) {
