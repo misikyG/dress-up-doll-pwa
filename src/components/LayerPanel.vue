@@ -868,6 +868,27 @@ const onDragEnd = () => {
   background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
+@media (max-width: 767px) {
+  .layer-context-menu {
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%);
+    max-height: 80vh;
+    max-height: 80dvh;
+    max-width: calc(100vw - 32px);
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .layer-context-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .layer-item.hidden {
   opacity: 0.55;
 }

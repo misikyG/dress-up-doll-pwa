@@ -173,7 +173,12 @@ const baseCanvasScale = computed(() => {
   const scaleX = availableWidth / targetSize.width;
   const scaleY = availableHeight / targetSize.height;
 
-  return Math.min(scaleX, scaleY, 1);
+  let base = Math.min(scaleX, scaleY, 1);
+  // 手機版基礎放大 5x，讓 100% 縮放顯示適合手機觀看的大小
+  if (gameStore.ui.isMobile) {
+    base *= 5;
+  }
+  return base;
 });
 
 const finalCanvasScale = computed(() => {
@@ -230,6 +235,8 @@ const getContentBoundsStyle = (layerId) => {
     top: `${b.y * 100}%`,
     width: `${b.w * 100}%`,
     height: `${b.h * 100}%`,
+    right: 'auto',
+    bottom: 'auto',
   };
 };
 
@@ -655,7 +662,10 @@ onUnmounted(() => {
 
 .free-mode-controls {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
   z-index: 1001;
 }

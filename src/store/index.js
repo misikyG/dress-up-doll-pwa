@@ -117,11 +117,11 @@ const computeContentBounds = (dataUrl) => {
       if (found && maxX >= minX && maxY >= minY) {
         // 加 15% padding，讓手指操作更容易
         const pad = Math.max((maxX - minX), (maxY - minY)) * 0.15;
-        const bx = Math.max(0, minX - pad) / dw;
-        const by = Math.max(0, minY - pad) / dh;
-        const bw = Math.min(dw, maxX - minX + 1 + pad * 2) / dw;
-        const bh = Math.min(dh, maxY - minY + 1 + pad * 2) / dh;
-        resolve({ x: bx, y: by, w: bw, h: bh });
+        const x1 = Math.max(0, minX - pad);
+        const y1 = Math.max(0, minY - pad);
+        const x2 = Math.min(dw, maxX + 1 + pad);
+        const y2 = Math.min(dh, maxY + 1 + pad);
+        resolve({ x: x1 / dw, y: y1 / dh, w: (x2 - x1) / dw, h: (y2 - y1) / dh });
       } else {
         resolve({ x: 0, y: 0, w: 1, h: 1 });
       }

@@ -234,7 +234,7 @@
               <div
                 v-for="item in mobileVisibleItems"
                 :key="item.id"
-                :class="['mobile-item', { 'equipped': gameStore.isItemInCurrentOutfit(item) }]"
+                :class="['mobile-item', { 'equipped': gameStore.isItemInCurrentOutfit(item), 'has-variant': item.hasVariant }]"
                 @click="handleItemClick(item)"
                 @touchstart="handleItemTouchStart(item, $event)"
                 @touchend="handleItemTouchEnd"
@@ -243,6 +243,7 @@
               >
                 <img :src="item.thumbnailData || item.imageData" :alt="item.displayName" loading="lazy" />
                 <div v-if="gameStore.isItemInCurrentOutfit(item)" class="mobile-equipped-badge">✓</div>
+                <div v-if="item.hasVariant" class="mobile-variant-indicator" title="長按選擇變體">◆</div>
               </div>
             </template>
           </div>
@@ -1920,6 +1921,29 @@ watch(characterOptions, (options) => {
   font-weight: bold;
 }
 
+.mobile-variant-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background-color: rgba(245, 158, 11, 0.9);
+  background-color: var(--color-warning);
+  color: var(--color-bg-main);
+  border-radius: 50%;
+  font-size: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.mobile-item.has-variant {
+  border-color: rgba(245, 158, 11, 0.4);
+  border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+}
+
 .mobile-outfit-item {
   display: flex;
   flex-direction: column;
@@ -2003,6 +2027,32 @@ watch(characterOptions, (options) => {
     width: 14px;
     height: 14px;
     font-size: 0.6rem;
+  }
+
+  .mobile-variant-indicator {
+    width: 12px;
+    height: 12px;
+    font-size: 0.45rem;
+  }
+
+  .context-menu {
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%);
+    max-height: 80vh;
+    max-height: 80dvh;
+    max-width: calc(100vw - 32px);
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .context-menu-content {
+    max-height: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
