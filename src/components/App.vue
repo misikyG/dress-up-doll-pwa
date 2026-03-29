@@ -133,6 +133,7 @@ body {
 }
 
 .btn-close:hover {
+  background-color: rgba(71, 45, 37, 0.20);
   background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
@@ -185,6 +186,7 @@ body {
 }
 
 .spinner {
+  border: 3px solid rgba(71, 45, 37, 0.30);
   border: 3px solid color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
@@ -219,6 +221,7 @@ body {
 }
 
 .btn-secondary {
+  background-color: rgba(192, 183, 163, 0.50);
   background-color: color-mix(in srgb, var(--color-border) 50%, transparent);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
@@ -351,6 +354,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .thumbnail {
+  background-color: rgba(240, 242, 245, 0.60);
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
   border-radius: var(--radius-sm);
   display: flex;
@@ -383,6 +387,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 .loading-spinner {
   width: 40px;
   height: 40px;
+  border: 4px solid rgba(192, 183, 163, 0.30);
   border: 4px solid color-mix(in srgb, var(--color-border) 30%, transparent);
   border-top-color: var(--color-bg-main);
   border-radius: var(--radius-full);
@@ -442,6 +447,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .main-nav button:not(.active):hover {
+  background-color: rgba(71, 45, 37, 0.20);
   background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
@@ -468,6 +474,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .header-actions button:hover {
+  background-color: rgba(71, 45, 37, 0.20);
   background-color: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
   color: var(--color-text-primary);
 }
@@ -563,6 +570,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
   left: 0;
   width: 100%;
   height: 100%;
+  background-color: rgba(71, 45, 37, 0.50);
   background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   display: flex;
   align-items: center;

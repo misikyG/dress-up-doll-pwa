@@ -162,10 +162,29 @@ const resolveOutfitImages = async (outfit) => {
     resolved[slot] = [];
     for (const item of arr) {
       if (!item?.id) continue;
-      if (item.imageData) { resolved[slot].push({ ...item }); continue; }
+      if (item.imageData) {
+        // 確保也有 thumbnailData
+        if (!item.thumbnailData) {
+          try {
+            const full = await DressingCore.getData('items', item.id);
+            if (full?.thumbnailData) item.thumbnailData = full.thumbnailData;
+          } catch {}
+        }
+        resolved[slot].push({ ...item });
+        continue;
+      }
       try {
-        const imgData = await resolveImageData(item.id, item.currentVariant);
-        if (imgData) resolved[slot].push({ ...item, imageData: imgData });
+        const full = await DressingCore.getData('items', item.id);
+        if (!full) continue;
+        const imgData = item.currentVariant && full.variantImages?.[item.currentVariant]
+          ? full.variantImages[item.currentVariant] : full.imageData;
+        if (imgData) {
+          resolved[slot].push({
+            ...item,
+            imageData: imgData,
+            thumbnailData: item.thumbnailData || full.thumbnailData || null,
+          });
+        }
       } catch { /* 單項解析失敗不影響其他項目 */ }
     }
   }
@@ -537,8 +556,9 @@ export const useGameStore = defineStore('game', {
 
     async saveAppState() {
       try {
+        const outfitSnapshot = createOutfitSnapshot(this.currentOutfit);
         const appState = {
-          currentOutfit: createOutfitSnapshot(this.currentOutfit),
+          currentOutfit: outfitSnapshot,
           selectedCharacterId: this.selectedCharacterId,
           layerOrder: cloneState(this.layerOrder),
           canvasMode: this.canvasMode,
@@ -552,7 +572,17 @@ export const useGameStore = defineStore('game', {
           _savedAt: Date.now(),
         };
         // 同步寫入 localStorage（F5/關閉時 IndexedDB 可能來不及完成）
-        try { localStorage.setItem('appState-backup', JSON.stringify(appState)); } catch {}
+        // 去掉 thumbnailData 以減小體積，避免超過 localStorage 5MB 限制
+        try {
+          const lsState = { ...appState };
+          const lsOutfit = {};
+          for (const [slot, items] of Object.entries(outfitSnapshot)) {
+            if (!Array.isArray(items)) { lsOutfit[slot] = items; continue; }
+            lsOutfit[slot] = items.map(({ thumbnailData, ...rest }) => rest);
+          }
+          lsState.currentOutfit = lsOutfit;
+          localStorage.setItem('appState-backup', JSON.stringify(lsState));
+        } catch {}
         await DressingCore.setData('settings', 'appState', appState);
       } catch {}
     },
@@ -605,6 +635,18 @@ export const useGameStore = defineStore('game', {
 
       const itemToWear = { ...item, imageData: imgData };
       if (variantKey) itemToWear.currentVariant = variantKey;
+      // 確保縮圖存在（如果 wardrobeItem 本身沒有 thumbnailData）
+      if (!itemToWear.thumbnailData) {
+        try {
+          const full = await DressingCore.getData('items', item.id);
+          if (full?.thumbnailData) {
+            itemToWear.thumbnailData = full.thumbnailData;
+            // 同步更新 wardrobeItems
+            const wi = this.wardrobeItems.find(w => w.id === item.id);
+            if (wi && !wi.thumbnailData) wi.thumbnailData = full.thumbnailData;
+          }
+        } catch {}
+      }
 
       this.currentOutfit[slot] = singleSlotCategories.has(item.category) 
         ? [itemToWear] 

@@ -67,7 +67,7 @@
             <div v-if="gameStore.selectedItem?.id === layer.id" class="selection-border"></div>
           </div>
 
-          <div v-if="gameStore.selectedItem?.id === layer.id" class="highlight-border" :style="getHighlightBoundsStyle(layer.id)"></div>
+          <div v-if="gameStore.selectedItem?.id === layer.id && !(gameStore.canvasMode === 'free' && layer.category !== 'character')" class="highlight-border"></div>
         </div>
 
         <template v-for="layer in filterEffectLayers" :key="layer.id">
@@ -230,20 +230,6 @@ const getContentBoundsStyle = (layerId) => {
     top: `${b.y * 100}%`,
     width: `${b.w * 100}%`,
     height: `${b.h * 100}%`,
-  };
-};
-
-const getHighlightBoundsStyle = (layerId) => {
-  const b = contentBoundsMap[layerId];
-  if (!b || gameStore.canvasMode !== 'free' || (b.x === 0 && b.y === 0 && b.w === 1 && b.h === 1)) return {};
-  const pad = 4; // px, matching the original -4px inset
-  return {
-    position: 'absolute',
-    left: `calc(${b.x * 100}% - ${pad}px)`,
-    top: `calc(${b.y * 100}% - ${pad}px)`,
-    width: `calc(${b.w * 100}% + ${pad * 2}px)`,
-    height: `calc(${b.h * 100}% + ${pad * 2}px)`,
-    inset: 'auto',
   };
 };
 
@@ -772,6 +758,7 @@ onUnmounted(() => {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 20px rgba(71, 45, 37, 0.12);
   box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   transition: all 0.3s ease;
   max-height: clamp(170px, 24vh, 240px);

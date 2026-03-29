@@ -411,6 +411,7 @@ const flipSelected = (axis) => {
 .icon-btn-ctrl {
   width: 36px;
   height: 36px;
+  background: rgba(71, 45, 37, 0.70);
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -419,6 +420,7 @@ const flipSelected = (axis) => {
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   display: flex;
   align-items: center;
@@ -427,8 +429,10 @@ const flipSelected = (axis) => {
 }
 
 .icon-btn-ctrl:hover:not(:disabled) {
+  background: rgba(71, 45, 37, 0.85);
   background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 45, 37, 0.25);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
 }
 
@@ -443,6 +447,7 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn {
+  background: rgba(71, 45, 37, 0.70);
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -453,6 +458,7 @@ const flipSelected = (axis) => {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   white-space: nowrap;
   flex: 1;
@@ -460,8 +466,10 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn:hover:not(:disabled) {
+  background: rgba(71, 45, 37, 0.85);
   background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 45, 37, 0.25);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
 }
 
@@ -483,6 +491,7 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn.flip {
+  background: rgba(71, 45, 37, 0.70);
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   padding: 7px 12px;
   font-size: 0.8rem;
@@ -499,6 +508,7 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn.save {
+  background: var(--color-warning);
   background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent));
   color: var(--color-text-primary);
   font-weight: 600;
@@ -509,6 +519,7 @@ const flipSelected = (axis) => {
 }
 
 .zoom-badge {
+  background: rgba(71, 45, 37, 0.75);
   background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -517,6 +528,7 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   gap: 6px;
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
 }
 
@@ -536,6 +548,7 @@ const flipSelected = (axis) => {
 }
 
 .zoom-icon:hover:not(:disabled) {
+  background: rgba(192, 183, 163, 0.15);
   background: color-mix(in srgb, var(--color-border) 15%, transparent);
 }
 
@@ -559,6 +572,7 @@ const flipSelected = (axis) => {
 }
 
 .check-badge {
+  background: rgba(71, 45, 37, 0.70);
   background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -570,6 +584,7 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   transition: all 0.2s ease;
   flex: 1;
@@ -577,6 +592,7 @@ const flipSelected = (axis) => {
 }
 
 .check-badge:hover {
+  background: rgba(71, 45, 37, 0.85);
   background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
 }
 
@@ -586,6 +602,7 @@ const flipSelected = (axis) => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
+  background: rgba(71, 45, 37, 0.75);
   background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -595,12 +612,14 @@ const flipSelected = (axis) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
   transition: all 0.2s ease;
   font-size: 0.9rem;
 }
 
 .toggle-btn:hover {
+  background: rgba(71, 45, 37, 0.90);
   background: color-mix(in srgb, var(--color-text-primary) 90%, transparent);
   transform: scale(1.05);
 }
@@ -648,6 +667,7 @@ const flipSelected = (axis) => {
   left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(71, 45, 37, 0.50);
   background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
   display: flex;
   align-items: center;
@@ -658,6 +678,7 @@ const flipSelected = (axis) => {
 .download-dialog {
   background: var(--color-bg-card);
   border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(71, 45, 37, 0.25);
   box-shadow: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
   min-width: 280px;
   max-width: 90vw;
@@ -812,11 +833,13 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.cancel {
+  background: rgba(71, 45, 37, 0.30);
   background: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
   color: var(--color-text-primary);
 }
 
 .dialog-btn.cancel:hover {
+  background: rgba(71, 45, 37, 0.50);
   background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
 }
 
@@ -826,6 +849,7 @@ const flipSelected = (axis) => {
 }
 
 .dialog-btn.confirm:hover {
+  background: rgba(97, 139, 106, 0.85);
   background: color-mix(in srgb, var(--color-primary) 85%, transparent);
 }
 

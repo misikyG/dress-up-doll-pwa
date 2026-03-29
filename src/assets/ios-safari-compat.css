@@ -227,30 +227,48 @@ button,
    12. 彈窗內容滾動修正
    iOS Safari 的 position:fixed body 會阻止子元素滾動，
    必須明確在滾動容器上啟用 -webkit-overflow-scrolling
+/* ===========================================
+   12. 彈窗內容滾動修正
+   iOS Safari 的 position:fixed body 會阻止子元素滾動。
+   modal-overlay 本身不應滾動（它是背景遮罩）；
+   滾動僅發生在 modal 內部的內容區域。
    =========================================== */
 
 .modal-overlay {
-  overflow-y: auto;
+  /* 遮罩層不滾動，防止與內部滾動衝突 */
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
 .modal-base {
-  /* 防止 modal 本身被溢出截斷，讓內部容器自行滾動 */
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* 在手機全螢幕時確保高度受限 */
   max-height: 100%;
 }
 
+/* 所有需要在 modal 內滾動的容器 */
 .search-results-wrapper,
 .help-tab-content,
-.help-content,
 .contact-content,
 .settings-content,
 .modal-content {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  /* 確保 iOS 可以觸控滾動 */
   overflow-y: auto !important;
+  overflow-x: hidden;
   touch-action: pan-y;
+  /* flex: 1 + min-height: 0 讓 flex 子項在 overflow:hidden 父容器內正確滾動 */
+  flex: 1;
+  min-height: 0;
+}
+
+/* help-content 是 tabs + tab-content 的容器，本身不應滾動 */
+.help-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden !important;
 }
 
 /* ===========================================
@@ -263,4 +281,121 @@ button,
   background-color: var(--color-bg-canvas);
   /* 如果需要半透明效果且瀏覽器支援 color-mix */
   background-color: color-mix(in srgb, var(--color-bg-canvas) 60%, transparent);
+}
+
+/* ===========================================
+   14. color-mix() 完整回退
+   iOS Safari < 16.2 不支援 color-mix()，
+   所有使用 color-mix 的元素需要 rgba 硬編碼替代
+   基於預設主題 --color-text-primary: #472d25
+   =========================================== */
+
+/* --- Controls 浮動按鈕 --- */
+.icon-btn-ctrl {
+  background: rgba(71, 45, 37, 0.70);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+}
+
+.icon-btn-ctrl:hover:not(:disabled) {
+  background: rgba(71, 45, 37, 0.85);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
+  box-shadow: 0 4px 12px rgba(71, 45, 37, 0.25);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
+}
+
+.badge-btn {
+  background: rgba(71, 45, 37, 0.70);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+}
+
+.badge-btn:hover:not(:disabled) {
+  background: rgba(71, 45, 37, 0.85);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
+  box-shadow: 0 4px 12px rgba(71, 45, 37, 0.25);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 25%, transparent);
+}
+
+.badge-btn.mode {
+  background: rgba(71, 45, 37, 0.45);
+  background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+}
+
+.badge-btn.mode.active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.badge-btn.flip {
+  background: rgba(71, 45, 37, 0.70);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
+}
+
+.badge-btn.save {
+  background: var(--color-warning);
+  background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent));
+}
+
+.zoom-badge {
+  background: rgba(71, 45, 37, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+}
+
+.zoom-icon:hover:not(:disabled) {
+  background: rgba(192, 183, 163, 0.15);
+  background: color-mix(in srgb, var(--color-border) 15%, transparent);
+}
+
+.check-badge {
+  background: rgba(71, 45, 37, 0.70);
+  background: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+}
+
+.check-badge:hover {
+  background: rgba(71, 45, 37, 0.85);
+  background: color-mix(in srgb, var(--color-text-primary) 85%, transparent);
+}
+
+.toggle-btn {
+  background: rgba(71, 45, 37, 0.75);
+  background: color-mix(in srgb, var(--color-text-primary) 75%, transparent);
+  box-shadow: 0 2px 8px rgba(71, 45, 37, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+}
+
+.toggle-btn:hover {
+  background: rgba(71, 45, 37, 0.90);
+  background: color-mix(in srgb, var(--color-text-primary) 90%, transparent);
+}
+
+/* --- 選取物件顯示 badge --- */
+.selected-item-badge {
+  background: rgba(97, 139, 106, 0.85);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
+  color: #fff;
+}
+
+/* --- 下載 / 彈窗遮罩 --- */
+.download-dialog-overlay {
+  background: rgba(71, 45, 37, 0.50);
+  background: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+}
+
+/* --- modal overlay --- */
+.modal-overlay {
+  background-color: rgba(71, 45, 37, 0.50);
+  background-color: color-mix(in srgb, var(--color-text-primary) 50%, transparent);
+}
+
+/* --- 嵌入式物件面板底部陰影 --- */
+.embedded-layer-panel {
+  box-shadow: 0 -8px 20px rgba(71, 45, 37, 0.12);
+  box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
 }

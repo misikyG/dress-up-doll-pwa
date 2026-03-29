@@ -17,21 +17,31 @@ const applyIOSSafariFixes = () => {
     const style = document.createElement('style');
     style.id = 'ios-safari-rgb-fallback';
     style.textContent = `
-      /* iOS Safari rgb(from ...) 語法回退 */
+      /* iOS Safari rgb(from ...) / color-mix() 回退 — 使用 rgba 硬編碼 */
       :root {
-        --shadow-sm: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
-        --shadow-md: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
-        --shadow-lg: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
-        --shadow-xl: 0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+        --shadow-sm: 0 1px 3px rgba(71, 45, 37, 0.05);
+        --shadow-md: 0 2px 8px rgba(71, 45, 37, 0.08);
+        --shadow-lg: 0 4px 12px rgba(71, 45, 37, 0.12);
+        --shadow-xl: 0 8px 24px rgba(71, 45, 37, 0.15);
       }
       
-      /* 額外的 iOS Safari 樣式修復 */
+      /* 若瀏覽器支援 color-mix，使用主題色感知版本 */
+      @supports (background: color-mix(in srgb, red 50%, transparent)) {
+        :root {
+          --shadow-sm: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+          --shadow-md: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+          --shadow-lg: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+          --shadow-xl: 0 8px 24px color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+        }
+      }
+      
+      /* 額外的 iOS Safari 樣式修復 — rgba 回退 */
       .wardrobe {
-        background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
       }
       
       .panel-toggle-handle {
-        background: color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
+        background: rgba(97, 139, 106, 0.30) !important;
       }
       
       .panel-toggle-handle:hover {
@@ -39,51 +49,97 @@ const applyIOSSafariFixes = () => {
       }
       
       .category-tab:hover {
-        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        background-color: rgba(97, 139, 106, 0.10) !important;
       }
       
       .filter-toggle-btn:hover {
-        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        background-color: rgba(97, 139, 106, 0.10) !important;
       }
       
       .filter-clear-btn:hover {
-        background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        background-color: rgba(97, 139, 106, 0.10) !important;
       }
       
       .filter-checkbox-item:hover {
-        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        background-color: rgba(71, 45, 37, 0.10) !important;
       }
       
       .tag-item {
-        background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent) !important;
+        background-color: rgba(241, 247, 229, 0.20) !important;
       }
       
       .tag-item:hover {
-        background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent) !important;
+        background-color: rgba(241, 247, 229, 0.30) !important;
       }
       
       .grid-item:hover {
-        box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important;
+        box-shadow: 0 4px 12px rgba(71, 45, 37, 0.15) !important;
       }
       
       .item-card.equipped {
-        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        background-color: rgba(71, 45, 37, 0.10) !important;
       }
       
       .outfit-card {
-        background: linear-gradient(135deg, var(--color-info) 0%, color-mix(in srgb, var(--color-info) 70%, transparent) 100%) !important;
+        background: linear-gradient(135deg, var(--color-info) 0%, rgba(100, 181, 246, 0.70) 100%) !important;
       }
       
       .item-card.has-variant {
-        border-color: color-mix(in srgb, var(--color-warning) 50%, transparent) !important;
+        border-color: rgba(245, 187, 100, 0.50) !important;
       }
       
       .item-card.highlighted {
-        box-shadow: 0 0 12px color-mix(in srgb, var(--color-success) 50%, transparent) !important;
+        box-shadow: 0 0 12px rgba(129, 199, 132, 0.50) !important;
       }
       
       .context-menu-overlay {
-        background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        background-color: rgba(71, 45, 37, 0.30) !important;
+      }
+      
+      /* 若瀏覽器支援 color-mix，覆蓋為主題色感知版本 */
+      @supports (background: color-mix(in srgb, red 50%, transparent)) {
+        .wardrobe {
+          background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent) !important;
+        }
+        .panel-toggle-handle {
+          background: color-mix(in srgb, var(--color-primary) 30%, transparent) !important;
+        }
+        .category-tab:hover {
+          background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        }
+        .filter-toggle-btn:hover {
+          background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        }
+        .filter-clear-btn:hover {
+          background-color: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+        }
+        .filter-checkbox-item:hover {
+          background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        }
+        .tag-item {
+          background-color: color-mix(in srgb, var(--color-bg-panel) 20%, transparent) !important;
+        }
+        .tag-item:hover {
+          background-color: color-mix(in srgb, var(--color-bg-panel) 30%, transparent) !important;
+        }
+        .grid-item:hover {
+          box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important;
+        }
+        .item-card.equipped {
+          background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        }
+        .outfit-card {
+          background: linear-gradient(135deg, var(--color-info) 0%, color-mix(in srgb, var(--color-info) 70%, transparent) 100%) !important;
+        }
+        .item-card.has-variant {
+          border-color: color-mix(in srgb, var(--color-warning) 50%, transparent) !important;
+        }
+        .item-card.highlighted {
+          box-shadow: 0 0 12px color-mix(in srgb, var(--color-success) 50%, transparent) !important;
+        }
+        .context-menu-overlay {
+          background-color: color-mix(in srgb, var(--color-text-primary) 30%, transparent) !important;
+        }
       }
     `;
     document.head.appendChild(style);
