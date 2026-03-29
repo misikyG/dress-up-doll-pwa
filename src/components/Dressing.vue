@@ -60,7 +60,7 @@
               @touchstart.stop.prevent="onRotateStart($event, layer)"
               v-html="icons.rotate"
               :style="{
-                transform: `translateX(-50%) scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
+                transform: `translateX(50%) scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
               }"
             ></div>
             
@@ -697,7 +697,7 @@ onUnmounted(() => {
 /* 旋轉控制把手 */
 .rotate-handle {
   position: absolute;
-  bottom: -8px; left: 50%;
+  top: -8px; right: 50%;
   width: 44px; height: 44px;
   background: radial-gradient(circle at 30% 30%, var(--color-accent-gold), var(--color-accent-gold-dark));
   border: 2px solid var(--color-bg-card);

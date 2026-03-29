@@ -188,7 +188,11 @@ const applyIOSSafariFixes = () => {
 
     // 防止 iOS Safari 的橡皮筋效果
     document.body.addEventListener('touchmove', (e) => {
-      if (e.target.closest('.items-grid-container, .layer-list, .mobile-items-scroll, .modal-content, .settings-content, .filter-checkboxes, .mobile-wardrobe-body, .categories-scroll')) {
+      // 獨立頁面（如隱私權政策）不攔截任何滾動
+      if (document.documentElement.classList.contains('scrollable-page')) {
+        return;
+      }
+      if (e.target.closest('.items-grid-container, .layer-list, .mobile-items-scroll, .modal-content, .settings-content, .filter-checkboxes, .mobile-wardrobe-body, .categories-scroll, .search-results-wrapper, .help-tab-content, .contact-content, .room-content, .wardrobe-content, .context-menu-content')) {
         // 允許這些容器內的滾動
         return;
       }
