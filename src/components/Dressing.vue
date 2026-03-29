@@ -52,24 +52,24 @@
           
           <!-- 自由模式下的控制項 -->
           <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls">
-            <!-- 縮放控制：反向縮放抵銷物件縮放 -->
+            <!-- 縮放控制：反向縮放抵銷物件縮放 + 畫布縮放，確保觸控大小固定 -->
             <div v-if="gameStore.freeMode.enableFreeScale"
               class="scale-handle"
               @mousedown.stop="onScaleStart($event, layer)"
               @touchstart.stop.prevent="onScaleStart($event, layer)"
               :style="{
-                transform: `scale(${1 / (gameStore.freeMode.itemScales[layer.id] || 1)})`
+                transform: `scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
               }"
             ></div>
 
-            <!-- 旋轉控制：反向縮放抵銷物件縮放 -->
+            <!-- 旋轉控制：反向縮放抵銷物件縮放 + 畫布縮放 -->
             <div v-if="gameStore.freeMode.enableFreeRotation"
               class="rotate-handle"
               @mousedown.stop="onRotateStart($event, layer)"
               @touchstart.stop.prevent="onRotateStart($event, layer)"
               v-html="icons.rotate"
               :style="{
-                transform: `scale(${1 / (gameStore.freeMode.itemScales[layer.id] || 1)})`
+                transform: `translateX(50%) scale(${1 / ((gameStore.freeMode.itemScales[layer.id] || 1) * finalCanvasScale)})`
               }"
             ></div>
             
@@ -710,11 +710,11 @@ onUnmounted(() => {
   z-index: 1002;
 }
 
-/* 縮放控制把手 */
+/* 縮放控制把手 — 基礎大小 44px，會被 counter-scale 補償到螢幕上固定 44px */
 .scale-handle {
   position: absolute;
-  bottom: -16px; right: -16px;
-  width: 100px; height: 100px;
+  bottom: -8px; right: -8px;
+  width: 44px; height: 44px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-bg-panel));
   border: 2px solid var(--color-bg-card);
   border-radius: 0 50% 0 50%;
@@ -727,20 +727,21 @@ onUnmounted(() => {
   color: var(--color-text-inverse);
   font-size: 0.75rem;
   z-index: 1003;
+  touch-action: none;
 }
 
 .scale-handle::after {
   content: '➘';
-  font-size: 3rem;
+  font-size: 1.4rem;
   font-weight: bold;
 }
 
-/* 旋轉控制把手 */
+/* 旋轉控制把手 — 基礎大小 44px，counter-scale 保持固定螢幕大小 */
 .rotate-handle {
   position: absolute;
-  top: -24px; right: 50%;
-  transform: translateX(50%);
-  width: 280px; height: 280px;
+  top: -8px; right: 50%;
+  /* translateX(50%) 由 inline style 設定，與 counter-scale 合併 */
+  width: 44px; height: 44px;
   background: radial-gradient(circle at 30% 30%, var(--color-accent-gold), var(--color-accent-gold-dark));
   border: 2px solid var(--color-bg-card);
   border-radius: var(--radius-full);
@@ -753,6 +754,7 @@ onUnmounted(() => {
   color: var(--color-text-primary);
   box-shadow: var(--shadow-md);
   z-index: 1003;
+  touch-action: none;
 }
 
 .rotate-handle:active {

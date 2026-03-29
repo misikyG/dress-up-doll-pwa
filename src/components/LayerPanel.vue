@@ -104,7 +104,6 @@
           <!-- 拖拽指示器 -->
           <div 
             class="drag-handle" 
-            @touchstart.stop="onDragHandleTouchStart($event, layer, index)"
             title="拖拽重新排序"
           >≡</div>
         </div>
@@ -262,6 +261,8 @@ const deleteLayer = () => {
 };
 
 const onLayerTouchStart = (layer, event) => {
+  // 觸碰拖曳把手時不啟動長按選單（讓 SortableJS 處理）
+  if (event.target.closest('.drag-handle')) return;
   longPressTimer = setTimeout(() => onLayerContextMenu(layer, event), 500);
 };
 
@@ -286,17 +287,6 @@ const onDragStart = () => {
 const onDragEnd = () => {
   // v-model 會自動更新，觸發 computed setter
 };
-
-// 拖曳把手觸控事件（手機/平板）
-const onDragHandleTouchStart = (event, layer, index) => {
-  // 取消長按選單
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
-  // vuedraggable 會自動處理觸控拖曳
-};
-
 
 // 物件刪除改由右鍵/長按選單處理
 </script>
@@ -552,9 +542,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 }
 
 .layer-list {
-  background-color: color-mix(in srgb, var(--color-bg-card) 95%, transparent);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px); 
+  background-color: var(--color-bg-card);
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 1rem 0.875rem 1rem;
@@ -607,7 +595,8 @@ const onDragHandleTouchStart = (event, layer, index) => {
   border-radius: 10px;
   padding: 0.5rem;
   cursor: grab;
-  transition: all 0.2s ease;
+  /* 避免 transition: all — 會對 transform/layout 觸發 GPU 合成 */
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   min-width: 70px;
   position: relative;
   -webkit-user-select: none;
@@ -643,8 +632,7 @@ const onDragHandleTouchStart = (event, layer, index) => {
 
 .layer-item-drag {
   opacity: 0.8;
-  transform: scale(1.05) rotate(3deg);
-  box-shadow: 0 8px 16px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   cursor: grabbing !important;
 }
 
