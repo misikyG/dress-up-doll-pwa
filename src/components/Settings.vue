@@ -552,8 +552,11 @@ onUnmounted(() => {
     gameStore.applyTheme(gameStore.theme.currentTheme);
   }
   
-  // 自動備份 timer 不在此清除，因為它應在整個 session 中持續運作
-  // 只清除倒數顯示 timer
+  // 清除自動備份 timer 及倒數顯示 timer
+  if (autoBackupTimer) {
+    clearInterval(autoBackupTimer);
+    autoBackupTimer = null;
+  }
   if (autoBackupCountdownTimer) {
     clearInterval(autoBackupCountdownTimer);
     autoBackupCountdownTimer = null;

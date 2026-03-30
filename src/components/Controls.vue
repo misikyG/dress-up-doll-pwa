@@ -209,6 +209,14 @@ const executeDownload = async () => {
       ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
     }
 
+    // 釋放 Image 記憶體的輔助函數（iOS Safari 必需）
+    const releaseImg = (img) => {
+      if (!img) return;
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+    };
+
     for (const layer of layers) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -233,10 +241,12 @@ const executeDownload = async () => {
           } else {
             ctx.drawImage(img, 0, 0, canvasSize.width, canvasSize.height);
           }
+          releaseImg(img);
           resolve();
         };
         img.onerror = () => {
           console.error('圖像載入失敗:', layer.item.displayName);
+          releaseImg(img);
           resolve();
         };
         img.src = layer.item.imageData;
@@ -244,10 +254,10 @@ const executeDownload = async () => {
     }
 
     if (useWatermark.value) {
+      const watermarkImg = new Image();
       try {
-        const watermarkImg = new Image();
         watermarkImg.crossOrigin = 'anonymous';
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
           watermarkImg.onload = resolve;
           watermarkImg.onerror = () => {
             console.warn('浮水印載入失敗，跳過浮水印');
@@ -270,19 +280,33 @@ const executeDownload = async () => {
         }
       } catch (error) {
         console.warn('浮水印處理失敗:', error);
+      } finally {
+        releaseImg(watermarkImg);
       }
     }
 
     let finalCanvas = exportCanvas;
+    let resizedCanvas = null;
     if (outputWidth !== canvasSize.width || outputHeight !== canvasSize.height) {
-      finalCanvas = document.createElement('canvas');
-      finalCanvas.width = outputWidth;
-      finalCanvas.height = outputHeight;
-      const finalCtx = finalCanvas.getContext('2d');
+      resizedCanvas = document.createElement('canvas');
+      resizedCanvas.width = outputWidth;
+      resizedCanvas.height = outputHeight;
+      const finalCtx = resizedCanvas.getContext('2d');
       finalCtx.drawImage(exportCanvas, 0, 0, outputWidth, outputHeight);
+      finalCanvas = resizedCanvas;
+    }
+
+    // 先釋放 exportCanvas 記憶體（若已縮放則不再需要原尺寸）
+    if (resizedCanvas) {
+      exportCanvas.width = 0;
+      exportCanvas.height = 0;
     }
 
     finalCanvas.toBlob((blob) => {
+      // 釋放 finalCanvas 記憶體
+      finalCanvas.width = 0;
+      finalCanvas.height = 0;
+
       const url = URL.createObjectURL(blob);
       const filename = `紙娃娃-${outputWidth}x${outputHeight}-${new Date().getTime()}.png`;
       
@@ -296,9 +320,11 @@ const executeDownload = async () => {
         if (newTab) {
           newTab.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>${filename}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f0f0}img{max-width:100%;max-height:100vh;object-fit:contain}p{text-align:center;color:#666;font-family:sans-serif;padding:1rem}</style></head><body><div><p>長按圖片即可儲存</p><img src="${url}" alt="${filename}"></div></body></html>`);
           newTab.document.close();
+          // iOS 新分頁載入後延遲釋放 Blob URL
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         } else {
-          // 備用方案：直接在同視窗開啟
           window.location.href = url;
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
         gameStore.showNotification('長按圖片即可儲存', 'info');
       } else {
@@ -323,7 +349,7 @@ const generatePreviewImage = async () => {
     if (!canvas) return null;
 
     const previewCanvas = document.createElement('canvas');
-    const previewSize = 200; // 預覽圖尺寸
+    const previewSize = 200;
     previewCanvas.width = previewSize;
     previewCanvas.height = previewSize;
     const ctx = previewCanvas.getContext('2d');
@@ -348,14 +374,26 @@ const generatePreviewImage = async () => {
           const offsetY = (previewSize - drawHeight) / 2;
           
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+          img.onload = null;
+          img.onerror = null;
+          img.src = '';
           resolve();
         };
-        img.onerror = resolve;
+        img.onerror = () => {
+          img.onload = null;
+          img.onerror = null;
+          img.src = '';
+          resolve();
+        };
         img.src = layer.item.imageData;
       });
     }
 
-    return previewCanvas.toDataURL('image/jpeg', 0.7);
+    const result = previewCanvas.toDataURL('image/jpeg', 0.7);
+    // 釋放 canvas 記憶體
+    previewCanvas.width = 0;
+    previewCanvas.height = 0;
+    return result;
   } catch (error) {
     console.error('生成預覽圖失敗:', error);
     return null;

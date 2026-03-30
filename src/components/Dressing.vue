@@ -239,6 +239,11 @@ const contentBoundsMap = reactive({});
 watch(
   () => foregroundLayers.value,
   async (layers) => {
+    // 清除已不存在的圖層的邊界快取
+    const activeIds = new Set(layers.map(l => l.id));
+    for (const key of Object.keys(contentBoundsMap)) {
+      if (!activeIds.has(key)) delete contentBoundsMap[key];
+    }
     for (const layer of layers) {
       if (contentBoundsMap[layer.id]) continue;
       const bounds = await gameStore.getContentBounds(layer.id, layer.item.imageData);

@@ -85,11 +85,16 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
 };
 
 const imageCache = new Map();
-const MAX_IMAGE_CACHE = 15;
+const _isIOS = typeof navigator !== 'undefined' && (
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
+const MAX_IMAGE_CACHE = _isIOS ? 8 : 15;
+const MAX_HISTORY = _isIOS ? 12 : 25;
 
 // 快取內容邊界 (normalized 0-1)：用於自由模式的變換框定位
 const contentBoundsCache = new Map();
-const MAX_CONTENT_BOUNDS_CACHE = 50;
+const MAX_CONTENT_BOUNDS_CACHE = _isIOS ? 25 : 50;
 
 /**
  * 計算圖片中非透明像素的最小外接矩形 (normalized 0-1)
@@ -226,18 +231,19 @@ const singleSlotCategories = new Set(['filter', 'background', 'character', 'expr
 
 const hardcodedDefaultThemeCSS = `
 :root {
-  --color-primary: #618b6a;
-  --color-bg-main: #f8f5ea;
-  --color-bg-panel: #f1f7e5;
-  --color-bg-card: #ffffff;
-  --color-bg-canvas: #f0f2f5;
-  --color-text-primary: #472d25;
-  --color-text-secondary: #666666;
-  --color-border: #c0b7a3;
-  --color-success: #709172;
-  --color-error: #ad4b44;
-  --color-warning: #f5bb64;
-  --color-info: #71a2ca;
+  --color-primary: #a595d1;
+      
+      --color-bg-main: #f8f5ea;
+      --color-bg-panel: #c6d3ac;
+      --color-bg-card: #ffffff;
+      --color-bg-canvas: #f0f2f5;
+      --color-text-primary: #766258;
+      --color-text-secondary: #7c7c7c;
+      --color-border: #c6b99b;
+      --color-success: #709172;
+      --color-error: #ad4b44;
+      --color-warning: #f5bb64;
+      --color-info: #77b6c4;
   --shadow-sm: 0 1px 3px rgba(71, 45, 37, 0.05);
   --shadow-md: 0 2px 8px rgba(71, 45, 37, 0.08);
   --shadow-lg: 0 4px 12px rgba(71, 45, 37, 0.12);
@@ -292,7 +298,7 @@ export const presetThemes = [
       'color-success': '#97bc74',
       'color-error': '#d2552e',
       'color-warning': '#e8ae57',
-      'color-info': '#4a6fa5',
+      'color-info': '#71a2ca',
     }
   }
 ];
@@ -481,6 +487,9 @@ export const useGameStore = defineStore('game', {
         if (needsThumbnail) {
           const ids = await DressingCore.getAllKeys('items');
           let batchCount = 0;
+          const batchInterval = _isIOS ? 5 : 3;
+          const longPause = _isIOS ? 200 : 100;
+          const shortPause = _isIOS ? 80 : 50;
           for (const id of ids) {
             const fullItem = await DressingCore.getData('items', id);
             if (fullItem?.imageData) {
@@ -493,8 +502,8 @@ export const useGameStore = defineStore('game', {
                 const memItem = items.find(i => i.id === id);
                 if (memItem) memItem.thumbnailData = fullItem.thumbnailData;
                 batchCount++;
-                // 每處理 3 張讓出較長的時間，降低 iOS 記憶體壓力
-                await new Promise(r => setTimeout(r, batchCount % 3 === 0 ? 100 : 50));
+                // iOS 使用更長的間隔和更大的批次間距
+                await new Promise(r => setTimeout(r, batchCount % batchInterval === 0 ? longPause : shortPause));
               }
             }
           }
@@ -755,6 +764,7 @@ export const useGameStore = defineStore('game', {
       Object.assign(this.freeMode, { itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {} });
       this.hiddenLayerIds = [];
       imageCache.clear();
+      contentBoundsCache.clear();
       if (!this.isRestoring) {
         this.recordHistory();
         this.showNotification('已清空穿搭', 'info');
@@ -844,8 +854,7 @@ export const useGameStore = defineStore('game', {
       this.history = this.history.slice(0, this.historyIndex + 1);
       this.history.push(currentState);
 
-      const maxHistory = 25;
-      if (this.history.length > maxHistory) this.history = this.history.slice(-maxHistory);
+      if (this.history.length > MAX_HISTORY) this.history = this.history.slice(-MAX_HISTORY);
       this.historyIndex = this.history.length - 1;
       this.debouncedSaveAppState();
     },

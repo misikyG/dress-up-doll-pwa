@@ -19,12 +19,12 @@ const ensureScriptsLoaded = () => {
 
 const saveAuthState = (token, expiry) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      hasAuth: true,
-      access_token: token,
-      expiry,
-      ts: Date.now()
-    }));
+    const data = { hasAuth: true, ts: Date.now() };
+    if (token) {
+      data.access_token = token;
+      data.expiry = expiry;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch { /* ignore */ }
 };
 
@@ -81,27 +81,41 @@ export function hasPreviousAuth() {
 
 export async function tryRestoreSession(clientId) {
   const state = loadAuthState();
-  if (!state?.access_token || !state?.expiry) return false;
-  if (Date.now() >= state.expiry) {
-    clearAuthState();
-    return false;
-  }
+  if (!state?.hasAuth) return false;
+
+  // 即使 token 已過期，仍嘗試靜默刷新而非直接清除
+  const tokenExpired = !state.access_token || !state.expiry || Date.now() >= state.expiry;
+
   try {
     await ensureGoogleClient(clientId);
-    currentToken = state.access_token;
-    tokenExpiry = state.expiry;
-    window.gapi.client.setToken({ access_token: currentToken });
 
-    // 用 fetch 驗證 token 有效性，避免依賴 gapi.client.drive
-    const testResp = await fetch(
-      'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
-      { headers: { Authorization: `Bearer ${currentToken}` } }
-    );
-    if (!testResp.ok) throw new Error('Token validation failed');
+    if (!tokenExpired) {
+      // token 尚未過期，先驗證是否仍有效
+      currentToken = state.access_token;
+      tokenExpiry = state.expiry;
+      window.gapi.client.setToken({ access_token: currentToken });
 
-    return true;
+      const testResp = await fetch(
+        'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
+        { headers: { Authorization: `Bearer ${currentToken}` } }
+      );
+      if (testResp.ok) return true;
+      // token 驗證失敗，嘗試靜默刷新
+    }
+
+    // 嘗試靜默刷新取得新 token（不會彈出登入視窗）
+    const refreshed = await trySilentAuth(clientId);
+    if (refreshed) return true;
+
+    // 靜默刷新也失敗，保留 hasAuth 標記讓 UI 知道曾經登入過
+    saveAuthState(null, 0);
+    currentToken = null;
+    tokenExpiry = 0;
+    return false;
   } catch {
-    clearAuthState();
+    saveAuthState(null, 0);
+    currentToken = null;
+    tokenExpiry = 0;
     return false;
   }
 }
