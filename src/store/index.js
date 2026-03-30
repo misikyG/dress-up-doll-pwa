@@ -152,7 +152,9 @@ const createOutfitSnapshot = (outfit) => {
   const snapshot = {};
   for (const [slot, items] of Object.entries(outfit)) {
     if (!items || !Array.isArray(items)) { snapshot[slot] = []; continue; }
-    snapshot[slot] = items.map(({ imageData, variantImages, ...rest }) => ({ ...rest }));
+    snapshot[slot] = JSON.parse(JSON.stringify(
+      items.map(({ imageData, variantImages, ...rest }) => rest)
+    ));
   }
   return snapshot;
 };
@@ -265,19 +267,19 @@ export const presetThemes = [
   },
   {
     id: 'preset-amber',
-    name: '琥珀',
+    name: '泰奶',
     colors: {
-      'color-primary': '#d2833a',
+      'color-primary': '#f7a75d',
       'color-bg-main': '#fdf8f0',
-      'color-bg-panel': '#fbf3e4',
+      'color-bg-panel': '#fbefe4',
       'color-bg-card': '#fffdf8',
       'color-bg-canvas': '#f5f0e8',
-      'color-text-primary': '#867360',
-      'color-text-secondary': '#a89ab3',
+      'color-text-primary': '#786755',
+      'color-text-secondary': '#a09ba4',
       'color-border': '#c69986',
-      'color-success': '#7a9b5b',
-      'color-error': '#b8453a',
-      'color-warning': '#e6b830',
+      'color-success': '#97bc74',
+      'color-error': '#d2552e',
+      'color-warning': '#e8ae57',
       'color-info': '#4a6fa5',
     }
   }
@@ -983,6 +985,11 @@ export const useGameStore = defineStore('game', {
 
     async getAppStateForBackup() {
       await this.saveAppState();
+      // 優先從 localStorage 讀取（JSON.stringify 已正確處理 Proxy）
+      try {
+        const backup = localStorage.getItem('appState-backup');
+        if (backup) return JSON.parse(backup);
+      } catch {}
       try {
         return await DressingCore.getData('settings', 'appState');
       } catch { return null; }
@@ -1268,9 +1275,9 @@ export const useGameStore = defineStore('game', {
       root.style.setProperty('--app-base-font-size', `${size}px`);
       root.style.fontSize = `${size}px`;
       if (this.theme.fontFamily) {
-        document.body.style.fontFamily = this.theme.fontFamily;
+        root.style.setProperty('--app-font-family', this.theme.fontFamily);
       } else {
-        document.body.style.fontFamily = '';
+        root.style.removeProperty('--app-font-family');
       }
     },
 

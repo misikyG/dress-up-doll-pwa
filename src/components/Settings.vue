@@ -285,7 +285,7 @@
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.warning"></span> 危險區域</h4>
         <div class="dual-actions">
-          <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
+          <button @click="clearAllData" class="danger-btn small-danger">清空所有本地數據</button>
         </div>
         <p class="hint">將刪除所有匯入物件、儲存搭配、自定義主題、自定義 CSS 及所有設置，且無法復原！</p>
       </div>
@@ -852,6 +852,9 @@ const handleImportAllData = async (event) => {
     if (Array.isArray(data.dismissedBundledPacks)) {
       gameStore.dismissedBundledPacks = data.dismissedBundledPacks;
       await gameStore.saveDismissedBundledPacks();
+    }
+    if (data.appState) {
+      await gameStore.restoreAppStateFromBackup(data.appState);
     }
     gameStore.showNotification('所有資料已匯入', 'success');
   } catch {
@@ -1821,6 +1824,20 @@ const loadDefaultFilters = async () => {
   cursor: pointer;
   font-size: 0.95rem;
   transition: var(--transition-fast);
+}
+
+.danger-btn.small-danger {
+  width: auto;
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.danger-btn.small-danger:hover {
+  background-color: var(--color-error);
+  color: var(--color-bg-main);
 }
 
 .danger-btn:hover {

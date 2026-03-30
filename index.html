@@ -123,6 +123,9 @@
           document.documentElement.style.setProperty('--app-base-font-size', t.fontSize + 'px');
           document.documentElement.style.fontSize = t.fontSize + 'px';
         }
+        if (t.fontFamily) {
+          document.documentElement.style.setProperty('--app-font-family', t.fontFamily);
+        }
       } catch(e) {}
     })();
   </script>

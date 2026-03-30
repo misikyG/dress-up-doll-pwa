@@ -139,7 +139,6 @@ onUnmounted(() => {
   flex-direction: column;
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
-  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

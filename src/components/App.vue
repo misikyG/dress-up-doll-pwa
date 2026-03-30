@@ -62,7 +62,7 @@ textarea,
 
 body {
   margin: 0;
-  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--app-font-family, 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
 }
