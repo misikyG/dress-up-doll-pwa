@@ -515,14 +515,14 @@ const flipSelected = (axis) => {
 }
 
 .badge-btn.save {
-  background: var(--color-warning);
-  background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent));
+  background: var(--color-info);
+  background: linear-gradient(135deg, var(--color-info), color-mix(in srgb, var(--color-info) 80%, transparent));
   color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .badge-btn.save:hover {
-  background: var(--color-warning);
+  background: var(--color-info);
 }
 
 .zoom-badge {

@@ -260,6 +260,14 @@
             <button class="secondary-btn" @click="syncFromDrive" :disabled="isCloudBusy">
               {{ isCloudBusy ? '處理中...' : '從雲端還原' }}
             </button>
+            <label class="auto-backup-toggle checkbox-custom-container">
+              <input type="checkbox" :checked="autoBackupEnabled" @change="toggleAutoBackup" />
+              <span class="checkbox-custom auto-backup-check"></span>
+              <span>定時自動備份（每 5 分鐘）</span>
+            </label>
+            <p v-if="autoBackupEnabled" class="auto-backup-status hint">
+              ⏱ 自動備份已啟用{{ nextAutoBackupText }}
+            </p>
             <button class="danger-btn small" @click="disconnectGoogle">登出 Google</button>
           </template>
         </div>
@@ -305,7 +313,7 @@ import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
 import DressingCore from '../core/index.js';
-import { ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
+import { ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 
 defineEmits(['close']);
@@ -318,7 +326,13 @@ const isGoogleReady = ref(false);
 const isCloudBusy = ref(false);
 const isLoadingDemo = ref(false);
 const isLoadingFilters = ref(false);
+const autoBackupEnabled = ref(false);
+const nextAutoBackupText = ref('');
+let autoBackupTimer = null;
+let autoBackupCountdownTimer = null;
+let autoBackupNextTime = 0;
 const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
+const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000; // 5 分鐘
 
 const showColorEditor = ref(false);
 const showCustomCSS = ref(false);
@@ -536,6 +550,13 @@ onUnmounted(() => {
   if (gameStore.theme.previewColors) {
     gameStore.clearPreviewColors();
     gameStore.applyTheme(gameStore.theme.currentTheme);
+  }
+  
+  // 自動備份 timer 不在此清除，因為它應在整個 session 中持續運作
+  // 只清除倒數顯示 timer
+  if (autoBackupCountdownTimer) {
+    clearInterval(autoBackupCountdownTimer);
+    autoBackupCountdownTimer = null;
   }
 });
 
@@ -893,6 +914,7 @@ const connectGoogle = async () => {
 const disconnectGoogle = () => {
   signOut();
   isGoogleReady.value = false;
+  stopAutoBackup();
   gameStore.showNotification('已登出 Google', 'info');
 };
 
@@ -906,9 +928,139 @@ const restoreSession = async () => {
   isCloudBusy.value = true;
   try {
     const ok = await tryRestoreSession(GOOGLE_CLIENT_ID);
-    if (ok) isGoogleReady.value = true;
+    if (ok) {
+      isGoogleReady.value = true;
+      // 恢復自動備份設定
+      try {
+        const saved = localStorage.getItem('auto-backup-enabled');
+        if (saved === 'true') {
+          startAutoBackup(true);
+        }
+      } catch {}
+    }
   } catch { /* 恢復失敗不提示 */ }
   finally { isCloudBusy.value = false; }
+};
+
+/** 生成帶時間編碼的備份檔名，如 doll-backup-0730AM */
+const getTimestampedBackupName = () => {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const timeStr = String(hours).padStart(2, '0') + minutes + ampm;
+  return `doll-backup-${timeStr}`;
+};
+
+const toggleAutoBackup = (event) => {
+  if (event.target.checked) {
+    const confirmed = confirm(
+      '⚠️ 注意：啟用自動備份後，系統將每 5 分鐘自動上傳備份至雲端。\n\n' +
+      '新的備份可能會覆蓋較舊的備份檔案（僅保留最新 5 筆）。\n' +
+      '請確認您了解此機制，再決定是否啟用。'
+    );
+    if (confirmed) {
+      startAutoBackup(false);
+    } else {
+      event.target.checked = false;
+    }
+  } else {
+    stopAutoBackup();
+  }
+};
+
+const startAutoBackup = (silent = false) => {
+  autoBackupEnabled.value = true;
+  try { localStorage.setItem('auto-backup-enabled', 'true'); } catch {}
+  
+  autoBackupNextTime = Date.now() + AUTO_BACKUP_INTERVAL;
+  updateCountdownText();
+  
+  autoBackupCountdownTimer = setInterval(updateCountdownText, 30000);
+  
+  autoBackupTimer = setInterval(async () => {
+    if (!isGoogleReady.value || isCloudBusy.value) return;
+    try {
+      await performAutoBackup();
+      autoBackupNextTime = Date.now() + AUTO_BACKUP_INTERVAL;
+    } catch (err) {
+      console.warn('自動備份失敗:', err);
+    }
+  }, AUTO_BACKUP_INTERVAL);
+  
+  if (!silent) {
+    gameStore.showNotification('已啟用自動備份（每 5 分鐘）', 'success');
+  }
+};
+
+const stopAutoBackup = () => {
+  autoBackupEnabled.value = false;
+  try { localStorage.setItem('auto-backup-enabled', 'false'); } catch {}
+  if (autoBackupTimer) { clearInterval(autoBackupTimer); autoBackupTimer = null; }
+  if (autoBackupCountdownTimer) { clearInterval(autoBackupCountdownTimer); autoBackupCountdownTimer = null; }
+  nextAutoBackupText.value = '';
+};
+
+const updateCountdownText = () => {
+  const remaining = Math.max(0, autoBackupNextTime - Date.now());
+  const mins = Math.ceil(remaining / 60000);
+  nextAutoBackupText.value = mins > 0 ? `（下次備份約 ${mins} 分鐘後）` : '（即將備份...）';
+};
+
+const performAutoBackup = async () => {
+  isCloudBusy.value = true;
+  try {
+    await ensureAccessToken();
+    const { items, outfits } = await gameStore.getFullExportData();
+    const appState = await gameStore.getAppStateForBackup();
+    const payload = {
+      type: 'full-backup',
+      exportedAt: new Date().toISOString(),
+      packs: gameStore.availablePacks,
+      items,
+      outfits,
+      theme: {
+        currentTheme: gameStore.theme.currentTheme,
+        customThemes: gameStore.theme.customThemes,
+        customCSS: gameStore.theme.customCSS,
+        fontFamily: gameStore.theme.fontFamily,
+        fontSize: gameStore.theme.fontSize,
+        previewColors: gameStore.theme.previewColors,
+      },
+      appState,
+      hiddenItems: gameStore.hiddenItems,
+      dismissedBundledPacks: gameStore.dismissedBundledPacks,
+      schemaVersion: 2,
+    };
+    const backupName = getTimestampedBackupName();
+    await uploadJsonFile({ name: `${backupName}.json`, json: payload });
+    await pruneOldBackups({ name: BACKUP_FILENAME, keep: 5 });
+    // 也清理時間編碼的備份
+    await pruneTimedBackups();
+    gameStore.showNotification('自動備份完成', 'success');
+  } catch (err) {
+    console.error('自動備份失敗:', err);
+    if (!isTokenValid()) {
+      isGoogleReady.value = false;
+      stopAutoBackup();
+    }
+  } finally {
+    isCloudBusy.value = false;
+  }
+};
+
+const pruneTimedBackups = async () => {
+  try {
+    const files = await listBackupFiles({ name: 'doll-backup' });
+    if (files.length > 5) {
+      const toDelete = files.slice(5);
+      for (const f of toDelete) {
+        try { await deleteGDriveFile(f.id); } catch {}
+      }
+    }
+  } catch {}
 };
 
 const uploadToDrive = async () => {
@@ -936,12 +1088,14 @@ const uploadToDrive = async () => {
       dismissedBundledPacks: gameStore.dismissedBundledPacks,
       schemaVersion: 2,
     };
-    await uploadJsonFile({ name: BACKUP_FILENAME, json: payload });
+    const backupName = getTimestampedBackupName();
+    await uploadJsonFile({ name: `${backupName}.json`, json: payload });
 
-    // 僅保留最新 5 筆備份
+    // 僅保留最新 5 筆備份（含舊格式與時間編碼格式）
     const deleted = await pruneOldBackups({ name: BACKUP_FILENAME, keep: 5 });
+    await pruneTimedBackups();
     const extra = deleted > 0 ? `（已清理 ${deleted} 筆舊備份）` : '';
-    gameStore.showNotification(`已上傳備份到 Google Drive${extra}`, 'success');
+    gameStore.showNotification(`已上傳備份 ${backupName} 到 Google Drive${extra}`, 'success');
   } catch (err) {
     console.error('雲端上傳失敗:', err);
     if (!isTokenValid()) isGoogleReady.value = false;
@@ -1917,6 +2071,36 @@ const loadDefaultFilters = async () => {
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
+}
+
+.auto-backup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  width: 100%;
+  padding: 0.4rem 0;
+}
+
+.auto-backup-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.auto-backup-toggle .auto-backup-check {
+  border-color: var(--color-warning);
+}
+
+.auto-backup-toggle input[type="checkbox"]:checked + .auto-backup-check {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.auto-backup-status {
+  margin-top: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
 }
 
 .danger-btn.small {

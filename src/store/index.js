@@ -37,6 +37,7 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
           }
         }
       } catch { hasContent = false; }
+      // 釋放偵測用 canvas 記憶體
       detectCanvas.width = 0; detectCanvas.height = 0;
 
       let srcX, srcY, srcW, srcH;
@@ -66,10 +67,19 @@ const generateThumbnail = (dataUrl, maxDimension = 300) => {
         result = canvas.toDataURL('image/webp', 0.85);
         if (!result.startsWith('data:image/webp')) result = canvas.toDataURL('image/png');
       } catch { result = canvas.toDataURL('image/png'); }
+      // 釋放 canvas 與 img 記憶體，避免 iOS Safari 記憶體壓力
       canvas.width = 0; canvas.height = 0;
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
       resolve(result);
     };
-    img.onerror = () => resolve(null);
+    img.onerror = () => {
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+      resolve(null);
+    };
     img.src = dataUrl;
   });
 };
@@ -79,6 +89,7 @@ const MAX_IMAGE_CACHE = 15;
 
 // 快取內容邊界 (normalized 0-1)：用於自由模式的變換框定位
 const contentBoundsCache = new Map();
+const MAX_CONTENT_BOUNDS_CACHE = 50;
 
 /**
  * 計算圖片中非透明像素的最小外接矩形 (normalized 0-1)
@@ -90,7 +101,6 @@ const computeContentBounds = async (dataUrl) => {
   try {
     const img = new Image();
     img.src = dataUrl;
-    // decode() 確保圖片完全解碼，解決 iOS Safari getImageData 讀到空白的問題
     await img.decode();
 
     const maxDim = 400;
@@ -101,6 +111,9 @@ const computeContentBounds = async (dataUrl) => {
     c.width = dw; c.height = dh;
     const ctx = c.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(img, 0, 0, dw, dh);
+
+    // 釋放 img 記憶體
+    img.src = '';
 
     let minX = dw, minY = dh, maxX = 0, maxY = 0;
     let found = false;
@@ -120,7 +133,6 @@ const computeContentBounds = async (dataUrl) => {
     c.width = 0; c.height = 0;
 
     if (found && maxX >= minX && maxY >= minY) {
-      // 加 25% padding，讓操作框比內容稍大、手指容易操作
       const pad = Math.max((maxX - minX), (maxY - minY)) * 0.25;
       const x1 = Math.max(0, minX - pad);
       const y1 = Math.max(0, minY - pad);
@@ -462,12 +474,13 @@ export const useGameStore = defineStore('game', {
           items = fullItems.map(({ imageData, variantImages, ...rest }) => rest);
         }
 
-        // 縮圖生成 (v2)
+        // 縮圖生成 (v2) - 使用較長的間隔讓 iOS Safari 有時間釋放記憶體
         const thumbVersionData = await DressingCore.getData('settings', 'thumbnailVersion').catch(() => null);
         const currentThumbVersion = thumbVersionData?.version || 0;
         const needsThumbnail = items.some(i => !i.thumbnailData) || currentThumbVersion < 2;
         if (needsThumbnail) {
           const ids = await DressingCore.getAllKeys('items');
+          let batchCount = 0;
           for (const id of ids) {
             const fullItem = await DressingCore.getData('items', id);
             if (fullItem?.imageData) {
@@ -479,7 +492,9 @@ export const useGameStore = defineStore('game', {
                 await DressingCore.saveData('items', fullItem);
                 const memItem = items.find(i => i.id === id);
                 if (memItem) memItem.thumbnailData = fullItem.thumbnailData;
-                await new Promise(r => setTimeout(r, 50));
+                batchCount++;
+                // 每處理 3 張讓出較長的時間，降低 iOS 記憶體壓力
+                await new Promise(r => setTimeout(r, batchCount % 3 === 0 ? 100 : 50));
               }
             }
           }
@@ -505,6 +520,7 @@ export const useGameStore = defineStore('game', {
           name: o.name,
           previewImage: o.previewImage,
           createdAt: o.createdAt,
+          updatedAt: o.updatedAt || o.createdAt,
           layerOrder: o.layerOrder || [],
         }));
         this.availablePacks = packs;
@@ -801,6 +817,9 @@ export const useGameStore = defineStore('game', {
       if (!imageData) return { x: 0, y: 0, w: 1, h: 1 };
       const bounds = await computeContentBounds(imageData);
       contentBoundsCache.set(itemId, bounds);
+      if (contentBoundsCache.size > MAX_CONTENT_BOUNDS_CACHE) {
+        contentBoundsCache.delete(contentBoundsCache.keys().next().value);
+      }
       return bounds;
     },
 
@@ -895,6 +914,7 @@ export const useGameStore = defineStore('game', {
         name: o.name,
         previewImage: o.previewImage,
         createdAt: o.createdAt,
+        updatedAt: o.updatedAt || o.createdAt,
         layerOrder: o.layerOrder || [],
       }));
     },
@@ -1186,12 +1206,16 @@ export const useGameStore = defineStore('game', {
       });
       try {
         await DressingCore.setData('theme', 'settings', themeData);
-        // 快取中額外儲存已解析的配色，供頁面載入時同步套用
         const resolvedColors = this._resolveThemeColors();
         const cacheData = { ...themeData };
         if (resolvedColors) cacheData._resolvedColors = resolvedColors;
         localStorage.setItem('theme-settings-cache', JSON.stringify(cacheData));
       } catch {}
+    },
+
+    debouncedSaveThemeSettings() {
+      if (this._saveThemeTimer) clearTimeout(this._saveThemeTimer);
+      this._saveThemeTimer = setTimeout(() => this.saveThemeSettings(), 400);
     },
 
     _resolveThemeColors() {
@@ -1285,7 +1309,7 @@ export const useGameStore = defineStore('game', {
       this.theme.fontFamily = fontFamily;
       this.theme.fontSize = fontSize;
       this.applyFontSettings();
-      await this.saveThemeSettings();
+      this.debouncedSaveThemeSettings();
     },
 
     async setCustomCSS(css) {

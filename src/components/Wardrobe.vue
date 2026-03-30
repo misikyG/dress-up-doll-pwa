@@ -122,7 +122,7 @@
             <div class="items-grid-sizer" :style="{ height: `${totalContentHeight}px` }">
               <div v-if="activeCategory === 'starred'" class="items-grid"
                 :style="{ transform: `translateY(${visibleItems.offsetY}px)` }">
-                <div v-for="outfit in visibleItems.items" :key="`outfit-${outfit.id}`" class="grid-item outfit-card"
+                <div v-for="outfit in visibleItems.items" :key="`outfit-${outfit.id}-${outfit.updatedAt}`" class="grid-item outfit-card"
                   @click="loadOutfit(outfit)"
                   @contextmenu="handleOutfitContextMenu(outfit, $event)"
                   @touchstart="handleOutfitTouchStart(outfit, $event)"
@@ -198,6 +198,15 @@
         <div class="mobile-wardrobe-body">
           <!-- 分類 TAB -->
           <div class="mobile-categories">
+            <button 
+              class="mobile-filter-btn" 
+              @click="showMobileFilterPanel = true"
+              :class="{ active: hasActiveFilters }"
+              aria-label="篩選與排序"
+            >
+              <span class="mobile-filter-icon" v-html="filterIcon"></span>
+              <span v-if="hasActiveFilters" class="mobile-filter-badge">{{ activeFilterCount }}</span>
+            </button>
             <div class="categories-scroll" @wheel.prevent="onMobileCategoriesWheel">
               <button
                 v-for="category in gameStore.categories"
@@ -219,7 +228,7 @@
             <template v-if="activeCategory === 'starred'">
               <div
                 v-for="outfit in gameStore.savedOutfits"
-                :key="`mobile-outfit-${outfit.id}`"
+                :key="`mobile-outfit-${outfit.id}-${outfit.updatedAt}`"
                 class="mobile-item mobile-outfit-item"
                 @click="loadOutfit(outfit)"
                 @touchstart="handleOutfitTouchStart(outfit, $event)"
@@ -361,6 +370,94 @@
           </div>
         </div>
       </div>
+
+      <!-- 手機版篩選/排序彈出卡片 -->
+      <div v-if="showMobileFilterPanel" class="context-menu-overlay" @click="showMobileFilterPanel = false">
+        <div class="context-menu mobile-filter-popup" @click.stop>
+          <div class="context-menu-header">
+            <span class="context-menu-title">篩選與排序</span>
+            <button class="context-menu-close" @click="showMobileFilterPanel = false">✕</button>
+          </div>
+          <div class="context-menu-content">
+            <!-- 排序方式 -->
+            <div class="context-menu-section">
+              <span class="context-menu-section-title">排序方式</span>
+              <select v-model="sortBy" class="filter-select mobile-sort-select">
+                <option value="name">按名稱</option>
+                <option value="pack">按圖包</option>
+                <option value="recent">最近加入</option>
+              </select>
+            </div>
+            <div class="context-menu-divider"></div>
+            <!-- 圖包多選 -->
+            <div class="context-menu-section">
+              <div class="filter-section-header">
+                <span class="context-menu-section-title">圖包篩選</span>
+                <button class="filter-clear-btn" @click="clearPackFilters" v-if="selectedPacks.length > 0">
+                  清除
+                </button>
+              </div>
+              <div class="filter-checkboxes">
+                <label v-for="pack in availablePacks" :key="pack.id" class="filter-checkbox-item">
+                  <input type="checkbox" :value="pack.id" v-model="selectedPacks" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-label">{{ pack.displayName || pack.name }}</span>
+                </label>
+              </div>
+            </div>
+            <!-- 人物篩選 -->
+            <template v-if="characterOptions.length > 0 && activeCategory !== 'starred'">
+              <div class="context-menu-divider"></div>
+              <div class="context-menu-section">
+                <div class="filter-section-header">
+                  <span class="context-menu-section-title">人物篩選</span>
+                  <button class="filter-clear-btn" @click="clearCharacterFilters" v-if="selectedCharacters.length > 0">
+                    清除
+                  </button>
+                </div>
+                <div class="filter-checkboxes">
+                  <label v-for="char in characterOptions" :key="char.id" class="filter-checkbox-item">
+                    <input type="checkbox" :value="char.id" v-model="selectedCharacters" />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">{{ char.name }}<span v-if="char.pack"> · {{ char.pack }}</span></span>
+                  </label>
+                </div>
+              </div>
+            </template>
+            <!-- 屬性標籤 -->
+            <template v-if="currentCategoryTags.length > 0">
+              <div class="context-menu-divider"></div>
+              <div class="context-menu-section">
+                <div class="filter-section-header">
+                  <span class="context-menu-section-title">屬性標籤</span>
+                  <button class="filter-clear-btn" @click="clearTagFilters" v-if="selectedTags.length > 0">
+                    清除
+                  </button>
+                </div>
+                <div class="filter-checkboxes tag-checkboxes">
+                  <label v-for="tag in currentCategoryTags" :key="tag.key" class="filter-checkbox-item tag-item">
+                    <input type="checkbox" :value="tag.key" v-model="selectedTags" />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-label">{{ tag.key }}<span v-if="tag.count"> ({{ tag.count }})</span></span>
+                  </label>
+                </div>
+              </div>
+            </template>
+            <!-- 隱藏物件開關 -->
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-section">
+              <label class="filter-checkbox-item hide-toggle">
+                <input type="checkbox" v-model="showHidden" />
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-label">顯示隱藏的物件</span>
+                <span v-if="gameStore.hiddenItems.length > 0" class="hidden-count">
+                  ({{ gameStore.hiddenItems.length }})
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
     </Teleport>
   </section>
 </template>
@@ -381,6 +478,7 @@ const scrollContainer = ref(null);
 const scrollTop = ref(0);
 const containerHeight = ref(600);
 const showFilterPanel = ref(false);
+const showMobileFilterPanel = ref(false);
 const showHidden = ref(false);  // 顯示隱藏物件的開關
 
 // 上下文選單狀態 (整合變體選單)
@@ -711,6 +809,7 @@ const getCurrentVariant = (item) => {
 
 // 長按事件處理
 let longPressMoved = false;
+const LONG_PRESS_DELAY = 700; // 手機/平板稍長的延遲，避免水平滑動時誤觸
 
 const handleItemTouchStart = (item, event) => {
   longPressMoved = false;
@@ -718,7 +817,7 @@ const handleItemTouchStart = (item, event) => {
     if (!longPressMoved) {
       showContextMenu(item, event);
     }
-  }, 500); // 500ms 長按
+  }, LONG_PRESS_DELAY);
 };
 
 const handleItemTouchMove = () => {
@@ -752,7 +851,7 @@ const handleOutfitTouchStart = (outfit, event) => {
     if (!longPressMoved) {
       showOutfitContextMenu(outfit, event);
     }
-  }, 500);
+  }, LONG_PRESS_DELAY);
 };
 
 const handleOutfitTouchEnd = () => {
@@ -1773,6 +1872,73 @@ watch(characterOptions, (options) => {
   border-bottom: 1px solid var(--color-border);
 }
 
+.mobile-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  align-self: center;
+  margin-right: 0.35rem;
+}
+
+.mobile-filter-btn:active {
+  transform: scale(0.95);
+}
+
+.mobile-filter-btn .mobile-filter-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-filter-btn .mobile-filter-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--color-error);
+  color: var(--color-bg-main);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.mobile-filter-popup {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  min-width: 260px;
+  max-width: 320px;
+  width: 85vw;
+  max-height: 70vh;
+}
+
+.mobile-filter-popup .context-menu-content {
+  max-height: 60vh;
+}
+
+.mobile-sort-select {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
 .categories-scroll {
   display: flex;
   flex-direction: row;
@@ -1813,6 +1979,11 @@ watch(characterOptions, (options) => {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+  color: var(--color-text-primary);
+}
+
+.mobile-category-tab.active .mobile-tab-icon {
+  color: var(--color-bg-card);
 }
 
 .mobile-tab-label {

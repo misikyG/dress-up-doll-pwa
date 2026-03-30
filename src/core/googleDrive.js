@@ -304,9 +304,9 @@ export async function downloadLatestJson({ name }) {
   const baseName = name.replace(/\.json$/, '').replace(/'/g, "\\'");
   const safeName = name.replace(/'/g, "\\'");
 
-  // 同時搜尋壓縮版與非壓縮版
+  // 搜尋所有 doll-backup 相關檔案（含時間編碼格式如 doll-backup-0730AM）
   const q = encodeURIComponent(
-    `(name='${baseName}.json.gz' or name='${safeName}') and '${folderId}' in parents and trashed=false`
+    `(name contains '${baseName}') and '${folderId}' in parents and trashed=false`
   );
   const listResp = await fetch(
     `https://www.googleapis.com/drive/v3/files?pageSize=1&orderBy=modifiedTime%20desc&q=${q}&fields=files(id,name)`,
@@ -346,10 +346,9 @@ export async function listBackupFiles({ name }) {
 
   const folderId = await ensureFolder();
   const baseName = name.replace(/\.json$/, '').replace(/'/g, "\\'");
-  const safeName = name.replace(/'/g, "\\'");
 
   const q = encodeURIComponent(
-    `(name='${baseName}.json.gz' or name='${safeName}') and '${folderId}' in parents and trashed=false`
+    `(name contains '${baseName}') and '${folderId}' in parents and trashed=false`
   );
   const listResp = await fetch(
     `https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=modifiedTime%20desc&q=${q}&fields=files(id,name,modifiedTime,size)`,
