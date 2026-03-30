@@ -34,7 +34,7 @@
         <div class="zoom-badge">
           <button class="zoom-icon" @click="gameStore.zoomOut()" :disabled="gameStore.canvasZoom <= 0.05" title="縮小">－</button>
           <span class="zoom-text">{{ Math.round(gameStore.canvasZoom * 100) }}%</span>
-          <button class="zoom-icon" @click="gameStore.zoomIn()" :disabled="gameStore.canvasZoom >= 5" title="放大">＋</button>
+          <button class="zoom-icon" @click="gameStore.zoomIn()" :disabled="gameStore.canvasZoom >= maxZoom" title="放大">＋</button>
           <button class="zoom-icon" @click="gameStore.resetZoom()" title="重設縮放">◼︎</button>
         </div>
 
@@ -133,6 +133,13 @@ const watermarkSrc = new URL('../assets/watermark.png', import.meta.url).href;
 const emit = defineEmits(['pan-mode-change']);
 
 const hasSelectedItem = computed(() => gameStore.selectedItem !== null);
+
+const maxZoom = computed(() => {
+  if (gameStore.ui.isMobile && gameStore._baseCanvasScale > 0) {
+    return 1 / gameStore._baseCanvasScale;
+  }
+  return Math.max(5, gameStore.canvasSize.width / 400);
+});
 
 const togglePanMode = () => {
   panMode.value = !panMode.value;

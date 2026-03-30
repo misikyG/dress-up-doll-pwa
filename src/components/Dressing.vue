@@ -44,7 +44,9 @@
             @touchstart="onItemDragStart($event, layer)"
           />
           
-          <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls" :style="getContentBoundsStyle(layer.id)">
+          <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls" :style="getContentBoundsStyle(layer.id)"
+            @mousedown.stop="onItemDragStart($event, layer)"
+            @touchstart.stop="onItemDragStart($event, layer)">
             <div v-if="gameStore.freeMode.enableFreeScale"
               class="scale-handle"
               @mousedown.stop="onScaleStart($event, layer)"
@@ -174,17 +176,17 @@ const baseCanvasScale = computed(() => {
   const scaleY = availableHeight / targetSize.height;
 
   let base = Math.min(scaleX, scaleY, 1);
-  // 手機版：原始尺寸在手機上極小(2000×3800 → ~0.12 scale)，
-  // 乘以 6.5 使 100% 顯示為舒適觀看大小（約佔螢幕寬度的角色尺寸）
-  if (gameStore.ui.isMobile) {
-    base *= 6.5;
-  }
   return base;
 });
 
 const finalCanvasScale = computed(() => {
   return baseCanvasScale.value * gameStore.canvasZoom;
 });
+
+// 同步 baseCanvasScale 到 store，用於計算手機版最大縮放
+watch(baseCanvasScale, (val) => {
+  gameStore._baseCanvasScale = val;
+}, { immediate: true });
 
 const canvasStyle = computed(() => {
   const hasBackground = (gameStore.currentOutfit.background?.length || 0) > 0;
@@ -292,6 +294,13 @@ const selectItem = (layer) => {
 };
 
 const handleCanvasClick = (e) => {
+  // 點擊選取框外的區域可取消選取
+  if (gameStore.selectedItem) {
+    if (!e.target.closest('.free-mode-controls')) {
+      gameStore.clearSelection();
+    }
+    return;
+  }
   if (e.target === canvasViewport.value || e.target === canvas.value) {
     gameStore.clearSelection();
   }
@@ -390,6 +399,9 @@ const onCanvasDragEnd = () => {
 
 
 const onItemDragStart = (e, layer) => {
+  // iOS Safari: 確保縮放/旋轉把手的觸控不被攔截
+  if (e.target.closest('.scale-handle, .rotate-handle')) return;
+  
   if (panModeActive.value || e.button === 1) {
     onCanvasDragStart(e);
     return;
@@ -654,6 +666,12 @@ onUnmounted(() => {
 
 .canvas-item.is-selected {
   z-index: 9998 !important;
+  pointer-events: none;
+}
+
+.canvas-item.is-selected .free-mode-controls {
+  pointer-events: auto;
+  cursor: move;
 }
 
 .canvas-item.is-highlighted {}

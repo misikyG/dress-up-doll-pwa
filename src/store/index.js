@@ -352,6 +352,7 @@ export const useGameStore = defineStore('game', {
     backgroundSize: { width: 2000, height: 3800 },
     canvasZoom: 1,
     canvasPan: { x: 0, y: 0 },
+    _baseCanvasScale: 1,
     currentOutfit: createEmptyOutfit(),
     selectedCharacterId: null,
     selectedItem: null,
@@ -713,6 +714,10 @@ export const useGameStore = defineStore('game', {
     },
 
     selectItem(layer) {
+      if (this.selectedItem?.id === layer.id) {
+        this.selectedItem = null;
+        return;
+      }
       this.selectedItem = layer;
       if (layer?.category === 'character') this.selectedCharacterId = layer.item.id;
     },
@@ -1073,7 +1078,13 @@ export const useGameStore = defineStore('game', {
     },
 
     setCanvasZoom(zoom) {
-      const maxZoom = Math.max(5, this.canvasSize.width / 400);
+      let maxZoom;
+      if (this.ui.isMobile && this._baseCanvasScale > 0) {
+        // 手機版最大縮放 = 畫布原始大小 (finalScale = baseCanvasScale * zoom = 1)
+        maxZoom = 1 / this._baseCanvasScale;
+      } else {
+        maxZoom = Math.max(5, this.canvasSize.width / 400);
+      }
       this.canvasZoom = Math.max(0.05, Math.min(maxZoom, zoom));
     },
     setCanvasPan(pan) { this.canvasPan = { ...pan }; },

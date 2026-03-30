@@ -126,6 +126,7 @@
                   @click="loadOutfit(outfit)"
                   @contextmenu="handleOutfitContextMenu(outfit, $event)"
                   @touchstart="handleOutfitTouchStart(outfit, $event)"
+                  @touchmove="handleItemTouchMove"
                   @touchend="handleOutfitTouchEnd"
                   @touchcancel="handleOutfitTouchEnd">
                   <div class="item-thumbnail outfit-preview">
@@ -148,6 +149,7 @@
                   @click="handleItemClick(item)"
                   @contextmenu="handleItemContextMenu(item, $event)"
                   @touchstart="handleItemTouchStart(item, $event)"
+                  @touchmove="handleItemTouchMove"
                   @touchend="handleItemTouchEnd"
                   @touchcancel="handleItemTouchEnd">
                   <div class="item-thumbnail">
@@ -221,6 +223,7 @@
                 class="mobile-item mobile-outfit-item"
                 @click="loadOutfit(outfit)"
                 @touchstart="handleOutfitTouchStart(outfit, $event)"
+                @touchmove="handleItemTouchMove"
                 @touchend="handleOutfitTouchEnd"
                 @touchcancel="handleOutfitTouchEnd"
               >
@@ -237,6 +240,7 @@
                 :class="['mobile-item', { 'equipped': gameStore.isItemInCurrentOutfit(item), 'has-variant': item.hasVariant }]"
                 @click="handleItemClick(item)"
                 @touchstart="handleItemTouchStart(item, $event)"
+                @touchmove="handleItemTouchMove"
                 @touchend="handleItemTouchEnd"
                 @touchcancel="handleItemTouchEnd"
                 @contextmenu="handleItemContextMenu(item, $event)"
@@ -731,10 +735,24 @@ const getCurrentVariant = (item) => {
 };
 
 // 長按事件處理
+let longPressMoved = false;
+
 const handleItemTouchStart = (item, event) => {
+  longPressMoved = false;
   longPressTimer = setTimeout(() => {
-    showContextMenu(item, event);
+    if (!longPressMoved) {
+      showContextMenu(item, event);
+    }
   }, 500); // 500ms 長按
+};
+
+const handleItemTouchMove = () => {
+  // 手指移動時取消長按，避免水平滾動選單時誤觸
+  longPressMoved = true;
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
 };
 
 const handleItemTouchEnd = () => {
@@ -754,8 +772,11 @@ const handleOutfitContextMenu = (outfit, event) => {
 };
 
 const handleOutfitTouchStart = (outfit, event) => {
+  longPressMoved = false;
   longPressTimer = setTimeout(() => {
-    showOutfitContextMenu(outfit, event);
+    if (!longPressMoved) {
+      showOutfitContextMenu(outfit, event);
+    }
   }, 500);
 };
 
@@ -2281,16 +2302,33 @@ watch(characterOptions, (options) => {
 .tablet-style .desktop-wardrobe {
   flex: 1;
   display: flex;
+  width: 100%;
 }
 
 .tablet-style .items-display {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  width: 0;
 }
 
 .tablet-style .items-grid-container {
   flex: 1;
+  padding-inline: 0.5rem;
+}
+
+.tablet-style .items-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px;
+}
+
+.tablet-style .grid-item {
+  min-height: 0;
+}
+
+.tablet-style .item-thumbnail {
+  aspect-ratio: 1;
 }
 
 .tablet-style .panel-toggle-handle--right {
