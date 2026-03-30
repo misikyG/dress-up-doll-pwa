@@ -33,16 +33,21 @@
             'is-highlighted': gameStore.selectedItem?.id === layer.id,
             'pan-mode-active': panModeActive
           }"
-          @click.stop="selectItem(layer)"
         >
           <img 
             :src="layer.item.imageData" 
             :alt="layer.item.displayName"
             draggable="false"
             decoding="async"
+          />
+
+          <!-- 感應區域：僅限內容邊界範圍 -->
+          <div class="item-hit-area"
+            :style="getContentBoundsStyle(layer.id)"
+            @click.stop="selectItem(layer)"
             @mousedown="onItemDragStart($event, layer)"
             @touchstart="onItemDragStart($event, layer)"
-          />
+          ></div>
           
           <div v-if="gameStore.canvasMode === 'free' && layer.category !== 'character' && gameStore.selectedItem?.id === layer.id" class="free-mode-controls" :style="getContentBoundsStyle(layer.id)"
             @mousedown.stop="onItemDragStart($event, layer)"
@@ -143,6 +148,10 @@ const scaleState = ref({ isScaling: false, scaleItem: null, startY: 0, startScal
 const rotateState = ref({ isRotating: false, rotateItem: null, startAngle: 0, startRotation: 0, centerX: 0, centerY: 0 });
 const canvasDragState = ref({ isDragging: false, startX: 0, startY: 0, startPan: { x: 0, y: 0 } });
 
+// 用於讓 baseCanvasScale 在 viewport 大小變化時重新計算
+const viewportSizeTrigger = ref(0);
+let viewportResizeObserver = null;
+
 const getClientPos = (e) => ({
   x: e.touches ? e.touches[0].clientX : e.clientX,
   y: e.touches ? e.touches[0].clientY : e.clientY
@@ -163,6 +172,8 @@ const removeGlobalListeners = (moveHandler, endHandler) => {
 };
 
 const baseCanvasScale = computed(() => {
+  // 讀取 viewportSizeTrigger 以在 viewport 大小變化時重新計算
+  void viewportSizeTrigger.value;
   if (!canvasViewport.value) return 1;
   const rect = canvasViewport.value.getBoundingClientRect();
   const hasBackground = (gameStore.currentOutfit.background?.length || 0) > 0;
@@ -215,13 +226,13 @@ const filterEffectLayers = computed(() =>
   visibleLayers.value.filter(l => l.item.filterEffect)
 );
 
-// --- 內容邊界：用於自由模式變換框定位 ---
+// --- 內容邊界：用於自由模式變換框定位 + 點擊感應區域 ---
 const contentBoundsMap = reactive({});
 watch(
-  () => gameStore.canvasMode === 'free' ? foregroundLayers.value : [],
+  () => foregroundLayers.value,
   async (layers) => {
     for (const layer of layers) {
-      if (layer.category === 'character' || contentBoundsMap[layer.id]) continue;
+      if (contentBoundsMap[layer.id]) continue;
       const bounds = await gameStore.getContentBounds(layer.id, layer.item.imageData);
       contentBoundsMap[layer.id] = bounds;
     }
@@ -294,16 +305,9 @@ const selectItem = (layer) => {
 };
 
 const handleCanvasClick = (e) => {
-  // 點擊選取框外的區域可取消選取
-  if (gameStore.selectedItem) {
-    if (!e.target.closest('.free-mode-controls')) {
-      gameStore.clearSelection();
-    }
-    return;
-  }
-  if (e.target === canvasViewport.value || e.target === canvas.value) {
-    gameStore.clearSelection();
-  }
+  // 點擊 hit-area 或 free-mode-controls 以外的區域取消選取
+  if (e.target.closest('.item-hit-area, .free-mode-controls')) return;
+  gameStore.clearSelection();
 };
 
 const handleWheel = (e) => {
@@ -366,7 +370,8 @@ const onCanvasDragStart = (e) => {
   }
   
   if (!isMiddleButton && !isPanMode) {
-    if (gameStore.canvasZoom <= 1 || e.target.tagName === 'IMG') return;
+    // 只在放大時才允許拖曳畫布；或者目標是 hit-area 時不做畫布拖曳
+    if (gameStore.canvasZoom <= 1 || e.target.closest('.item-hit-area')) return;
   }
   
   const pos = getClientPos(e);
@@ -529,10 +534,23 @@ const handleKeyDown = (e) => {
   if (e.key === 'Escape') gameStore.clearSelection();
 };
 
-onMounted(() => window.addEventListener('keydown', handleKeyDown));
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+  // 監聽 viewport 大小變化，觸發 baseCanvasScale 重新計算
+  if (canvasViewport.value) {
+    viewportResizeObserver = new ResizeObserver(() => {
+      viewportSizeTrigger.value++;
+    });
+    viewportResizeObserver.observe(canvasViewport.value);
+  }
+});
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
+  if (viewportResizeObserver) {
+    viewportResizeObserver.disconnect();
+    viewportResizeObserver = null;
+  }
   removeGlobalListeners(onItemDragging, onItemDragEnd);
   removeGlobalListeners(onCanvasDragging, onCanvasDragEnd);
   removeGlobalListeners(onScaling, onScaleEnd);
@@ -624,14 +642,22 @@ onUnmounted(() => {
   display: flex; 
   align-items: center; 
   justify-content: center;
+  pointer-events: none;
 }
 
 .canvas-item img {
   width: 100%; 
   height: 100%;
   object-fit: contain;
-  pointer-events: auto;
+  pointer-events: none;
   content-visibility: auto;
+}
+
+.item-hit-area {
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 1;
+  touch-action: none;
 }
 
 .filter-effect-layer {
@@ -646,7 +672,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.canvas-item.pan-mode-active {
+.canvas-item.pan-mode-active .item-hit-area {
   pointer-events: none;
 }
 
@@ -666,6 +692,9 @@ onUnmounted(() => {
 
 .canvas-item.is-selected {
   z-index: 9998 !important;
+}
+
+.canvas-item.is-selected > .item-hit-area {
   pointer-events: none;
 }
 

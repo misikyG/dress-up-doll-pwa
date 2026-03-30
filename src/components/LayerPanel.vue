@@ -183,7 +183,7 @@ const layersList = computed({
 const isLayerHidden = (layerId) => gameStore.isLayerHidden(layerId);
 
 const selectLayer = (layer) => {
-  gameStore.selectItem(layer);
+  gameStore.toggleSelectItem(layer);
 };
 
 const getCategoryName = (category) => {

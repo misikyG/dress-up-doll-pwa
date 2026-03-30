@@ -2303,14 +2303,20 @@ watch(characterOptions, (options) => {
   flex: 1;
   display: flex;
   width: 100%;
+  min-width: 0;
+}
+
+.tablet-style .category-sidebar {
+  flex-shrink: 0;
 }
 
 .tablet-style .items-display {
   flex: 1 1 0;
   min-width: 0;
+  width: 0;
   display: flex;
   flex-direction: column;
-  width: 0;
+  background-color: var(--color-bg-card);
 }
 
 .tablet-style .items-grid-container {

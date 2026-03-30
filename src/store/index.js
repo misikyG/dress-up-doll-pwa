@@ -714,6 +714,11 @@ export const useGameStore = defineStore('game', {
     },
 
     selectItem(layer) {
+      this.selectedItem = layer;
+      if (layer?.category === 'character') this.selectedCharacterId = layer.item.id;
+    },
+
+    toggleSelectItem(layer) {
       if (this.selectedItem?.id === layer.id) {
         this.selectedItem = null;
         return;
