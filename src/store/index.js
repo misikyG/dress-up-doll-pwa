@@ -900,7 +900,25 @@ export const useGameStore = defineStore('game', {
 
       try {
         await DressingCore.saveData('outfits', outfitData);
-        await this._reloadOutfits();
+        const now = new Date().toISOString();
+        const outfitEntry = {
+          id: outfitData.id,
+          name: trimmedName,
+          previewImage,
+          createdAt: outfitData.createdAt,
+          updatedAt: now,
+          layerOrder: outfitData.layerOrder || [],
+        };
+        if (existing) {
+          const idx = this.savedOutfits.findIndex(o => o.id === existing.id);
+          if (idx !== -1) {
+            this.savedOutfits[idx] = outfitEntry;
+          } else {
+            this.savedOutfits.push(outfitEntry);
+          }
+        } else {
+          this.savedOutfits.push(outfitEntry);
+        }
         this.showNotification(`穿搭「${trimmedName}」已保存`, 'success');
       } catch (e) {
         this.showNotification('保存失敗', 'error');

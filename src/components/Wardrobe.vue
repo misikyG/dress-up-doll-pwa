@@ -1863,7 +1863,7 @@ watch(characterOptions, (options) => {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 0 0.75rem 0.5rem;
+  padding: 0.35rem 0.75rem 0.5rem;
 }
 
 .mobile-categories {
@@ -1873,21 +1873,19 @@ watch(characterOptions, (options) => {
 }
 
 .mobile-filter-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  border: none;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-primary);
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  align-self: center;
   margin-right: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
 .mobile-filter-btn:active {
@@ -2180,6 +2178,15 @@ watch(characterOptions, (options) => {
     padding: 0.35rem 0.55rem;
   }
 
+  .mobile-filter-btn {
+    padding: 0.35rem 0.55rem;
+  }
+
+  .mobile-filter-btn .mobile-filter-icon {
+    width: 16px;
+    height: 16px;
+  }
+
   .mobile-tab-icon {
     width: 16px;
     height: 16px;
@@ -2265,6 +2272,7 @@ watch(characterOptions, (options) => {
   .items-controls {
     padding: 0.5rem;
     gap: 0.35rem;
+    flex-wrap: nowrap;
   }
   
   .filter-toggle-btn {

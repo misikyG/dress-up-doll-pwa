@@ -517,7 +517,7 @@ const flipSelected = (axis) => {
 .badge-btn.save {
   background: var(--color-info);
   background: linear-gradient(135deg, var(--color-info), color-mix(in srgb, var(--color-info) 80%, transparent));
-  color: var(--color-text-primary);
+  color: var(--color-bg-card);
   font-weight: 600;
 }
 

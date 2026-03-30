@@ -293,7 +293,7 @@
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.warning"></span> 危險區域</h4>
         <div class="dual-actions">
-          <button @click="clearAllData" class="danger-btn small-danger">清空所有本地數據</button>
+          <button @click="clearAllData" class="danger-btn small-danger">清空所有本機數據</button>
         </div>
         <p class="hint">將刪除所有匯入物件、儲存搭配、自定義主題、自定義 CSS 及所有設置，且無法復原！</p>
       </div>

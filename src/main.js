@@ -153,7 +153,7 @@ const applyIOSSafariFixes = () => {
       .badge-btn { background: rgba(71,45,37,0.7) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
       .badge-btn.mode { background: rgba(71,45,37,0.45) !important; }
       .badge-btn.flip { background: rgba(71,45,37,0.7) !important; }
-      .badge-btn.save { background: linear-gradient(135deg, var(--color-warning), rgba(245,187,100,0.8)) !important; }
+      .badge-btn.save { background: linear-gradient(135deg, var(--color-info), rgba(113,162,202,0.8)) !important; }
       .zoom-badge { background: rgba(71,45,37,0.75) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
       .check-badge { background: rgba(71,45,37,0.7) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
       .toggle-btn { background: rgba(71,45,37,0.75) !important; box-shadow: 0 2px 8px rgba(71,45,37,0.15) !important; }
@@ -165,7 +165,7 @@ const applyIOSSafariFixes = () => {
         .badge-btn { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
         .badge-btn.mode { background: color-mix(in srgb, var(--color-text-primary) 45%, transparent) !important; }
         .badge-btn.flip { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; }
-        .badge-btn.save { background: linear-gradient(135deg, var(--color-warning), color-mix(in srgb, var(--color-warning) 80%, transparent)) !important; }
+        .badge-btn.save { background: linear-gradient(135deg, var(--color-info), color-mix(in srgb, var(--color-info) 80%, transparent)) !important; }
         .zoom-badge { background: color-mix(in srgb, var(--color-text-primary) 75%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
         .check-badge { background: color-mix(in srgb, var(--color-text-primary) 70%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
         .toggle-btn { background: color-mix(in srgb, var(--color-text-primary) 75%, transparent) !important; box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 15%, transparent) !important; }
