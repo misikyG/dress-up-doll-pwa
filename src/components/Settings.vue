@@ -196,7 +196,7 @@
             <div class="font-setting-row">
               <label>更改默認字體</label>
               <select v-model="editingFontFamily" class="font-family-select" @change="applyFontSettings">
-                <option value="">系統預設</option>
+                <option value="">系統預設(思源黑體)</option>
                 <option v-for="font in fontOptions" :key="font.value" :value="font.value" :style="{ fontFamily: font.value }">
                   {{ font.label }}
                 </option>
@@ -337,11 +337,13 @@ const editingFontFamily = ref('');
 const fontOptions = [
   { label: '微軟正黑體', value: '"Microsoft JhengHei", sans-serif' },
   { label: '思源宋體', value: '"Noto Serif TC", serif' },
-  { label: '蘋方', value: '"PingFang TC", sans-serif' },
-  { label: 'Arial', value: 'Arial, Helvetica, sans-serif' },
-  { label: 'Segoe UI', value: '"Segoe UI", Tahoma, sans-serif' },
-  { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
-  { label: '等寬字體', value: '"Consolas", "Courier New", monospace' },
+  { label: '仙人掌古典明朝 (Cactus Classical Serif)', value: '"Cactus Classical Serif", serif' },
+  { label: '巧克力古典黑 (Chocolate Classical Sans)', value: '"Chocolate Classical Sans", sans-serif' },
+  { label: '霞鶩文楷 TC', value: '"LXGW WenKai TC", cursive' },
+  { label: '昭源宋體', value: '"Chiron Sung HK", serif' },
+  { label: '霞鶩文楷等寬 TC', value: '"LXGW WenKai Mono TC", monospace' },
+  { label: '昭源圓體 TC', value: '"Chiron GoRound TC", sans-serif' },
+  { label: '昭源黑體', value: '"Chiron Hei HK", sans-serif' },
 ];
 
 // 從 CSS 變數動態讀取預設顏色，確保與 index.html 同步
@@ -794,6 +796,7 @@ const exportAllData = async () => {
   isExportingAll.value = true;
   try {
     const { items, outfits } = await gameStore.getFullExportData();
+    const appState = await gameStore.getAppStateForBackup();
     const payload = {
       type: 'full-backup',
       exportedAt: new Date().toISOString(),
@@ -804,7 +807,11 @@ const exportAllData = async () => {
         currentTheme: gameStore.theme.currentTheme,
         customThemes: gameStore.theme.customThemes,
         customCSS: gameStore.theme.customCSS,
+        fontFamily: gameStore.theme.fontFamily,
+        fontSize: gameStore.theme.fontSize,
+        previewColors: gameStore.theme.previewColors,
       },
+      appState,
       hiddenItems: gameStore.hiddenItems,
       dismissedBundledPacks: gameStore.dismissedBundledPacks,
       schemaVersion: 2,
@@ -906,6 +913,7 @@ const uploadToDrive = async () => {
   try {
     await ensureAccessToken();
     const { items, outfits } = await gameStore.getFullExportData();
+    const appState = await gameStore.getAppStateForBackup();
     const payload = {
       type: 'full-backup',
       exportedAt: new Date().toISOString(),
@@ -916,7 +924,11 @@ const uploadToDrive = async () => {
         currentTheme: gameStore.theme.currentTheme,
         customThemes: gameStore.theme.customThemes,
         customCSS: gameStore.theme.customCSS,
+        fontFamily: gameStore.theme.fontFamily,
+        fontSize: gameStore.theme.fontSize,
+        previewColors: gameStore.theme.previewColors,
       },
+      appState,
       hiddenItems: gameStore.hiddenItems,
       dismissedBundledPacks: gameStore.dismissedBundledPacks,
       schemaVersion: 2,
@@ -971,6 +983,10 @@ const syncFromDrive = async () => {
     if (Array.isArray(data.dismissedBundledPacks)) {
       gameStore.dismissedBundledPacks = data.dismissedBundledPacks;
       await gameStore.saveDismissedBundledPacks();
+    }
+    // 還原畫布暫存狀態
+    if (data.appState) {
+      await gameStore.restoreAppStateFromBackup(data.appState);
     }
 
     gameStore.showNotification('已從雲端同步完成', 'success');

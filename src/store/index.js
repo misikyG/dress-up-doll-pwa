@@ -861,7 +861,7 @@ export const useGameStore = defineStore('game', {
 
       const outfitCopy = {};
       for (const [slot, items] of Object.entries(this.currentOutfit)) {
-        outfitCopy[slot] = Array.isArray(items) ? items.map(item => ({ ...item })) : [];
+        outfitCopy[slot] = Array.isArray(items) ? JSON.parse(JSON.stringify(items)) : [];
       }
 
       const outfitData = {
@@ -979,6 +979,23 @@ export const useGameStore = defineStore('game', {
         DressingCore.getAllData('outfits'),
       ]);
       return { items, outfits };
+    },
+
+    async getAppStateForBackup() {
+      await this.saveAppState();
+      try {
+        return await DressingCore.getData('settings', 'appState');
+      } catch { return null; }
+    },
+
+    async restoreAppStateFromBackup(appStateData) {
+      if (!appStateData) return;
+      try {
+        appStateData._savedAt = Date.now();
+        await DressingCore.setData('settings', 'appState', appStateData);
+        try { localStorage.setItem('appState-backup', JSON.stringify(appStateData)); } catch {}
+        await this.loadAppState();
+      } catch {}
     },
 
     async addNewItem(itemData) {
