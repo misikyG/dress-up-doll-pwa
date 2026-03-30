@@ -8,6 +8,7 @@ let gapiReady = false;
 let initializing = null;
 let currentToken = null;
 let tokenExpiry = 0;
+let storedClientId = null;
 
 const ensureScriptsLoaded = () => {
   if (typeof window === 'undefined') throw new Error('Google APIs unavailable in SSR');
@@ -39,6 +40,7 @@ const clearAuthState = () => {
 };
 
 export async function ensureGoogleClient(clientId) {
+  if (clientId) storedClientId = clientId;
   ensureScriptsLoaded();
   if (gapiReady && tokenClient) return;
   if (initializing) return initializing;
@@ -87,11 +89,12 @@ export async function tryRestoreSession(clientId) {
     tokenExpiry = state.expiry;
     window.gapi.client.setToken({ access_token: currentToken });
 
-    await window.gapi.client.drive.files.list({
-      pageSize: 1,
-      spaces: 'appDataFolder',
-      fields: 'files(id)'
-    });
+    // 用 fetch 驗證 token 有效性，避免依賴 gapi.client.drive
+    const testResp = await fetch(
+      'https://www.googleapis.com/drive/v3/files?pageSize=1&spaces=appDataFolder&fields=files(id)',
+      { headers: { Authorization: `Bearer ${currentToken}` } }
+    );
+    if (!testResp.ok) throw new Error('Token validation failed');
 
     return true;
   } catch {
@@ -102,6 +105,7 @@ export async function tryRestoreSession(clientId) {
 
 export async function ensureAccessToken() {
   ensureScriptsLoaded();
+  if (storedClientId) await ensureGoogleClient(storedClientId);
   if (!tokenClient) throw new Error('Google client not initialized');
 
   if (isTokenValid()) {
@@ -158,58 +162,68 @@ export function signOut() {
 }
 
 export async function uploadJsonFile({ name, json }) {
-  const token = window.gapi.client.getToken();
-  if (!token?.access_token) throw new Error('No access token available');
+  if (!currentToken) throw new Error('No access token available');
 
-  const metadata = { name, parents: ['appDataFolder'] };
-  const boundary = '===DollBackup' + Date.now() + '===';
-  const body =
-    '--' + boundary + '\r\n' +
-    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-    JSON.stringify(metadata) + '\r\n' +
-    '--' + boundary + '\r\n' +
-    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-    JSON.stringify(json) + '\r\n' +
-    '--' + boundary + '--';
+  const metadata = JSON.stringify({ name, parents: ['appDataFolder'] });
+  const fileBody = JSON.stringify(json);
 
-  const response = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+  // Step 1: 發起 resumable upload（無 5MB 大小限制）
+  const initResp = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token.access_token}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`,
+        Authorization: `Bearer ${currentToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': 'application/json; charset=UTF-8',
       },
-      body,
+      body: metadata,
     }
   );
 
-  if (!response.ok) {
-    const errBody = await response.text().catch(() => '');
-    throw new Error(`Upload failed (${response.status}): ${errBody}`);
+  if (!initResp.ok) {
+    const errBody = await initResp.text().catch(() => '');
+    throw new Error(`Upload init failed (${initResp.status}): ${errBody}`);
   }
 
-  return response.json();
+  const uploadUrl = initResp.headers.get('Location');
+  if (!uploadUrl) throw new Error('No resumable upload URL returned');
+
+  // Step 2: 上傳檔案內容
+  const uploadResp = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: fileBody,
+  });
+
+  if (!uploadResp.ok) {
+    const errBody = await uploadResp.text().catch(() => '');
+    throw new Error(`Upload failed (${uploadResp.status}): ${errBody}`);
+  }
+
+  return uploadResp.json();
 }
 
 export async function downloadLatestJson({ name }) {
-  const queryParts = [`name='${name.replace(/'/g, "\\'")}'`, "'appDataFolder' in parents"];
-  const list = await window.gapi.client.drive.files.list({
-    pageSize: 1,
-    orderBy: 'modifiedTime desc',
-    q: queryParts.join(' and '),
-    fields: 'files(id, name)'
-  });
-  const file = list.result.files?.[0];
-  if (!file) return null;
+  if (!currentToken) throw new Error('No access token available');
 
-  // 使用 fetch 下載，避免 gapi 對大型回應的處理問題
-  const token = window.gapi.client.getToken();
-  if (!token?.access_token) throw new Error('No access token available');
+  // 使用 fetch 列出檔案，避免依賴 gapi.client.drive 可能未初始化的問題
+  const q = encodeURIComponent(`name='${name.replace(/'/g, "\\'")}' and 'appDataFolder' in parents`);
+  const listResp = await fetch(
+    `https://www.googleapis.com/drive/v3/files?pageSize=1&orderBy=modifiedTime%20desc&q=${q}&spaces=appDataFolder&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${currentToken}` } }
+  );
+  if (!listResp.ok) {
+    const errBody = await listResp.text().catch(() => '');
+    throw new Error(`List files failed (${listResp.status}): ${errBody}`);
+  }
+  const listData = await listResp.json();
+  const file = listData.files?.[0];
+  if (!file) return null;
 
   const response = await fetch(
     `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-    { headers: { Authorization: `Bearer ${token.access_token}` } }
+    { headers: { Authorization: `Bearer ${currentToken}` } }
   );
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
@@ -219,18 +233,35 @@ export async function downloadLatestJson({ name }) {
 }
 
 export async function listBackupFiles({ name }) {
-  const queryParts = [`name='${name.replace(/'/g, "\\'")}'`, "'appDataFolder' in parents"];
-  const list = await window.gapi.client.drive.files.list({
-    pageSize: 100,
-    orderBy: 'modifiedTime desc',
-    q: queryParts.join(' and '),
-    fields: 'files(id, name, modifiedTime, size)'
-  });
-  return list.result.files || [];
+  if (!currentToken) throw new Error('No access token available');
+
+  const q = encodeURIComponent(`name='${name.replace(/'/g, "\\'")}' and 'appDataFolder' in parents`);
+  const listResp = await fetch(
+    `https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=modifiedTime%20desc&q=${q}&spaces=appDataFolder&fields=files(id,name,modifiedTime,size)`,
+    { headers: { Authorization: `Bearer ${currentToken}` } }
+  );
+  if (!listResp.ok) {
+    const errBody = await listResp.text().catch(() => '');
+    throw new Error(`List files failed (${listResp.status}): ${errBody}`);
+  }
+  const listData = await listResp.json();
+  return listData.files || [];
 }
 
 export async function deleteFile(fileId) {
-  await window.gapi.client.drive.files.delete({ fileId });
+  if (!currentToken) throw new Error('No access token available');
+
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${currentToken}` },
+    }
+  );
+  if (!resp.ok && resp.status !== 204) {
+    const errBody = await resp.text().catch(() => '');
+    throw new Error(`Delete failed (${resp.status}): ${errBody}`);
+  }
 }
 
 export async function pruneOldBackups({ name, keep = MAX_BACKUPS } = {}) {

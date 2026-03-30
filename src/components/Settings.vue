@@ -930,9 +930,16 @@ const uploadToDrive = async () => {
     const extra = deleted > 0 ? `（已清理 ${deleted} 筆舊備份）` : '';
     gameStore.showNotification(`已上傳備份到 Google Drive${extra}`, 'success');
   } catch (err) {
-    console.error(err);
+    console.error('雲端上傳失敗:', err);
     if (!isTokenValid()) isGoogleReady.value = false;
-    gameStore.showNotification('上傳失敗，請檢查網路或權限', 'error');
+    const detail = err?.message || '';
+    const status = detail.match(/\((\d+)\)/)?.[1];
+    if (status === '401' || status === '403') {
+      gameStore.showNotification('上傳失敗：權限過期，請重新登入 Google', 'error');
+      isGoogleReady.value = false;
+    } else {
+      gameStore.showNotification(`上傳失敗：${detail.slice(0, 80) || '請檢查網路'}`, 'error');
+    }
   } finally {
     isCloudBusy.value = false;
   }
@@ -970,9 +977,16 @@ const syncFromDrive = async () => {
 
     gameStore.showNotification('已從雲端同步完成', 'success');
   } catch (err) {
-    console.error(err);
+    console.error('雲端同步失敗:', err);
     if (!isTokenValid()) isGoogleReady.value = false;
-    gameStore.showNotification('同步失敗，請檢查網路或權限', 'error');
+    const detail = err?.message || '';
+    const status = detail.match(/\((\d+)\)/)?.[1];
+    if (status === '401' || status === '403') {
+      gameStore.showNotification('同步失敗：權限過期，請重新登入 Google', 'error');
+      isGoogleReady.value = false;
+    } else {
+      gameStore.showNotification(`同步失敗：${detail.slice(0, 80) || '請檢查網路'}`, 'error');
+    }
   } finally {
     isCloudBusy.value = false;
   }
