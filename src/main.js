@@ -173,18 +173,6 @@ const applyIOSSafariFixes = () => {
       }
     `;
     document.head.appendChild(ctrlFallback);
-    
-    // 修復 iOS Safari 的 100vh 問題
-    const setViewportHeight = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    
-    setViewportHeight();
-    window.addEventListener('resize', setViewportHeight);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(setViewportHeight, 100);
-    });
 
     // 防止 iOS Safari 的橡皮筋效果
     document.body.addEventListener('touchmove', (e) => {
@@ -203,6 +191,18 @@ const applyIOSSafariFixes = () => {
     }, { passive: false });
   }
 };
+
+// 修復所有行動瀏覽器的 100vh 問題（Android Chrome 地址列、iOS Safari 等）
+// --vh 必須在所有裝置上設定，否則 CSS 中 calc(var(--vh, 1vh) * 100) 會退回 100vh（大視窗高度）
+const setViewportHeight = () => {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', () => {
+  setTimeout(setViewportHeight, 100);
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', applyIOSSafariFixes);
