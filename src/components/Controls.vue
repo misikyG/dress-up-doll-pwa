@@ -119,6 +119,7 @@
 import { ref, computed } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
+import watermarkSrc from '../assets/watermark.png';
 
 const gameStore = useGameStore();
 const collapsed = ref(false);
@@ -127,8 +128,6 @@ const panMode = ref(false);
 const showDownloadDialog = ref(false);
 const downloadSize = ref('original');
 const useWatermark = ref(false);
-
-const watermarkSrc = new URL('../assets/watermark.png', import.meta.url).href;
 
 const emit = defineEmits(['pan-mode-change']);
 
@@ -172,7 +171,7 @@ const executeDownload = async () => {
       return;
     }
 
-    const layers = gameStore.currentLayers;
+    const layers = gameStore.currentLayers.filter(l => !l.hidden);
     if (layers.length === 0) {
       gameStore.showNotification('畫布上沒有物件', 'warning');
       return;
@@ -253,35 +252,22 @@ const executeDownload = async () => {
       });
     }
 
+    // 浮水印覆蓋（全畫布等比例覆蓋，縮放時跟著畫布等比例縮放）
     if (useWatermark.value) {
-      const watermarkImg = new Image();
       try {
-        watermarkImg.crossOrigin = 'anonymous';
-        await new Promise((resolve) => {
-          watermarkImg.onload = resolve;
-          watermarkImg.onerror = () => {
-            console.warn('浮水印載入失敗，跳過浮水印');
-            resolve();
-          };
-          watermarkImg.src = watermarkSrc;
-        });
-        
-        if (watermarkImg.complete && watermarkImg.naturalWidth > 0) {
-          const wmSize = Math.min(canvasSize.width, canvasSize.height) * 0.15;
-          const wmAspect = watermarkImg.naturalWidth / watermarkImg.naturalHeight;
-          const wmWidth = wmAspect >= 1 ? wmSize : wmSize * wmAspect;
-          const wmHeight = wmAspect >= 1 ? wmSize / wmAspect : wmSize;
-          const wmX = canvasSize.width - wmWidth - 40;
-          const wmY = canvasSize.height - wmHeight - 40;
-          
+        const response = await fetch(watermarkSrc);
+        if (response.ok) {
+          const blob = await response.blob();
+          const wmBitmap = await createImageBitmap(blob);
           ctx.globalAlpha = 0.7;
-          ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
+          ctx.drawImage(wmBitmap, 0, 0, canvasSize.width, canvasSize.height);
           ctx.globalAlpha = 1.0;
+          wmBitmap.close();
+        } else {
+          console.warn('浮水印載入失敗，HTTP', response.status);
         }
       } catch (error) {
         console.warn('浮水印處理失敗:', error);
-      } finally {
-        releaseImg(watermarkImg);
       }
     }
 
@@ -361,7 +347,7 @@ const generatePreviewImage = async () => {
     const canvasSize = hasBackground ? gameStore.backgroundSize : gameStore.canvasSize;
     const scale = previewSize / Math.max(canvasSize.width, canvasSize.height);
 
-    const layers = gameStore.currentLayers;
+    const layers = gameStore.currentLayers.filter(l => !l.hidden);
     for (const layer of layers) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
