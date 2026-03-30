@@ -1,7 +1,7 @@
 ﻿<template>
   <section
     aria-label="衣櫃"
-    class="panel left-panel wardrobe"
+    class="wardrobe"
     :class="{ collapsed: gameStore.ui.wardrobeCollapsed, 'mobile-bottom-sheet': gameStore.ui.isMobile, 'tablet-style': gameStore.ui.isTablet }"
   >
     <template v-if="!gameStore.ui.isMobile">
@@ -2274,9 +2274,7 @@ watch(characterOptions, (options) => {
 }
 
 .tablet-style.collapsed {
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
+  width: 100%;
 }
 
 .tablet-style.collapsed .items-display {
@@ -2297,6 +2295,7 @@ watch(characterOptions, (options) => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .tablet-style .desktop-wardrobe {
@@ -2304,6 +2303,7 @@ watch(characterOptions, (options) => {
   display: flex;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .tablet-style .category-sidebar {
@@ -2316,7 +2316,6 @@ watch(characterOptions, (options) => {
   width: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-card);
 }
 
 .tablet-style .items-grid-container {

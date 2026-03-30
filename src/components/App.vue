@@ -512,9 +512,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 }
 
 .layout-tablet .left-panel.collapsed {
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
 }
 
 .layout-tablet .center-panel {
@@ -709,7 +709,7 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 
   .left-panel {
     order: 2;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-height: 36px;
     height: auto;
     background: transparent;
@@ -726,9 +726,9 @@ input[type="checkbox"]:checked + .checkbox-custom::after,
 
 /* 平板視圖覆寫：保持收合時與分類列一致的寬度 */
 .tablet-view .left-panel.collapsed {
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
 }
   .modal-overlay {
     padding: 0;

@@ -148,9 +148,11 @@ const scaleState = ref({ isScaling: false, scaleItem: null, startY: 0, startScal
 const rotateState = ref({ isRotating: false, rotateItem: null, startAngle: 0, startRotation: 0, centerX: 0, centerY: 0 });
 const canvasDragState = ref({ isDragging: false, startX: 0, startY: 0, startPan: { x: 0, y: 0 } });
 
-// 用於讓 baseCanvasScale 在 viewport 大小變化時重新計算
+// 用於讓 baseCanvasScale 在視窗大小變化時重新計算（不隨面板收放而變化）
 const viewportSizeTrigger = ref(0);
 let viewportResizeObserver = null;
+let lastWindowWidth = 0;
+let lastWindowHeight = 0;
 
 const getClientPos = (e) => ({
   x: e.touches ? e.touches[0].clientX : e.clientX,
@@ -536,10 +538,19 @@ const handleKeyDown = (e) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
-  // 監聽 viewport 大小變化，觸發 baseCanvasScale 重新計算
+  // 記錄初始視窗大小
+  lastWindowWidth = window.innerWidth;
+  lastWindowHeight = window.innerHeight;
+  // ResizeObserver：僅在視窗大小真正改變時更新（忽略面板收放造成的元素尺寸變化）
   if (canvasViewport.value) {
     viewportResizeObserver = new ResizeObserver(() => {
-      viewportSizeTrigger.value++;
+      const ww = window.innerWidth;
+      const wh = window.innerHeight;
+      if (ww !== lastWindowWidth || wh !== lastWindowHeight) {
+        lastWindowWidth = ww;
+        lastWindowHeight = wh;
+        viewportSizeTrigger.value++;
+      }
     });
     viewportResizeObserver.observe(canvasViewport.value);
   }
