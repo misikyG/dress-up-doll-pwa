@@ -620,6 +620,9 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   flex: 0 0 auto;
   touch-action: none;
+  will-change: transform;
+  contain: layout style;
+  backface-visibility: hidden;
 }
 
 .selected-item-badge {
@@ -660,6 +663,7 @@ onUnmounted(() => {
   align-items: center; 
   justify-content: center;
   pointer-events: none;
+  contain: layout style;
 }
 
 .canvas-item img {
@@ -668,6 +672,7 @@ onUnmounted(() => {
   object-fit: contain;
   pointer-events: none;
   content-visibility: auto;
+  backface-visibility: hidden;
 }
 
 .item-hit-area {

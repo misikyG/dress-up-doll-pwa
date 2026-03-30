@@ -1,7 +1,8 @@
 const DRIVE_DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const STORAGE_KEY = 'google_drive_auth';
 const MAX_BACKUPS = 5;
+const FOLDER_NAME = 'dress-up-doll';
 
 let tokenClient = null;
 let gapiReady = false;
@@ -9,6 +10,7 @@ let initializing = null;
 let currentToken = null;
 let tokenExpiry = 0;
 let storedClientId = null;
+let cachedFolderId = null;
 
 const ensureScriptsLoaded = () => {
   if (typeof window === 'undefined') throw new Error('Google APIs unavailable in SSR');
@@ -37,6 +39,7 @@ const clearAuthState = () => {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
   currentToken = null;
   tokenExpiry = 0;
+  cachedFolderId = null;
 };
 
 export async function ensureGoogleClient(clientId) {
@@ -91,7 +94,7 @@ export async function tryRestoreSession(clientId) {
 
     // 用 fetch 驗證 token 有效性，避免依賴 gapi.client.drive
     const testResp = await fetch(
-      'https://www.googleapis.com/drive/v3/files?pageSize=1&spaces=appDataFolder&fields=files(id)',
+      'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
       { headers: { Authorization: `Bearer ${currentToken}` } }
     );
     if (!testResp.ok) throw new Error('Token validation failed');
@@ -161,13 +164,102 @@ export function signOut() {
   try { window.gapi?.client?.setToken(null); } catch { /* ignore */ }
 }
 
+// ---- 可見資料夾管理 ----
+
+async function ensureFolder() {
+  if (!currentToken) throw new Error('No access token available');
+  if (cachedFolderId) return cachedFolderId;
+
+  // 搜尋現有資料夾
+  const q = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const listResp = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1`,
+    { headers: { Authorization: `Bearer ${currentToken}` } }
+  );
+  if (!listResp.ok) {
+    const errBody = await listResp.text().catch(() => '');
+    throw new Error(`Search folder failed (${listResp.status}): ${errBody}`);
+  }
+  const listData = await listResp.json();
+
+  if (listData.files?.length > 0) {
+    cachedFolderId = listData.files[0].id;
+    return cachedFolderId;
+  }
+
+  // 建立資料夾
+  const createResp = await fetch(
+    'https://www.googleapis.com/drive/v3/files',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${currentToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: FOLDER_NAME,
+        mimeType: 'application/vnd.google-apps.folder',
+      }),
+    }
+  );
+  if (!createResp.ok) {
+    const errBody = await createResp.text().catch(() => '');
+    throw new Error(`Create folder failed (${createResp.status}): ${errBody}`);
+  }
+  const folderData = await createResp.json();
+  cachedFolderId = folderData.id;
+  return cachedFolderId;
+}
+
+// ---- Gzip 壓縮 / 解壓縮（加速上傳下載）----
+
+async function compressToGzip(str) {
+  if (typeof CompressionStream === 'undefined') return null;
+  try {
+    const blob = new Blob([new TextEncoder().encode(str)]);
+    const cs = new CompressionStream('gzip');
+    const compressedStream = blob.stream().pipeThrough(cs);
+    return new Response(compressedStream).blob();
+  } catch {
+    return null;
+  }
+}
+
+async function decompressGzip(blob) {
+  if (typeof DecompressionStream === 'undefined') return null;
+  try {
+    const ds = new DecompressionStream('gzip');
+    const decompressedStream = blob.stream().pipeThrough(ds);
+    return new Response(decompressedStream).text();
+  } catch {
+    return null;
+  }
+}
+
+// ---- 上傳 / 下載 / 列表 ----
+
 export async function uploadJsonFile({ name, json }) {
   if (!currentToken) throw new Error('No access token available');
 
-  const metadata = JSON.stringify({ name, parents: ['appDataFolder'] });
-  const fileBody = JSON.stringify(json);
+  const folderId = await ensureFolder();
+  const jsonStr = JSON.stringify(json);
 
-  // Step 1: 發起 resumable upload（無 5MB 大小限制）
+  // 嘗試 gzip 壓縮以加速網路傳輸
+  let uploadBlob, contentType, fileName;
+  const compressed = await compressToGzip(jsonStr);
+  if (compressed) {
+    uploadBlob = compressed;
+    contentType = 'application/gzip';
+    fileName = name.replace(/\.json$/, '') + '.json.gz';
+  } else {
+    uploadBlob = new Blob([jsonStr], { type: 'application/json; charset=UTF-8' });
+    contentType = 'application/json; charset=UTF-8';
+    fileName = name;
+  }
+
+  const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
+
+  // Step 1: 發起 resumable upload
   const initResp = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
     {
@@ -175,7 +267,8 @@ export async function uploadJsonFile({ name, json }) {
       headers: {
         Authorization: `Bearer ${currentToken}`,
         'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': contentType,
+        'X-Upload-Content-Length': String(uploadBlob.size),
       },
       body: metadata,
     }
@@ -192,8 +285,8 @@ export async function uploadJsonFile({ name, json }) {
   // Step 2: 上傳檔案內容
   const uploadResp = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-    body: fileBody,
+    headers: { 'Content-Type': contentType },
+    body: uploadBlob,
   });
 
   if (!uploadResp.ok) {
@@ -207,10 +300,16 @@ export async function uploadJsonFile({ name, json }) {
 export async function downloadLatestJson({ name }) {
   if (!currentToken) throw new Error('No access token available');
 
-  // 使用 fetch 列出檔案，避免依賴 gapi.client.drive 可能未初始化的問題
-  const q = encodeURIComponent(`name='${name.replace(/'/g, "\\'")}' and 'appDataFolder' in parents`);
+  const folderId = await ensureFolder();
+  const baseName = name.replace(/\.json$/, '').replace(/'/g, "\\'");
+  const safeName = name.replace(/'/g, "\\'");
+
+  // 同時搜尋壓縮版與非壓縮版
+  const q = encodeURIComponent(
+    `(name='${baseName}.json.gz' or name='${safeName}') and '${folderId}' in parents and trashed=false`
+  );
   const listResp = await fetch(
-    `https://www.googleapis.com/drive/v3/files?pageSize=1&orderBy=modifiedTime%20desc&q=${q}&spaces=appDataFolder&fields=files(id,name)`,
+    `https://www.googleapis.com/drive/v3/files?pageSize=1&orderBy=modifiedTime%20desc&q=${q}&fields=files(id,name)`,
     { headers: { Authorization: `Bearer ${currentToken}` } }
   );
   if (!listResp.ok) {
@@ -229,15 +328,31 @@ export async function downloadLatestJson({ name }) {
     const errBody = await response.text().catch(() => '');
     throw new Error(`Download failed (${response.status}): ${errBody}`);
   }
+
+  // 若為 gzip 壓縮檔則解壓縮
+  if (file.name.endsWith('.gz')) {
+    const blob = await response.blob();
+    const decompressed = await decompressGzip(blob);
+    if (decompressed) return JSON.parse(decompressed);
+    // 若解壓失敗，嘗試直接解析
+    return JSON.parse(await blob.text());
+  }
+
   return response.json();
 }
 
 export async function listBackupFiles({ name }) {
   if (!currentToken) throw new Error('No access token available');
 
-  const q = encodeURIComponent(`name='${name.replace(/'/g, "\\'")}' and 'appDataFolder' in parents`);
+  const folderId = await ensureFolder();
+  const baseName = name.replace(/\.json$/, '').replace(/'/g, "\\'");
+  const safeName = name.replace(/'/g, "\\'");
+
+  const q = encodeURIComponent(
+    `(name='${baseName}.json.gz' or name='${safeName}') and '${folderId}' in parents and trashed=false`
+  );
   const listResp = await fetch(
-    `https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=modifiedTime%20desc&q=${q}&spaces=appDataFolder&fields=files(id,name,modifiedTime,size)`,
+    `https://www.googleapis.com/drive/v3/files?pageSize=100&orderBy=modifiedTime%20desc&q=${q}&fields=files(id,name,modifiedTime,size)`,
     { headers: { Authorization: `Bearer ${currentToken}` } }
   );
   if (!listResp.ok) {

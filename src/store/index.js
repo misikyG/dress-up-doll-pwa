@@ -1032,9 +1032,25 @@ export const useGameStore = defineStore('game', {
         this.savedOutfits = [];
         this.availablePacks = [];
         this.hiddenItems = [];
+        this.dismissedBundledPacks = [];
         this.clearCurrentOutfit();
         this.clearHistory();
-        await this.saveHiddenItems();
+
+        // 重置主題、自定義 CSS、字體設定
+        this.theme.currentTheme = 'default';
+        this.theme.customThemes = [];
+        this.theme.customCSS = '';
+        this.theme.previewColors = null;
+        this.theme.fontFamily = '';
+        this.theme.fontSize = 16;
+        this.applyTheme('default');
+        this.applyCustomCSS('');
+        this.applyFontSettings();
+
+        // 清除 localStorage 備份
+        try { localStorage.removeItem('appState-backup'); } catch {}
+        try { localStorage.removeItem('theme-settings-cache'); } catch {}
+
         this.showNotification('所有資料已清空', 'info');
       } catch {
         this.showNotification('清空失敗', 'error');

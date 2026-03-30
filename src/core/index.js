@@ -102,7 +102,7 @@ class DressingCore {
   }
 
   async clearAllData() {
-    const stores = ['items', 'outfits', 'packs'];
+    const stores = ['items', 'outfits', 'packs', 'theme', 'settings'];
     const tx = this.db.transaction(stores, 'readwrite');
     stores.forEach(name => tx.objectStore(name).clear());
     return new Promise((resolve, reject) => {

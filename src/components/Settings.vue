@@ -263,7 +263,7 @@
             <button class="danger-btn small" @click="disconnectGoogle">登出 Google</button>
           </template>
         </div>
-        <p class="hint">備份資料存放於 Google Drive 應用程式資料夾，僅本應用可存取。雲端最多保留最新 5 筆備份。</p>
+        <p class="hint">備份資料存放於 Google Drive「dress-up-doll」資料夾中，最多保留最新 5 筆備份。</p>
       </div>
       
       <div class="settings-section">
@@ -285,11 +285,9 @@
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.warning"></span> 危險區域</h4>
         <div class="dual-actions">
-          <button @click="factoryResetTheme" class="danger-btn">恢復原廠設置</button>
           <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
         </div>
-        <p class="hint">恢復原廠設置：將主題恢復為預設，並刪除所有自定義主題與自定義 CSS。</p>
-        <p class="hint">清空所有本地數據：刪除所有匯入的物件和儲存的搭配，且無法復原！</p>
+        <p class="hint">將刪除所有匯入物件、儲存搭配、自定義主題、自定義 CSS 及所有設置，且無法復原！</p>
       </div>
     </div>
   </div>
@@ -992,32 +990,15 @@ const syncFromDrive = async () => {
   }
 };
 
-const factoryResetTheme = async () => {
-  if (!confirm('確定要恢復原廠設置嗎？將刪除所有自定義主題與自定義 CSS，且無法復原。')) return;
-  // 清除所有自定義主題
-  gameStore.theme.customThemes = [];
-  gameStore.theme.customThemes = [];
-  gameStore.theme.customCSS = '';
-  gameStore.applyCustomCSS('');
-  gameStore.theme.currentTheme = 'default';
-  gameStore.applyTheme('default');
-  gameStore.theme.previewColors = null;
-  gameStore.theme.fontFamily = '';
-  gameStore.theme.fontSize = 16;
-  gameStore.applyFontSettings();
-  await gameStore.saveThemeSettings();
+const clearAllData = async () => {
+  if (!confirm('確定要清空所有本地數據嗎？\n將刪除所有匯入物件、儲存搭配、主題與自定義設置，且無法復原！')) return;
+  await gameStore.clearAllData();
+  // 重置本地 UI 狀態
   Object.assign(editingColors, getDefaultColors());
   customCSS.value = '';
   newThemeName.value = '';
   editingFontSize.value = 16;
   editingFontFamily.value = '';
-  gameStore.showNotification('已恢復原廠設置', 'success');
-};
-
-const clearAllData = () => {
-  if (confirm('再次確認：真的要刪除所有數據嗎？')) {
-    gameStore.clearAllData();
-  }
 };
 
 const DEMO_PACK_ID = 'demo-sample-pack';
