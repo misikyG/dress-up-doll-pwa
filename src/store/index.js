@@ -384,21 +384,21 @@ export const useGameStore = defineStore('game', {
     },
 
     categories: [
-      { key: 'starred', name: '已儲存搭配', icon: '⭐', svg: icons.starred },
-      { key: 'filter', name: '濾鏡', icon: '🎛', svg: icons.filterLayer },
-      { key: 'background', name: '背景', icon: '🌄', svg: icons.background },
-      { key: 'character', name: '人物', icon: '🧍', svg: icons.character },
-      { key: 'expression', name: '表情', icon: '😊', svg: icons.expression },
-      { key: 'hair', name: '髮型', icon: '💇', svg: icons.hair },
-      { key: 'underwear', name: '內衣', icon: '👙', svg: icons.underwear },
-      { key: 'top', name: '上衣', icon: '👕', svg: icons.top },
-      { key: 'bottom', name: '下身', icon: '👖', svg: icons.bottom },
-      { key: 'outer', name: '外套', icon: '🧥', svg: icons.outer },
-      { key: 'dress', name: '套裝', icon: '👗', svg: icons.dress },
-      { key: 'shoes', name: '鞋子', icon: '👠', svg: icons.shoes },
-      { key: 'accessory', name: '配飾', icon: '💎', svg: icons.accessory },
-      { key: 'carry', name: '攜帶品', icon: '👜', svg: icons.carry },
-      { key: 'other', name: '其他', icon: '📦', svg: icons.other }
+      { key: 'starred', name: '已儲存搭配', svg: icons.starred },
+      { key: 'filter', name: '濾鏡', svg: icons.filterLayer },
+      { key: 'background', name: '背景', svg: icons.background },
+      { key: 'character', name: '人物', svg: icons.character },
+      { key: 'expression', name: '表情', svg: icons.expression },
+      { key: 'hair', name: '髮型', svg: icons.hair },
+      { key: 'underwear', name: '內衣', svg: icons.underwear },
+      { key: 'top', name: '上衣', svg: icons.top },
+      { key: 'bottom', name: '下身', svg: icons.bottom },
+      { key: 'outer', name: '外套', svg: icons.outer },
+      { key: 'dress', name: '套裝', svg: icons.dress },
+      { key: 'shoes', name: '鞋子', svg: icons.shoes },
+      { key: 'accessory', name: '配飾', svg: icons.accessory },
+      { key: 'carry', name: '攜帶品', svg: icons.carry },
+      { key: 'other', name: '其他', svg: icons.other }
     ],
 
     categoryTags: {},
@@ -549,10 +549,10 @@ export const useGameStore = defineStore('game', {
         window.addEventListener('pagehide', flushSave);
         window.addEventListener('beforeunload', flushSave);
 
-        this.showNotification('✅ 系統準備就緒', 'success');
+        this.showNotification('系統準備就緒', 'success');
       } catch (error) {
         console.error("初始化失敗", error);
-        this.showNotification(`❌ 系統初始化失敗: ${error}`, 'error');
+        this.showNotification(`系統初始化失敗: ${error}`, 'error');
       } finally {
         this.ui.loading = false;
       }
@@ -668,7 +668,7 @@ export const useGameStore = defineStore('game', {
 
       if (!this.isRestoring) {
         this.recordHistory();
-        this.showNotification(`✨ 已穿戴：${item.displayName}`, 'success');
+        this.showNotification(`已穿戴：${item.displayName}`, 'success');
       }
     },
 
@@ -688,7 +688,7 @@ export const useGameStore = defineStore('game', {
               item.imageData = imgData;
             }
             this.recordHistory();
-            this.showNotification(`🔄 已切換變體：${originalItem.variants.find(v => v.key === variantKey)?.name || variantKey}`, 'info');
+            this.showNotification(`已切換變體：${originalItem.variants.find(v => v.key === variantKey)?.name || variantKey}`, 'info');
           }
           break;
         }
@@ -709,7 +709,7 @@ export const useGameStore = defineStore('game', {
       this.selectedItem = null;
       if (!this.isRestoring) {
         this.recordHistory();
-        this.showNotification(`🗑️ 已移除：${item.displayName}`, 'info');
+        this.showNotification(`已移除：${item.displayName}`, 'info');
       }
     },
 
@@ -739,7 +739,7 @@ export const useGameStore = defineStore('game', {
       imageCache.clear();
       if (!this.isRestoring) {
         this.recordHistory();
-        this.showNotification('🗑️ 已清空穿搭', 'info');
+        this.showNotification('已清空穿搭', 'info');
       }
     },
 
@@ -806,7 +806,7 @@ export const useGameStore = defineStore('game', {
       Object.assign(this.freeMode, { itemPositions: {}, itemScales: {}, itemFlips: {}, itemRotations: {} });
       this.selectedItem = null;
       this.recordHistory();
-      this.showNotification('🔄 已重置所有變換', 'info');
+      this.showNotification('已重置所有變換', 'info');
     },
 
     recordHistory() {
@@ -851,11 +851,11 @@ export const useGameStore = defineStore('game', {
 
     async saveCurrentOutfit(name, previewImage = null) {
       const trimmedName = name?.trim();
-      if (!trimmedName) { this.showNotification('❌ 請輸入穿搭名稱', 'error'); return; }
+      if (!trimmedName) { this.showNotification('請輸入穿搭名稱', 'error'); return; }
 
       const existing = this.savedOutfits.find(o => o.name === trimmedName);
       if (existing && !confirm('是否要將舊搭配覆蓋？')) {
-        this.showNotification('ℹ️ 已取消覆蓋', 'info');
+        this.showNotification('已取消覆蓋', 'info');
         return;
       }
 
@@ -880,9 +880,9 @@ export const useGameStore = defineStore('game', {
       try {
         await DressingCore.saveData('outfits', outfitData);
         await this._reloadOutfits();
-        this.showNotification(`💾 穿搭「${trimmedName}」已保存`, 'success');
+        this.showNotification(`穿搭「${trimmedName}」已保存`, 'success');
       } catch (e) {
-        this.showNotification('❌ 保存失敗', 'error');
+        this.showNotification('保存失敗', 'error');
       }
     },
 
@@ -909,7 +909,7 @@ export const useGameStore = defineStore('game', {
         await DressingCore.saveData('outfits', normalized);
         await this._reloadOutfits();
       } catch {
-        this.showNotification('❌ 匯入穿搭失敗', 'error');
+        this.showNotification('匯入穿搭失敗', 'error');
       }
     },
 
@@ -917,29 +917,29 @@ export const useGameStore = defineStore('game', {
       try {
         await DressingCore.deleteData('outfits', outfitId);
         await this._reloadOutfits();
-        this.showNotification('🗑️ 穿搭已刪除', 'info');
+        this.showNotification('穿搭已刪除', 'info');
       } catch {
-        this.showNotification('❌ 刪除失敗', 'error');
+        this.showNotification('刪除失敗', 'error');
       }
     },
 
     async renameOutfit(outfitId, newName) {
       if (!outfitId || !newName) {
-        this.showNotification('❌ 重新命名失敗：缺少必要參數', 'error');
+        this.showNotification('重新命名失敗：缺少必要參數', 'error');
         return false;
       }
       try {
         const original = await DressingCore.getData('outfits', outfitId);
         if (!original) {
-          this.showNotification('❌ 找不到該穿搭', 'error');
+          this.showNotification('找不到該穿搭', 'error');
           return false;
         }
         await DressingCore.saveData('outfits', { ...original, name: newName });
         await this._reloadOutfits();
-        this.showNotification('✏️ 穿搭已重新命名', 'success');
+        this.showNotification('穿搭已重新命名', 'success');
         return true;
       } catch {
-        this.showNotification('❌ 重新命名失敗', 'error');
+        this.showNotification('重新命名失敗', 'error');
         return false;
       }
     },
@@ -949,7 +949,7 @@ export const useGameStore = defineStore('game', {
       try {
         const fullData = await DressingCore.getData('outfits', outfit.id);
         if (!fullData?.outfit) {
-          this.showNotification('❌ 無法載入穿搭', 'error');
+          this.showNotification('無法載入穿搭', 'error');
           this.isRestoring = false;
           return;
         }
@@ -966,10 +966,10 @@ export const useGameStore = defineStore('game', {
         this.selectedCharacterId = normalized.character[0]?.id || null;
         this.isRestoring = false;
         this.recordHistory();
-        this.showNotification(`📷 已載入穿搭: ${outfit.name}`, 'success');
+        this.showNotification(`已載入穿搭: ${outfit.name}`, 'success');
       } catch {
         this.isRestoring = false;
-        this.showNotification('❌ 載入穿搭失敗', 'error');
+        this.showNotification('載入穿搭失敗', 'error');
       }
     },
 
@@ -1011,9 +1011,9 @@ export const useGameStore = defineStore('game', {
         this.availablePacks = this.availablePacks.filter(p => p.id !== packId);
         if (pack?.isBundled) await this.dismissBundledPack(packId);
         this.cleanupOutfit();
-        this.showNotification('🗑️ 圖包已刪除', 'info');
+        this.showNotification('圖包已刪除', 'info');
       } catch {
-        this.showNotification('❌ 刪除失敗', 'error');
+        this.showNotification('刪除失敗', 'error');
       }
     },
 
@@ -1035,16 +1035,16 @@ export const useGameStore = defineStore('game', {
         this.clearCurrentOutfit();
         this.clearHistory();
         await this.saveHiddenItems();
-        this.showNotification('🗑️ 所有資料已清空', 'info');
+        this.showNotification('所有資料已清空', 'info');
       } catch {
-        this.showNotification('❌ 清空失敗', 'error');
+        this.showNotification('清空失敗', 'error');
       }
     },
 
     async toggleHideItem(itemId) {
       const idx = this.hiddenItems.indexOf(itemId);
       idx === -1 ? this.hiddenItems.push(itemId) : this.hiddenItems.splice(idx, 1);
-      this.showNotification(idx === -1 ? '👁️ 物件已隱藏' : '👁️ 物件已取消隱藏', 'info');
+      this.showNotification(idx === -1 ? '物件已隱藏' : '物件已取消隱藏', 'info');
       await this.saveHiddenItems();
     },
 
@@ -1078,7 +1078,7 @@ export const useGameStore = defineStore('game', {
         this.wardrobeItems = this.wardrobeItems.filter(i => i.id !== itemId);
         this.cleanupOutfit();
       } catch {
-        this.showNotification('❌ 刪除失敗', 'error');
+        this.showNotification('刪除失敗', 'error');
       }
     },
 

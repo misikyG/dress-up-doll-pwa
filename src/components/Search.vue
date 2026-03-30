@@ -219,7 +219,7 @@ const gotoWardrobe = (item) => {
   // 設置高亮物件 ID，讓衣櫃閃爍提示
   gameStore.setHighlightedItemId(item.id);
   emit('close');
-  gameStore.showNotification(`📍 已跳轉到「${getCategoryName(item.category)}」分類`, 'info');
+  gameStore.showNotification(`已跳轉到「${getCategoryName(item.category)}」分類`, 'info');
 };
 
 const getCategoryName = (category) => gameStore.getCategoryName(category);

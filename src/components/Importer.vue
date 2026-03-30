@@ -8,7 +8,7 @@
       <!-- 附贈圖包區域 -->
       <div v-if="bundledPacks.length > 0" class="bundled-packs-section">
         <div class="bundled-packs-header">
-          <span class="bundled-icon">🎁</span>
+          <span class="bundled-icon" v-html="icons.gift"></span>
           <span class="bundled-title">附贈圖包</span>
         </div>
         <div class="bundled-packs-list">
@@ -57,7 +57,7 @@
       
       <!-- 錯誤訊息顯示 -->
       <div v-if="processingState.error" class="error-message">
-        <div class="error-icon">❌</div>
+        <div class="error-icon" v-html="icons.xCircle"></div>
         <div class="error-content">
           <p class="error-title">匯入失敗</p>
           <p class="error-detail">{{ processingState.error }}</p>
@@ -68,7 +68,7 @@
       
       <!-- 成功提示 -->
       <div v-if="processingState.success" class="success-message">
-        <div class="success-icon">✅</div>
+        <div class="success-icon" v-html="icons.checkCircle"></div>
         <div class="success-content">
           <p class="success-title">匯入成功！</p>
           <p class="success-detail">{{ processingState.successMessage }}</p>
@@ -224,7 +224,7 @@ const saveItemsToDB = async (items, packInfo) => {
     processingState.value.success = true;
     processingState.value.successMessage = `圖包「${packInfo.displayName}」已成功匯入，包含 ${items.length} 個物件`;
 
-    gameStore.showNotification(`🎉 圖包 "${packInfo.displayName}" 匯入成功!`, 'success');
+    gameStore.showNotification(`圖包 "${packInfo.displayName}" 匯入成功!`, 'success');
     
     // 清除附贈圖包信息
     currentBundledInfo = null;

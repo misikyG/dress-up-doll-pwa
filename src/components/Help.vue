@@ -146,7 +146,7 @@
             </ul>
             <p class="privacy-full-link">
               <a href="#/privacy" target="_blank" rel="noopener noreferrer">
-                📄 查看完整隱私權政策（獨立頁面）
+                查看完整隱私權政策（獨立頁面）
               </a>
             </p>
           </div>

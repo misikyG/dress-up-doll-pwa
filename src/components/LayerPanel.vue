@@ -76,7 +76,7 @@
           <div class="layer-thumbnail">
             <img :src="layer.item.thumbnailData || layer.item.imageData" :alt="layer.item.displayName" loading="lazy" decoding="async" />
             <div v-if="gameStore.selectedItem?.id === layer.id" class="selected-indicator">✓</div>
-            <div v-if="isLayerHidden(layer.id)" class="hidden-indicator" title="已隱藏">👁‍🗨</div>
+            <div v-if="isLayerHidden(layer.id)" class="hidden-indicator" title="已隱藏" v-html="icons.eyeHide"></div>
           </div>
           
           <!-- 物件信息 -->

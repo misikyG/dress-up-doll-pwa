@@ -123,9 +123,9 @@ const avatarError = ref(false);
 
 const copyEmail = () => {
   navigator.clipboard.writeText('misiky1@gmail.com').then(() => {
-    gameStore.showNotification('📋 已複製電子信箱', 'success');
+    gameStore.showNotification('已複製電子信箱', 'success');
   }).catch(() => {
-    gameStore.showNotification('❌ 複製失敗', 'error');
+    gameStore.showNotification('複製失敗', 'error');
   });
 };
 </script>

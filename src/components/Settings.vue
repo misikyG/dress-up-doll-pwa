@@ -6,11 +6,9 @@
     </div>
     
     <div class="settings-content">
-      <!-- 主題管理區塊 -->
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.settings"></span> 主題管理</h4>
         
-        <!-- 預設主題選擇 -->
         <div class="theme-selector">
           <label>選擇主題</label>
           <div class="theme-options">
@@ -40,7 +38,6 @@
           </div>
         </div>
 
-        <!-- 自定義顏色編輯器 -->
         <div class="subsection">
           <button class="subsection-toggle" @click="showColorEditor = !showColorEditor">
             <span class="toggle-icon">{{ showColorEditor ? '▼' : '▶' }}</span>
@@ -61,7 +58,6 @@
               </div>
             </div>
 
-            <!-- iro.js 顏色編輯彈窗 -->
             <div v-if="activeColorKey" class="color-picker-popup">
               <div class="color-picker-header">
                 <span>{{ colorLabels[activeColorKey] }}</span>
@@ -145,7 +141,6 @@
           </div>
         </div>
 
-        <!-- 自定義 CSS -->
         <div class="subsection">
           <button class="subsection-toggle" @click="showCustomCSS = !showCustomCSS">
             <span class="toggle-icon">{{ showCustomCSS ? '▼' : '▶' }}</span>
@@ -183,7 +178,6 @@
           </div>
         </div>
 
-        <!-- 默認字體 -->
         <div class="subsection">
           <button class="subsection-toggle" @click="showFontSettings = !showFontSettings">
             <span class="toggle-icon">{{ showFontSettings ? '▼' : '▶' }}</span>
@@ -212,19 +206,18 @@
         </div>
       </div>
 
-      <!-- 圖包管理區塊 -->
       <div class="settings-section">
         <h4><span class="section-icon" v-html="icons.import"></span> 圖包管理</h4>
         <div class="pack-actions">
+          <button class="primary-btn" @click="showImporter = true">匯入圖包</button>
           <button class="secondary-btn" @click="loadDemoPack" :disabled="isLoadingDemo">
             {{ isLoadingDemo ? '載入中...' : '載入示範圖包' }}
           </button>
           <button class="secondary-btn" @click="loadDefaultFilters" :disabled="isLoadingFilters">
             {{ isLoadingFilters ? '載入中...' : '載入默認濾鏡' }}
           </button>
-          <button class="primary-btn" @click="showImporter = true">匯入圖包</button>
-          <button class="secondary-btn" @click="exportAllData" :disabled="isExportingAll">
-            {{ isExportingAll ? '匯出中...' : '匯出全部資料' }}
+          <button class="secondary-btn" @click="exportAllPacks" :disabled="isExportingPacks">
+            {{ isExportingPacks ? '匯出中...' : '匯出所有圖包' }}
           </button>
         </div>
         <div class="pack-delete">
@@ -245,11 +238,9 @@
         </div>
       </div>
 
-      <!-- 雲端同步區塊 -->
       <div class="settings-section">
-        <h4>☁️ 雲端同步（Google Drive）</h4>
+        <h4><span class="section-icon" v-html="icons.cloud"></span> 雲端同步（Google Drive）</h4>
 
-        <!-- 登入狀態指示 -->
         <div class="cloud-status" :class="{ connected: isGoogleReady }">
           <span class="status-dot"></span>
           <span v-if="isGoogleReady" class="status-text">已連線 Google 雲端</span>
@@ -275,13 +266,30 @@
         <p class="hint">備份資料存放於 Google Drive 應用程式資料夾，僅本應用可存取。雲端最多保留最新 5 筆備份。</p>
       </div>
       
-      <!-- 危險區域 -->
       <div class="settings-section">
-        <h4>⚠️ 危險區域</h4>
-        <button @click="factoryResetTheme" class="danger-btn">恢復原廠設置</button>
-        <p class="hint">將主題恢復為預設，並刪除所有自定義主題與自定義 CSS。</p>
-        <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
-        <p class="hint">此操作會刪除所有匯入的物件和儲存的搭配，且無法復原！</p>
+        <h4><span class="section-icon" v-html="icons.database"></span> 資料管理</h4>
+        <div class="dual-actions">
+          <button class="primary-btn" @click="triggerImportAllData">匯入所有資料</button>
+          <button class="secondary-btn" @click="exportAllData" :disabled="isExportingAll">
+            {{ isExportingAll ? '匯出中...' : '匯出所有資料' }}
+          </button>
+        </div>
+        <input
+          ref="allDataFileInput"
+          type="file"
+          accept=".json"
+          @change="handleImportAllData"
+          style="display: none;">
+      </div>
+
+      <div class="settings-section">
+        <h4><span class="section-icon" v-html="icons.warning"></span> 危險區域</h4>
+        <div class="dual-actions">
+          <button @click="factoryResetTheme" class="danger-btn">恢復原廠設置</button>
+          <button @click="clearAllData" class="danger-btn">清空所有本地數據</button>
+        </div>
+        <p class="hint">恢復原廠設置：將主題恢復為預設，並刪除所有自定義主題與自定義 CSS。</p>
+        <p class="hint">清空所有本地數據：刪除所有匯入的物件和儲存的搭配，且無法復原！</p>
       </div>
     </div>
   </div>
@@ -298,6 +306,7 @@ import { ref, onMounted, reactive, nextTick, onUnmounted } from 'vue';
 import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
+import DressingCore from '../core/index.js';
 import { ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 
@@ -306,6 +315,7 @@ const gameStore = useGameStore();
 const showImporter = ref(false);
 const selectedPackId = ref('');
 const isExportingAll = ref(false);
+const isExportingPacks = ref(false);
 const isGoogleReady = ref(false);
 const isCloudBusy = ref(false);
 const isLoadingDemo = ref(false);
@@ -318,6 +328,7 @@ const showFontSettings = ref(false);
 const newThemeName = ref('');
 const colorFileInput = ref(null);
 const cssFileInput = ref(null);
+const allDataFileInput = ref(null);
 const customCSS = ref('');
 const activeColorKey = ref(null);
 
@@ -340,7 +351,6 @@ const getCSSVariable = (name) => {
   return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
 };
 
-// 顏色變數名稱列表
 const colorKeys = [
   'color-primary',
   'color-bg-main',
@@ -356,7 +366,6 @@ const colorKeys = [
   'color-info',
 ];
 
-// 從 CSS 變數動態生成 defaultColors
 const getDefaultColors = () => {
   const colors = {};
   colorKeys.forEach(key => {
@@ -404,10 +413,8 @@ const closeColorPicker = () => {
 const initIroColorPicker = () => {
   if (!iroPickerContainer.value || !activeColorKey.value) return;
   
-  // 清空容器
   iroPickerContainer.value.innerHTML = '';
   
-  // 創建 iro.js 色彩選取器
   iroColorPicker = new iro.ColorPicker(iroPickerContainer.value, {
     width: 200,
     color: editingColors[activeColorKey.value],
@@ -442,23 +449,15 @@ const getCurrentRgbValues = () => {
   return { r, g, b };
 };
 
-const getCurrentRgb = () => {
-  const { r, g, b } = getCurrentRgbValues();
-  return `${r}, ${g}, ${b}`;
-};
-
 const handleHexInput = (event) => {
   let value = event.target.value;
-  // 確保以 # 開頭
   if (!value.startsWith('#')) {
     value = '#' + value;
   }
-  // 只允許有效的 hex 字符
   value = value.replace(/[^#0-9A-Fa-f]/g, '').slice(0, 7);
   
   if (activeColorKey.value && value.length === 7) {
     editingColors[activeColorKey.value] = value;
-    // 更新 iro picker
     if (iroColorPicker) {
       iroColorPicker.color.hexString = value;
     }
@@ -470,7 +469,6 @@ const validateHexInput = (event) => {
   if (!value.startsWith('#')) {
     value = '#' + value;
   }
-  // 如果不是完整的 hex，補全
   if (value.length < 7) {
     value = value.padEnd(7, '0');
   }
@@ -502,7 +500,6 @@ const handleRgbInput = (channel, event) => {
   
   editingColors[activeColorKey.value] = hex;
   
-  // 更新 iro picker
   if (iroColorPicker) {
     iroColorPicker.color.hexString = hex;
   }
@@ -536,10 +533,8 @@ onUnmounted(() => {
     iroColorPicker = null;
   }
   
-  // 關閉設定時，清除預覽顏色並恢復到當前儲存的主題
   if (gameStore.theme.previewColors) {
     gameStore.clearPreviewColors();
-    // 恢復到當前儲存的主題顏色
     gameStore.applyTheme(gameStore.theme.currentTheme);
   }
 });
@@ -555,7 +550,6 @@ const handleThemeClick = (themeId) => {
 const applyTheme = async (themeId) => {
   await gameStore.setCurrentTheme(themeId);
   
-  // 更新編輯器中的顏色以反映當前主題
   if (themeId === 'default') {
     Object.assign(editingColors, defaultColors);
   } else {
@@ -566,13 +560,13 @@ const applyTheme = async (themeId) => {
     }
   }
   
-  gameStore.showNotification('✅ 已套用主題', 'success');
+  gameStore.showNotification('已套用主題', 'success');
 };
 
 const deleteTheme = async (themeId) => {
   if (confirm('確定要刪除此主題嗎？')) {
     await gameStore.deleteCustomTheme(themeId);
-    gameStore.showNotification('🗑️ 已刪除主題', 'success');
+    gameStore.showNotification('已刪除主題', 'success');
   }
 };
 
@@ -595,17 +589,15 @@ const previewColors = async () => {
   Object.entries(editingColors).forEach(([key, value]) => {
     root.style.setProperty(`--${key}`, value);
   });
-  // 保存預覽顏色到 store 以便持久化
   await gameStore.savePreviewColors({ ...editingColors });
-  gameStore.showNotification('👁️ 預覽中（已臨時保存）', 'info');
+  gameStore.showNotification('預覽中（已臨時保存）', 'info');
 };
 
 const resetColors = () => {
   Object.assign(editingColors, defaultColors);
   gameStore.applyTheme('default');
-  // 清除預覽顏色
   gameStore.clearPreviewColors();
-  gameStore.showNotification('🔄 已重置為預設色', 'info');
+  gameStore.showNotification('已重置為預設色', 'info');
 };
 
 const saveCurrentTheme = async () => {
@@ -615,17 +607,17 @@ const saveCurrentTheme = async () => {
     // 沒有輸入名稱→覆蓋當前選擇的主題
     const currentId = gameStore.theme.currentTheme;
     if (currentId === 'default') {
-      gameStore.showNotification('❌ 無法覆蓋預設主題，請輸入新名稱', 'error');
+      gameStore.showNotification('無法覆蓋預設主題，請輸入新名稱', 'error');
       return;
     }
     const currentTheme = gameStore.theme.customThemes.find(t => t.id === currentId);
     if (!currentTheme) {
-      gameStore.showNotification('❌ 請輸入主題名稱', 'error');
+      gameStore.showNotification('請輸入主題名稱', 'error');
       return;
     }
     if (!confirm(`是否確認覆蓋「${currentTheme.name}」主題設定？將無法恢復`)) return;
     await gameStore.updateCustomTheme(currentId, { colors: { ...editingColors } });
-    gameStore.showNotification('✅ 已覆蓋並套用主題', 'success');
+    gameStore.showNotification('已覆蓋並套用主題', 'success');
     return;
   }
 
@@ -636,7 +628,7 @@ const saveCurrentTheme = async () => {
 
   await gameStore.setCurrentTheme(theme.id);
   newThemeName.value = '';
-  gameStore.showNotification('✅ 已儲存並套用主題', 'success');
+  gameStore.showNotification('已儲存並套用主題', 'success');
 };
 
 const exportColors = () => {
@@ -646,7 +638,7 @@ const exportColors = () => {
     exportedAt: new Date().toISOString(),
   };
   downloadJson(config, `colors-${Date.now()}.json`);
-  gameStore.showNotification('📤 已匯出顏色設定', 'success');
+  gameStore.showNotification('已匯出顏色設定', 'success');
 };
 
 const triggerColorImport = () => {
@@ -662,26 +654,24 @@ const handleColorImport = async (event) => {
     const config = JSON.parse(text);
     if (config.colors) {
       Object.assign(editingColors, config.colors);
-      // 立即套用到 UI
+      // 即時套用到 UI
       const root = document.documentElement;
       Object.entries(editingColors).forEach(([key, value]) => {
         root.style.setProperty(`--${key}`, value);
       });
       
-      // 自動創建新主題並保存
       const themeName = config.name || `匯入主題 ${new Date().toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
       const theme = await gameStore.addCustomTheme({
         name: themeName,
         colors: { ...editingColors },
       });
       await gameStore.setCurrentTheme(theme.id);
-      // 清除預覽顏色，因為已經保存為正式主題了
       await gameStore.clearPreviewColors();
-      gameStore.showNotification(`✅ 已匯入並儲存為主題「${themeName}」`, 'success');
+      gameStore.showNotification(`已匯入並儲存為主題「${themeName}」`, 'success');
     }
   } catch (error) {
     console.error(error);
-    gameStore.showNotification('❌ 匯入失敗，請檢查檔案格式', 'error');
+    gameStore.showNotification('匯入失敗，請檢查檔案格式', 'error');
   }
 
   event.target.value = '';
@@ -694,7 +684,7 @@ const exportCSS = () => {
     exportedAt: new Date().toISOString(),
   };
   downloadJson(config, `custom-css-${Date.now()}.json`);
-  gameStore.showNotification('📤 已匯出 CSS 設定', 'success');
+  gameStore.showNotification('已匯出 CSS 設定', 'success');
 };
 
 const triggerCSSImport = () => {
@@ -716,10 +706,10 @@ const handleCSSImport = async (event) => {
     } else {
       customCSS.value = text;
     }
-    gameStore.showNotification('✅ 已匯入 CSS 設定', 'success');
+    gameStore.showNotification('已匯入 CSS 設定', 'success');
   } catch (error) {
     console.error(error);
-    gameStore.showNotification('❌ 匯入失敗，請檢查檔案格式', 'error');
+    gameStore.showNotification('匯入失敗，請檢查檔案格式', 'error');
   }
 
   event.target.value = '';
@@ -727,18 +717,18 @@ const handleCSSImport = async (event) => {
 
 const applyCustomCSS = async () => {
   await gameStore.setCustomCSS(customCSS.value);
-  gameStore.showNotification('✅ 已套用自定義 CSS', 'success');
+  gameStore.showNotification('已套用自定義 CSS', 'success');
 };
 
 const previewCustomCSS = () => {
   gameStore.applyCustomCSS(customCSS.value);
-  gameStore.showNotification('👁️ 預覽中（尚未儲存）', 'info');
+  gameStore.showNotification('預覽中（尚未儲存）', 'info');
 };
 
 const clearCustomCSS = async () => {
   customCSS.value = '';
   await gameStore.setCustomCSS('');
-  gameStore.showNotification('🗑️ 已清除自定義 CSS', 'success');
+  gameStore.showNotification('已清除自定義 CSS', 'success');
 };
 
 const increaseFontSize = () => {
@@ -779,7 +769,27 @@ const exportSelectedPack = () => {
     exportedAt: new Date().toISOString(),
   };
   downloadJson(payload, `pack-${pack.id}.json`);
-  gameStore.showNotification(`📦 已匯出圖包：${pack.displayName || pack.name}`, 'success');
+  gameStore.showNotification(`已匯出圖包：${pack.displayName || pack.name}`, 'success');
+};
+
+const exportAllPacks = async () => {
+  isExportingPacks.value = true;
+  try {
+    const allItems = await DressingCore.getAllData('items');
+    const payload = {
+      type: 'packs-backup',
+      exportedAt: new Date().toISOString(),
+      packs: gameStore.availablePacks,
+      items: allItems,
+      schemaVersion: 2,
+    };
+    downloadJson(payload, `doll-packs-${Date.now()}.json`);
+    gameStore.showNotification('所有圖包已匯出', 'success');
+  } catch {
+    gameStore.showNotification('匯出失敗', 'error');
+  } finally {
+    isExportingPacks.value = false;
+  }
 };
 
 const exportAllData = async () => {
@@ -802,12 +812,47 @@ const exportAllData = async () => {
       schemaVersion: 2,
     };
     downloadJson(payload, `doll-backup-${Date.now()}.json`);
-    gameStore.showNotification('💾 全部資料已匯出', 'success');
+    gameStore.showNotification('全部資料已匯出', 'success');
   } catch {
-    gameStore.showNotification('❌ 匯出失敗', 'error');
+    gameStore.showNotification('匯出失敗', 'error');
   } finally {
     isExportingAll.value = false;
   }
+};
+
+const triggerImportAllData = () => {
+  allDataFileInput.value?.click();
+};
+
+const handleImportAllData = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (data.type !== 'full-backup') {
+      gameStore.showNotification('檔案格式不正確，請選擇完整備份檔', 'error');
+      return;
+    }
+    if (!confirm('匯入所有資料將覆蓋本機所有資料，確定要繼續嗎？')) return;
+    await gameStore.clearAllData();
+    for (const pack of data.packs || []) await gameStore.addPack(pack);
+    for (const item of data.items || []) await gameStore.addNewItem(item);
+    for (const outfit of data.outfits || []) await gameStore.importOutfit(outfit);
+    if (data.theme) await gameStore.restoreThemeFromBackup(data.theme);
+    if (Array.isArray(data.hiddenItems)) {
+      gameStore.hiddenItems = data.hiddenItems;
+      await gameStore.saveHiddenItems();
+    }
+    if (Array.isArray(data.dismissedBundledPacks)) {
+      gameStore.dismissedBundledPacks = data.dismissedBundledPacks;
+      await gameStore.saveDismissedBundledPacks();
+    }
+    gameStore.showNotification('所有資料已匯入', 'success');
+  } catch {
+    gameStore.showNotification('匯入失敗，請檢查檔案格式', 'error');
+  }
+  event.target.value = '';
 };
 
 const downloadJson = (data, filename) => {
@@ -828,10 +873,10 @@ const connectGoogle = async () => {
     // 使用互動式登入，確保彈出 Google 帳號選擇 / 授權畫面
     await interactiveSignIn(GOOGLE_CLIENT_ID);
     isGoogleReady.value = true;
-    gameStore.showNotification('✅ 已登入 Google', 'success');
+    gameStore.showNotification('已登入 Google', 'success');
   } catch (err) {
     console.error(err);
-    gameStore.showNotification('❌ Google 登入失敗，請稍後再試', 'error');
+    gameStore.showNotification('Google 登入失敗，請稍後再試', 'error');
   } finally {
     isCloudBusy.value = false;
   }
@@ -840,7 +885,7 @@ const connectGoogle = async () => {
 const disconnectGoogle = () => {
   signOut();
   isGoogleReady.value = false;
-  gameStore.showNotification('ℹ️ 已登出 Google', 'info');
+  gameStore.showNotification('已登出 Google', 'info');
 };
 
 /**
@@ -883,12 +928,11 @@ const uploadToDrive = async () => {
     // 僅保留最新 5 筆備份
     const deleted = await pruneOldBackups({ name: BACKUP_FILENAME, keep: 5 });
     const extra = deleted > 0 ? `（已清理 ${deleted} 筆舊備份）` : '';
-    gameStore.showNotification(`☁️ 已上傳備份到 Google Drive${extra}`, 'success');
+    gameStore.showNotification(`已上傳備份到 Google Drive${extra}`, 'success');
   } catch (err) {
     console.error(err);
-    // 若 token 已失效，重置連線狀態
     if (!isTokenValid()) isGoogleReady.value = false;
-    gameStore.showNotification('❌ 上傳失敗，請檢查網路或權限', 'error');
+    gameStore.showNotification('上傳失敗，請檢查網路或權限', 'error');
   } finally {
     isCloudBusy.value = false;
   }
@@ -900,7 +944,7 @@ const syncFromDrive = async () => {
     await ensureAccessToken();
     const data = await downloadLatestJson({ name: BACKUP_FILENAME });
     if (!data) {
-      gameStore.showNotification('ℹ️ 雲端沒有備份檔', 'info');
+      gameStore.showNotification('雲端沒有備份檔', 'info');
       return;
     }
     if (!confirm('從雲端還原將覆蓋本機所有資料，確定要繼續嗎？')) return;
@@ -924,12 +968,11 @@ const syncFromDrive = async () => {
       await gameStore.saveDismissedBundledPacks();
     }
 
-    gameStore.showNotification('☁️ 已從雲端同步完成', 'success');
+    gameStore.showNotification('已從雲端同步完成', 'success');
   } catch (err) {
     console.error(err);
-    // 若 token 已失效，重置連線狀態
     if (!isTokenValid()) isGoogleReady.value = false;
-    gameStore.showNotification('❌ 同步失敗，請檢查網路或權限', 'error');
+    gameStore.showNotification('同步失敗，請檢查網路或權限', 'error');
   } finally {
     isCloudBusy.value = false;
   }
@@ -939,26 +982,22 @@ const factoryResetTheme = async () => {
   if (!confirm('確定要恢復原廠設置嗎？將刪除所有自定義主題與自定義 CSS，且無法復原。')) return;
   // 清除所有自定義主題
   gameStore.theme.customThemes = [];
-  // 清除自定義 CSS
+  gameStore.theme.customThemes = [];
   gameStore.theme.customCSS = '';
   gameStore.applyCustomCSS('');
-  // 重置為預設主題
   gameStore.theme.currentTheme = 'default';
   gameStore.applyTheme('default');
-  // 清除預覽顏色
   gameStore.theme.previewColors = null;
-  // 重置字體設定
   gameStore.theme.fontFamily = '';
   gameStore.theme.fontSize = 16;
   gameStore.applyFontSettings();
   await gameStore.saveThemeSettings();
-  // 重置編輯中的狀態
   Object.assign(editingColors, getDefaultColors());
   customCSS.value = '';
   newThemeName.value = '';
   editingFontSize.value = 16;
   editingFontFamily.value = '';
-  gameStore.showNotification('✅ 已恢復原廠設置', 'success');
+  gameStore.showNotification('已恢復原廠設置', 'success');
 };
 
 const clearAllData = () => {
@@ -970,9 +1009,8 @@ const clearAllData = () => {
 const DEMO_PACK_ID = 'demo-sample-pack';
 
 const loadDemoPack = async () => {
-  // 檢查是否已載入
   if (gameStore.availablePacks.some(p => p.id === DEMO_PACK_ID)) {
-    gameStore.showNotification('ℹ️ 示範圖包已存在，請先刪除後再重新載入', 'info');
+    gameStore.showNotification('示範圖包已存在，請先刪除後再重新載入', 'info');
     return;
   }
   
@@ -1023,10 +1061,10 @@ const loadDemoPack = async () => {
     }
     await gameStore.addPack(packInfo);
     
-    gameStore.showNotification(`🎉 已載入示範圖包，包含 ${items.length} 個物件`, 'success');
+    gameStore.showNotification(`已載入示範圖包，包含 ${items.length} 個物件`, 'success');
   } catch (err) {
     console.error('載入示範圖包失敗:', err);
-    gameStore.showNotification(`❌ 載入示範圖包失敗: ${err.message}`, 'error');
+    gameStore.showNotification(`載入示範圖包失敗: ${err.message}`, 'error');
   } finally {
     isLoadingDemo.value = false;
   }
@@ -1045,7 +1083,7 @@ const DEFAULT_FILTERS_PACK_ID = 'default-filters-pack';
 
 const loadDefaultFilters = async () => {
   if (gameStore.availablePacks.some(p => p.id === DEFAULT_FILTERS_PACK_ID)) {
-    gameStore.showNotification('ℹ️ 默認濾鏡已存在，請先刪除後再重新載入', 'info');
+    gameStore.showNotification('默認濾鏡已存在，請先刪除後再重新載入', 'info');
     return;
   }
   
@@ -1101,10 +1139,10 @@ const loadDefaultFilters = async () => {
     }
     await gameStore.addPack(packInfo);
     
-    gameStore.showNotification(`🎨 已載入默認濾鏡，包含 ${items.length} 種效果`, 'success');
+    gameStore.showNotification(`已載入默認濾鏡，包含 ${items.length} 種效果`, 'success');
   } catch (err) {
     console.error('載入默認濾鏡失敗:', err);
-    gameStore.showNotification('❌ 載入失敗：' + (err.message || '未知錯誤'), 'error');
+    gameStore.showNotification('載入失敗：' + (err.message || '未知錯誤'), 'error');
   } finally {
     isLoadingFilters.value = false;
   }
@@ -1783,6 +1821,16 @@ const loadDefaultFilters = async () => {
   gap: 0.5rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+}
+
+.dual-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dual-actions button {
+  flex: 1;
+  width: auto;
 }
 
 .pack-delete {

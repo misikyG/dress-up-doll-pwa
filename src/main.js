@@ -10,7 +10,7 @@ const applyIOSSafariFixes = () => {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   
   if (isIOS || isSafari) {
-    console.log('📱 偵測到 iOS/Safari，套用相容性修復...');
+    console.log('偵測到 iOS/Safari，套用相容性修復...');
     document.documentElement.classList.add('is-ios-safari');
     
     // 動態注入 rgb(from ...) 的回退樣式

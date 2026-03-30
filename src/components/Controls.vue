@@ -168,13 +168,13 @@ const executeDownload = async () => {
   try {
     const canvas = document.querySelector('.canvas');
     if (!canvas) {
-      gameStore.showNotification('❌ 找不到畫布', 'error');
+      gameStore.showNotification('找不到畫布', 'error');
       return;
     }
 
     const layers = gameStore.currentLayers;
     if (layers.length === 0) {
-      gameStore.showNotification('❌ 畫布上沒有物件', 'warning');
+      gameStore.showNotification('畫布上沒有物件', 'warning');
       return;
     }
 
@@ -300,20 +300,20 @@ const executeDownload = async () => {
           // 備用方案：直接在同視窗開啟
           window.location.href = url;
         }
-        gameStore.showNotification('📱 長按圖片即可儲存', 'info');
+        gameStore.showNotification('長按圖片即可儲存', 'info');
       } else {
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        gameStore.showNotification('✅ 圖像已下載', 'success');
+        gameStore.showNotification('圖像已下載', 'success');
       }
     }, 'image/png');
 
   } catch (error) {
     console.error('下載圖像失敗:', error);
-    gameStore.showNotification('❌ 下載失敗', 'error');
+    gameStore.showNotification('下載失敗', 'error');
   }
 };
 

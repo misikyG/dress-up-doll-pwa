@@ -346,7 +346,7 @@
           <div class="context-menu-content">
             <div class="context-menu-section">
               <button class="context-menu-option" @click="loadOutfit(outfitContextMenu.outfit); hideOutfitContextMenu();">
-                <span class="option-icon">📷</span>
+                <span class="option-icon" v-html="icons.camera"></span>
                 <span class="option-name">載入搭配</span>
               </button>
               <button class="context-menu-option" @click="renameOutfit(outfitContextMenu.outfit)">
@@ -372,7 +372,6 @@ import { icons } from '../icons.js';
 
 const gameStore = useGameStore();
 
-// 響應式狀態
 const activeCategory = ref('character');
 const selectedPacks = ref([]);  // 改為多選陣列
 const selectedTags = ref([]);   // Tag 多選陣列
@@ -392,7 +391,6 @@ const contextMenu = ref({
   y: 0
 });
 
-// 搭配上下文選單狀態
 const outfitContextMenu = ref({
   visible: false,
   outfit: null,
@@ -402,7 +400,6 @@ const outfitContextMenu = ref({
 
 let longPressTimer = null;
 
-// 圖示
 const filterIcon = icons.filter;
 
 const ITEM_WIDTH = 120;
@@ -433,18 +430,15 @@ const baseItemsForCategory = computed(() => {
 
   let items = gameStore.getItemsByCategory(activeCategory.value);
 
-  // 隱藏物件過濾
   if (showHidden.value) {
     items = items.filter(item => gameStore.hiddenItems.includes(item.id));
   } else {
     items = items.filter(item => !gameStore.hiddenItems.includes(item.id));
   }
 
-  // 圖包篩選
   if (selectedPacks.value.length > 0) {
     items = items.filter(item => selectedPacks.value.includes(item.packId));
   }
-
   // 人物篩選：僅當 item 有綁定時才受影響
   if (effectiveCharacterFilters.value.length > 0) {
     const allowIds = new Set(effectiveCharacterFilters.value);
@@ -457,7 +451,6 @@ const baseItemsForCategory = computed(() => {
   return items;
 });
 
-// 當前分類可用的 tags（依照目前物件池動態產生）
 const currentCategoryTags = computed(() => {
   if (activeCategory.value === 'starred') return [];
   const tagCounts = new Map();
@@ -471,30 +464,24 @@ const currentCategoryTags = computed(() => {
   return Array.from(tagCounts.entries()).map(([key, count]) => ({ key, count }));
 });
 
-// 是否有啟用的篩選
 const hasActiveFilters = computed(() => {
   return selectedPacks.value.length > 0 || selectedTags.value.length > 0 || selectedCharacters.value.length > 0;
 });
 
-// 啟用的篩選數量
 const activeFilterCount = computed(() => {
   return selectedPacks.value.length + selectedTags.value.length + selectedCharacters.value.length;
 });
 
-// 獲取 tag 的顯示名稱
 const getTagDisplayName = (_category, tagKey) => tagKey;
 
-// 清除圖包篩選
 const clearPackFilters = () => {
   selectedPacks.value = [];
 };
 
-// 清除人物篩選
 const clearCharacterFilters = () => {
   selectedCharacters.value = [];
 };
 
-// 清除 tag 篩選
 const clearTagFilters = () => {
   selectedTags.value = [];
 };
@@ -588,15 +575,12 @@ const currentCategoryIcon = computed(() => {
 
 const setActiveCategory = (categoryKey) => {
   activeCategory.value = categoryKey;
-  // 切換分類時重置 tag 篩選
   selectedTags.value = [];
-  // 重置手機版載入數量
   mobileLoadedCount.value = MOBILE_MAX_ITEMS;
   if (scrollContainer.value) scrollContainer.value.scrollTop = 0;
   if (mobileScrollContainer.value) mobileScrollContainer.value.scrollLeft = 0;
 };
 
-// 使用 store 中的共用方法
 const getPackName = (item) => gameStore.getPackName(item);
 
 const handleItemClick = (item) => {
@@ -623,24 +607,20 @@ const isExpressionAvailable = (item) => {
   );
 };
 
-// 使用 store 中的共用方法
 const formatDate = (dateString) => gameStore.formatDate(dateString);
 
 const showContextMenu = (item, event) => {
   event.preventDefault();
   event.stopPropagation();
   
-  // 計算選單位置，確保不超出視窗
   const menuWidth = 200;
   const menuHeight = 280;
   let x = event.clientX || event.touches?.[0]?.clientX || 0;
   let y = event.clientY || event.touches?.[0]?.clientY || 0;
   
-  // 確保選單不會超出右邊界
   if (x + menuWidth > window.innerWidth) {
     x = window.innerWidth - menuWidth - 10;
   }
-  // 確保選單不會超出下邊界
   if (y + menuHeight > window.innerHeight) {
     y = window.innerHeight - menuHeight - 10;
   }
@@ -673,7 +653,6 @@ const selectVariant = (variantKey) => {
   hideContextMenu();
 };
 
-// 隱藏物件功能
 const isItemHidden = (item) => {
   return gameStore.hiddenItems?.includes(item.id) || false;
 };
@@ -683,26 +662,23 @@ const toggleHideItem = async (item) => {
   hideContextMenu();
 };
 
-// 重新命名物件
 const renameItem = async (item) => {
   const newName = prompt('請輸入新的名稱：', item.displayName);
   if (newName && newName.trim() && newName !== item.displayName) {
     await gameStore.renameItem(item.id, newName.trim());
-    gameStore.showNotification(`✏️ 已重新命名為「${newName.trim()}」`, 'success');
+    gameStore.showNotification(`已重新命名為「${newName.trim()}」`, 'success');
   }
   hideContextMenu();
 };
 
-// 刪除物件
 const deleteItem = async (item) => {
   if (confirm(`確定要刪除「${item.displayName}」嗎？此操作無法復原！`)) {
     await gameStore.deleteItem(item.id);
-    gameStore.showNotification(`🗑️ 已刪除「${item.displayName}」`, 'info');
+    gameStore.showNotification(`已刪除「${item.displayName}」`, 'info');
   }
   hideContextMenu();
 };
 
-// 獲取變體的顯示名稱
 const getVariantDisplayName = (variant) => {
   if (typeof variant === 'object') {
     return variant.name || variant.key;
@@ -710,7 +686,6 @@ const getVariantDisplayName = (variant) => {
   return variant;
 };
 
-// 獲取變體的 key
 const getVariantKey = (variant) => {
   if (typeof variant === 'object') {
     return variant.key;
@@ -825,7 +800,7 @@ const deleteOutfit = async (outfit) => {
 
 const renameOutfit = async (outfit) => {
   if (!outfit || !outfit.id) {
-    gameStore.showNotification('❌ 無法取得搭配資訊', 'error');
+    gameStore.showNotification('無法取得搭配資訊', 'error');
     hideOutfitContextMenu();
     return;
   }

@@ -28,8 +28,8 @@
               <span class="outfit-date">{{ formatDate(outfit.createdAt) }}</span>
             </div>
             <div class="outfit-actions">
-              <button @click.stop="duplicateOutfit(outfit)" class="duplicate-btn" title="複製搭配">📋</button>
-              <button @click.stop="deleteOutfit(outfit.id)" class="delete-btn" title="刪除搭配">🗑️</button>
+              <button @click.stop="duplicateOutfit(outfit)" class="duplicate-btn" title="複製搭配" v-html="icons.clipboard"></button>
+              <button @click.stop="deleteOutfit(outfit.id)" class="delete-btn" title="刪除搭配" v-html="icons.trash"></button>
             </div>
           </div>
         </div>
