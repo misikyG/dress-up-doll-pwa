@@ -114,6 +114,7 @@ export async function ensureAccessToken() {
       if (resp.error) return reject(resp);
       currentToken = resp.access_token;
       tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000 - 60000; // 提前 1 分鐘
+      window.gapi.client.setToken({ access_token: currentToken });
       saveAuthState(currentToken, tokenExpiry);
       resolve(resp);
     };
@@ -128,6 +129,7 @@ export async function interactiveSignIn(clientId) {
       if (resp.error) return reject(resp);
       currentToken = resp.access_token;
       tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000 - 60000;
+      window.gapi.client.setToken({ access_token: currentToken });
       saveAuthState(currentToken, tokenExpiry);
       resolve(resp);
     };
@@ -160,22 +162,25 @@ export async function uploadJsonFile({ name, json }) {
   if (!token?.access_token) throw new Error('No access token available');
 
   const metadata = { name, parents: ['appDataFolder'] };
-  const form = new FormData();
-  form.append(
-    'metadata',
-    new Blob([JSON.stringify(metadata)], { type: 'application/json' })
-  );
-  form.append(
-    'file',
-    new Blob([JSON.stringify(json)], { type: 'application/json' })
-  );
+  const boundary = '===DollBackup' + Date.now() + '===';
+  const body =
+    '--' + boundary + '\r\n' +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) + '\r\n' +
+    '--' + boundary + '\r\n' +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(json) + '\r\n' +
+    '--' + boundary + '--';
 
   const response = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token.access_token}` },
-      body: form,
+      headers: {
+        Authorization: `Bearer ${token.access_token}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
     }
   );
 

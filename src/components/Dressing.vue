@@ -188,7 +188,13 @@ const baseCanvasScale = computed(() => {
   const scaleX = availableWidth / targetSize.width;
   const scaleY = availableHeight / targetSize.height;
 
-  let base = Math.min(scaleX, scaleY, 1);
+  let base;
+  if (gameStore.ui.isMobile) {
+    // 手機版：以寬度為基準，讓畫布填滿螢幕寬度，使紙娃娃顯示更大
+    base = Math.min(scaleX, 1);
+  } else {
+    base = Math.min(scaleX, scaleY, 1);
+  }
   return base;
 });
 
