@@ -411,7 +411,7 @@ export const useGameStore = defineStore('game', {
       { key: 'expression', name: '表情', svg: icons.expression },
       { key: 'hair', name: '髮型', svg: icons.hair },
       { key: 'underwear', name: '內衣', svg: icons.underwear },
-      { key: 'top', name: '上衣', svg: icons.top },
+      { key: 'top', name: '上身', svg: icons.top },
       { key: 'bottom', name: '下身', svg: icons.bottom },
       { key: 'outer', name: '外套', svg: icons.outer },
       { key: 'dress', name: '套裝', svg: icons.dress },
