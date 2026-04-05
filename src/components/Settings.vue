@@ -902,7 +902,23 @@ const BACKUP_FILENAME = 'doll-backup.json';
 const connectGoogle = async () => {
   isCloudBusy.value = true;
   try {
-    // 使用互動式登入，確保彈出 Google 帳號選擇 / 授權畫面
+    if (hasPreviousAuth()) {
+      // 曾經登入過：先嘗試靜默刷新（不強制重新授權）
+      try {
+        await ensureAccessToken();
+        isGoogleReady.value = true;
+        // 恢復自動備份設定
+        try {
+          const saved = localStorage.getItem('auto-backup-enabled');
+          if (saved === 'true') startAutoBackup(true);
+        } catch {}
+        gameStore.showNotification('已重新連線 Google', 'success');
+        return;
+      } catch {
+        // 靜默刷新失敗，執行完整互動式登入
+      }
+    }
+    // 首次登入或靜默刷新失敗：互動式授權
     await interactiveSignIn(GOOGLE_CLIENT_ID);
     isGoogleReady.value = true;
     gameStore.showNotification('已登入 Google', 'success');

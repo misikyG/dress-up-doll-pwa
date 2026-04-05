@@ -80,40 +80,39 @@ export function hasPreviousAuth() {
 }
 
 export async function tryRestoreSession(clientId) {
+  if (clientId) storedClientId = clientId; // 記住 clientId 供後續 ensureAccessToken 使用
   const state = loadAuthState();
   if (!state?.hasAuth) return false;
 
-  // 即使 token 已過期，仍嘗試靜默刷新而非直接清除
   const tokenExpired = !state.access_token || !state.expiry || Date.now() >= state.expiry;
+
+  // token 已過期 → 不嘗試刷新（requestAccessToken 會彈出登入視窗）
+  // 保留 hasAuth 標記，讓 UI 知道曾經登入過，使用者操作時再靜默刷新
+  if (tokenExpired) {
+    currentToken = null;
+    tokenExpiry = 0;
+    return false;
+  }
 
   try {
     await ensureGoogleClient(clientId);
 
-    if (!tokenExpired) {
-      // token 尚未過期，先驗證是否仍有效
-      currentToken = state.access_token;
-      tokenExpiry = state.expiry;
-      window.gapi.client.setToken({ access_token: currentToken });
+    // token 尚未過期，驗證是否仍有效
+    currentToken = state.access_token;
+    tokenExpiry = state.expiry;
+    window.gapi.client.setToken({ access_token: currentToken });
 
-      const testResp = await fetch(
-        'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
-        { headers: { Authorization: `Bearer ${currentToken}` } }
-      );
-      if (testResp.ok) return true;
-      // token 驗證失敗，嘗試靜默刷新
-    }
+    const testResp = await fetch(
+      'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
+      { headers: { Authorization: `Bearer ${currentToken}` } }
+    );
+    if (testResp.ok) return true;
 
-    // 嘗試靜默刷新取得新 token（不會彈出登入視窗）
-    const refreshed = await trySilentAuth(clientId);
-    if (refreshed) return true;
-
-    // 靜默刷新也失敗，保留 hasAuth 標記讓 UI 知道曾經登入過
-    saveAuthState(null, 0);
+    // token 驗證失敗，但不觸發彈窗
     currentToken = null;
     tokenExpiry = 0;
     return false;
   } catch {
-    saveAuthState(null, 0);
     currentToken = null;
     tokenExpiry = 0;
     return false;
