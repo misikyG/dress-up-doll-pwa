@@ -158,7 +158,7 @@
                     <div v-if="item.hasVariant" class="variant-indicator" title="右鍵或長按選擇變體">◆</div>
                   </div>
                   <div class="item-info">
-                    <span class="item-name" :title="item.displayName">{{ item.displayName }}</span>
+                    <span class="item-name" :title="item.displayName">{{ item.displayName }}<span v-if="getItemDupCount(item) > 1" class="dup-count">({{ getItemDupCount(item) }})</span></span>
                     <div class="item-meta-row">
                       <span class="item-pack-name">{{ getPackName(item) }}</span>
                       <!-- Tag 標籤顯示 -->
@@ -325,6 +325,10 @@
             
             <!-- 物件操作 -->
             <div class="context-menu-section">
+              <button class="context-menu-option" @click="duplicateItem(contextMenu.item)">
+                <span class="option-icon" v-html="icons.duplicate"></span>
+                <span class="option-name">物件增生</span>
+              </button>
               <button class="context-menu-option" @click="toggleHideItem(contextMenu.item)">
                 <span class="option-icon" v-html="isItemHidden(contextMenu.item) ? icons.eyeShow : icons.eyeHide"></span>
                 <span class="option-name">{{ isItemHidden(contextMenu.item) ? '取消隱藏' : '隱藏' }}</span>
@@ -466,6 +470,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
+import { swalConfirm, swalPrompt } from '../core/swal.js';
 
 const gameStore = useGameStore();
 
@@ -761,20 +766,30 @@ const toggleHideItem = async (item) => {
 };
 
 const renameItem = async (item) => {
-  const newName = prompt('請輸入新的名稱：', item.displayName);
+  hideContextMenu();
+  const newName = await swalPrompt('請輸入新的名稱：', item.displayName, { title: '重新命名' });
   if (newName && newName.trim() && newName !== item.displayName) {
     await gameStore.renameItem(item.id, newName.trim());
     gameStore.showNotification(`已重新命名為「${newName.trim()}」`, 'success');
   }
-  hideContextMenu();
 };
 
 const deleteItem = async (item) => {
-  if (confirm(`確定要刪除「${item.displayName}」嗎？此操作無法復原！`)) {
+  hideContextMenu();
+  const ok = await swalConfirm(`確定要刪除「${item.displayName}」嗎？此操作無法復原！`, { title: '刪除物件', danger: true, icon: 'warning' });
+  if (ok) {
     await gameStore.deleteItem(item.id);
     gameStore.showNotification(`已刪除「${item.displayName}」`, 'info');
   }
+};
+
+const duplicateItem = async (item) => {
+  await gameStore.duplicateItem(item);
   hideContextMenu();
+};
+
+const getItemDupCount = (item) => {
+  return gameStore.getItemDuplicateCount(item);
 };
 
 const getVariantDisplayName = (variant) => {
@@ -891,10 +906,11 @@ const hideOutfitContextMenu = () => {
 };
 
 const deleteOutfit = async (outfit) => {
-  if (confirm(`確定要刪除搭配「${outfit.name}」嗎？`)) {
+  hideOutfitContextMenu();
+  const ok = await swalConfirm(`確定要刪除搭配「${outfit.name}」嗎？`, { title: '刪除搭配', danger: true, icon: 'warning' });
+  if (ok) {
     await gameStore.deleteOutfit(outfit.id);
   }
-  hideOutfitContextMenu();
 };
 
 const renameOutfit = async (outfit) => {
@@ -904,17 +920,14 @@ const renameOutfit = async (outfit) => {
     return;
   }
   
-  // 先保存 outfit 資訊，再關閉選單
   const outfitId = outfit.id;
   const currentName = outfit.name || '';
   hideOutfitContextMenu();
   
-  setTimeout(async () => {
-    const newName = prompt('請輸入新的搭配名稱：', currentName);
-    if (newName?.trim() && newName !== currentName) {
-      await gameStore.renameOutfit(outfitId, newName.trim());
-    }
-  }, 100);
+  const newName = await swalPrompt('請輸入新的搭配名稱：', currentName, { title: '重新命名搭配' });
+  if (newName?.trim() && newName !== currentName) {
+    await gameStore.renameOutfit(outfitId, newName.trim());
+  }
 };
 
 const handleScroll = () => {
@@ -1738,6 +1751,13 @@ watch(characterOptions, (options) => {
   -webkit-line-clamp: 1; 
   -webkit-box-orient: vertical; 
   overflow: hidden; 
+}
+
+.dup-count {
+  color: var(--color-warning);
+  font-weight: 700;
+  margin-left: 0.2em;
+  font-size: 0.85em;
 }
 
 .item-pack-name, .outfit-date { 

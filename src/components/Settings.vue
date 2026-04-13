@@ -313,8 +313,9 @@ import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
 import DressingCore from '../core/index.js';
-import { ensureAccessToken, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
+import { ensureAccessTokenOrInteractive, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, hasPreviousAuthAsync, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
+import { swalConfirm } from '../core/swal.js';
 
 defineEmits(['close']);
 const gameStore = useGameStore();
@@ -588,7 +589,8 @@ const applyTheme = async (themeId) => {
 };
 
 const deleteTheme = async (themeId) => {
-  if (confirm('確定要刪除此主題嗎？')) {
+  const ok = await swalConfirm('確定要刪除此主題嗎？', { title: '刪除主題', danger: true, icon: 'warning' });
+  if (ok) {
     await gameStore.deleteCustomTheme(themeId);
     gameStore.showNotification('已刪除主題', 'success');
   }
@@ -639,7 +641,7 @@ const saveCurrentTheme = async () => {
       gameStore.showNotification('請輸入主題名稱', 'error');
       return;
     }
-    if (!confirm(`是否確認覆蓋「${currentTheme.name}」主題設定？將無法恢復`)) return;
+    if (!await swalConfirm(`是否確認覆蓋「${currentTheme.name}」主題設定？將無法恢復`, { title: '覆蓋主題', danger: true, icon: 'warning' })) return;
     await gameStore.updateCustomTheme(currentId, { colors: { ...editingColors } });
     gameStore.showNotification('已覆蓋並套用主題', 'success');
     return;
@@ -776,7 +778,7 @@ const applyFontSettings = async () => {
 const deleteSelectedPack = async () => {
   const pack = gameStore.availablePacks.find(p => p.id === selectedPackId.value);
   if (!pack) return;
-  if (confirm(`確定要刪除圖包「${pack.displayName || pack.name}」及其所有物件嗎？`)) {
+  if (await swalConfirm(`確定要刪除圖包「${pack.displayName || pack.name}」及其所有物件嗎？`, { title: '刪除圖包', danger: true, icon: 'warning' })) {
     await gameStore.deletePack(selectedPackId.value);
     selectedPackId.value = '';
   }
@@ -863,7 +865,7 @@ const handleImportAllData = async (event) => {
       gameStore.showNotification('檔案格式不正確，請選擇完整備份檔', 'error');
       return;
     }
-    if (!confirm('匯入所有資料將覆蓋本機所有資料，確定要繼續嗎？')) return;
+    if (!await swalConfirm('匯入所有資料將覆蓋本機所有資料，確定要繼續嗎？', { title: '匯入資料', danger: true, icon: 'warning' })) return;
     await gameStore.clearAllData();
     for (const pack of data.packs || []) await gameStore.addPack(pack);
     for (const item of data.items || []) await gameStore.addNewItem(item);
@@ -902,26 +904,15 @@ const BACKUP_FILENAME = 'doll-backup.json';
 const connectGoogle = async () => {
   isCloudBusy.value = true;
   try {
-    if (hasPreviousAuth()) {
-      // 曾經登入過：先嘗試靜默刷新（不強制重新授權）
-      try {
-        await ensureAccessToken();
-        isGoogleReady.value = true;
-        // 恢復自動備份設定
-        try {
-          const saved = localStorage.getItem('auto-backup-enabled');
-          if (saved === 'true') startAutoBackup(true);
-        } catch {}
-        gameStore.showNotification('已重新連線 Google', 'success');
-        return;
-      } catch {
-        // 靜默刷新失敗，執行完整互動式登入
-      }
-    }
-    // 首次登入或靜默刷新失敗：互動式授權
-    await interactiveSignIn(GOOGLE_CLIENT_ID);
+    // 先嘗試靜默刷新，失敗則自動 fallback 到互動式登入
+    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
     isGoogleReady.value = true;
     gameStore.showNotification('已登入 Google', 'success');
+    // 恢復自動備份設定
+    try {
+      const saved = localStorage.getItem('auto-backup-enabled');
+      if (saved === 'true') startAutoBackup(true);
+    } catch {}
   } catch (err) {
     console.error(err);
     gameStore.showNotification('Google 登入失敗，請稍後再試', 'error');
@@ -938,18 +929,20 @@ const disconnectGoogle = () => {
 };
 
 /**
- * 從 localStorage 恢復登入狀態（不觸發任何 OAuth 彈窗）。
- * 只有當儲存的 token 仍然有效時才會成功。
+ * 從 localStorage / IndexedDB 恢復登入狀態（不觸發任何 OAuth 彈窗）。
+ * 只要曾經登入過就顯示為已連線，操作時再自動取得 token。
  */
 const restoreSession = async () => {
   if (isGoogleReady.value) return;
-  if (!hasPreviousAuth()) return;
+  // 先同步檢查 localStorage，再非同步檢查 IndexedDB fallback
+  const hasAuth = hasPreviousAuth() || await hasPreviousAuthAsync();
+  if (!hasAuth) return;
   isCloudBusy.value = true;
   try {
-    const ok = await tryRestoreSession(GOOGLE_CLIENT_ID);
-    if (ok) {
+    const result = await tryRestoreSession(GOOGLE_CLIENT_ID);
+    if (result === 'remembered') {
       isGoogleReady.value = true;
-      // 恢復自動備份設定
+      // 恢復自動備份設定（token 會在操作時動態取得）
       try {
         const saved = localStorage.getItem('auto-backup-enabled');
         if (saved === 'true') {
@@ -973,12 +966,13 @@ const getTimestampedBackupName = () => {
   return `doll-backup-${timeStr}`;
 };
 
-const toggleAutoBackup = (event) => {
+const toggleAutoBackup = async (event) => {
   if (event.target.checked) {
-    const confirmed = confirm(
+    const confirmed = await swalConfirm(
       '⚠️ 注意：啟用自動備份後，系統將每 5 分鐘自動上傳備份至雲端。\n\n' +
       '新的備份可能會覆蓋較舊的備份檔案（僅保留最新 5 筆）。\n' +
-      '請確認您了解此機制，再決定是否啟用。'
+      '請確認您了解此機制，再決定是否啟用。',
+      { title: '啟用自動備份', icon: 'info' }
     );
     if (confirmed) {
       startAutoBackup(false);
@@ -1031,7 +1025,7 @@ const updateCountdownText = () => {
 const performAutoBackup = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessToken();
+    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
     const { items, outfits } = await gameStore.getFullExportData();
     const appState = await gameStore.getAppStateForBackup();
     const payload = {
@@ -1061,10 +1055,8 @@ const performAutoBackup = async () => {
     gameStore.showNotification('自動備份完成', 'success');
   } catch (err) {
     console.error('自動備份失敗:', err);
-    if (!isTokenValid()) {
-      isGoogleReady.value = false;
-      stopAutoBackup();
-    }
+    // 不停止自動備份，下次會再嘗試（ensureAccessTokenOrInteractive 會處理 token 問題）
+    gameStore.showNotification('自動備份失敗，將於下次重試', 'warning');
   } finally {
     isCloudBusy.value = false;
   }
@@ -1085,7 +1077,7 @@ const pruneTimedBackups = async () => {
 const uploadToDrive = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessToken();
+    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
     const { items, outfits } = await gameStore.getFullExportData();
     const appState = await gameStore.getAppStateForBackup();
     const payload = {
@@ -1117,12 +1109,10 @@ const uploadToDrive = async () => {
     gameStore.showNotification(`已上傳備份 ${backupName} 到 Google Drive${extra}`, 'success');
   } catch (err) {
     console.error('雲端上傳失敗:', err);
-    if (!isTokenValid()) isGoogleReady.value = false;
     const detail = err?.message || '';
     const status = detail.match(/\((\d+)\)/)?.[1];
     if (status === '401' || status === '403') {
-      gameStore.showNotification('上傳失敗：權限過期，請重新登入 Google', 'error');
-      isGoogleReady.value = false;
+      gameStore.showNotification('上傳失敗：權限過期，請點擊上傳重試', 'error');
     } else {
       gameStore.showNotification(`上傳失敗：${detail.slice(0, 80) || '請檢查網路'}`, 'error');
     }
@@ -1134,13 +1124,13 @@ const uploadToDrive = async () => {
 const syncFromDrive = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessToken();
+    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
     const data = await downloadLatestJson({ name: BACKUP_FILENAME });
     if (!data) {
       gameStore.showNotification('雲端沒有備份檔', 'info');
       return;
     }
-    if (!confirm('從雲端還原將覆蓋本機所有資料，確定要繼續嗎？')) return;
+    if (!await swalConfirm('從雲端還原將覆蓋本機所有資料，確定要繼續嗎？', { title: '雲端還原', danger: true, icon: 'warning' })) return;
     await gameStore.clearAllData();
     for (const pack of data.packs || []) await gameStore.addPack(pack);
     for (const item of data.items || []) await gameStore.addNewItem(item);
@@ -1168,12 +1158,10 @@ const syncFromDrive = async () => {
     gameStore.showNotification('已從雲端同步完成', 'success');
   } catch (err) {
     console.error('雲端同步失敗:', err);
-    if (!isTokenValid()) isGoogleReady.value = false;
     const detail = err?.message || '';
     const status = detail.match(/\((\d+)\)/)?.[1];
     if (status === '401' || status === '403') {
-      gameStore.showNotification('同步失敗：權限過期，請重新登入 Google', 'error');
-      isGoogleReady.value = false;
+      gameStore.showNotification('同步失敗：權限過期，請重試', 'error');
     } else {
       gameStore.showNotification(`同步失敗：${detail.slice(0, 80) || '請檢查網路'}`, 'error');
     }
@@ -1183,7 +1171,7 @@ const syncFromDrive = async () => {
 };
 
 const clearAllData = async () => {
-  if (!confirm('確定要清空所有本地數據嗎？\n將刪除所有匯入物件、儲存搭配、主題與自定義設置，且無法復原！')) return;
+  if (!await swalConfirm('確定要清空所有本地數據嗎？\n將刪除所有匯入物件、儲存搭配、主題與自定義設置，且無法復原！', { title: '清空所有數據', danger: true, icon: 'warning' })) return;
   await gameStore.clearAllData();
   // 重置本地 UI 狀態
   Object.assign(editingColors, getDefaultColors());

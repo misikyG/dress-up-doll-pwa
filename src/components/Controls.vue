@@ -119,6 +119,7 @@
 import { ref, computed } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
+import { swalConfirm, swalPrompt } from '../core/swal.js';
 import watermarkSrc from '../assets/watermark.png';
 
 const gameStore = useGameStore();
@@ -149,14 +150,16 @@ defineExpose({
   panMode
 });
 
-const confirmClearCanvas = () => {
-  if (confirm('確定要清空畫布上的所有物件嗎？')) {
+const confirmClearCanvas = async () => {
+  const ok = await swalConfirm('確定要清空畫布上的所有物件嗎？', { title: '清空畫布', icon: 'warning' });
+  if (ok) {
     gameStore.clearCurrentOutfit();
   }
 };
 
-const resetPositions = () => {
-  if (confirm('確定要重設所有物件的位置、縮放和旋轉嗎？')) {
+const resetPositions = async () => {
+  const ok = await swalConfirm('確定要重設所有物件的位置、縮放和旋轉嗎？', { title: '重設變換', icon: 'warning' });
+  if (ok) {
     gameStore.resetItemTransforms();
   }
 };
@@ -387,7 +390,7 @@ const generatePreviewImage = async () => {
 };
 
 const saveOutfit = async () => {
-  const name = prompt('請為您的搭配取個名字：', `我的搭配 ${gameStore.savedOutfits.length + 1}`);
+  const name = await swalPrompt('請為您的搭配取個名字：', `我的搭配 ${gameStore.savedOutfits.length + 1}`, { title: '儲存搭配' });
   if (name) {
     const previewImage = await generatePreviewImage();
     gameStore.saveCurrentOutfit(name, previewImage);

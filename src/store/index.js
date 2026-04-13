@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import DressingCore from '../core/index.js'
 import { icons } from '../icons.js'
+import { swalConfirm } from '../core/swal.js'
 
 const cloneState = (obj) => JSON.parse(JSON.stringify(obj));
 const generateId = () => crypto?.randomUUID?.() || `outfit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -722,6 +723,42 @@ export const useGameStore = defineStore('game', {
       }
     },
 
+    /** 物件增生：在畫布上額外加一個同樣的物件 */
+    async duplicateItem(item, variantKey = null) {
+      if (!item) return;
+      const slot = getSlotName(item.category);
+      if (singleSlotCategories.has(item.category)) {
+        this.showNotification('此類別不支援增生', 'warning');
+        return;
+      }
+
+      const currentItems = this.currentOutfit[slot] || [];
+      const imgData = await resolveImageData(item.id, variantKey || item.currentVariant);
+      if (!imgData) return;
+
+      const itemToWear = { ...item, imageData: imgData };
+      if (variantKey) itemToWear.currentVariant = variantKey;
+      if (!itemToWear.thumbnailData) {
+        try {
+          const full = await DressingCore.getData('items', item.id);
+          if (full?.thumbnailData) itemToWear.thumbnailData = full.thumbnailData;
+        } catch {}
+      }
+
+      this.currentOutfit[slot] = [...currentItems, itemToWear];
+
+      this.recordHistory();
+      const count = this.currentOutfit[slot].filter(i => i.id === item.id).length;
+      this.showNotification(`已增生：${item.displayName} (×${count})`, 'success');
+    },
+
+    /** 取得某物件在穿搭中的數量 */
+    getItemDuplicateCount(item) {
+      if (!item) return 0;
+      const slot = getSlotName(item.category);
+      return (this.currentOutfit[slot] || []).filter(i => i.id === item.id).length;
+    },
+
     removeItem(item) {
       if (!item) return;
       const slot = getSlotName(item.category);
@@ -884,7 +921,7 @@ export const useGameStore = defineStore('game', {
       if (!trimmedName) { this.showNotification('請輸入穿搭名稱', 'error'); return; }
 
       const existing = this.savedOutfits.find(o => o.name === trimmedName);
-      if (existing && !confirm('是否要將舊搭配覆蓋？')) {
+      if (existing && !await swalConfirm('是否要將舊搭配覆蓋？', { title: '覆蓋搭配', icon: 'question' })) {
         this.showNotification('已取消覆蓋', 'info');
         return;
       }

@@ -153,6 +153,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import { useGameStore } from '../store/index.js';
 import { icons } from '../icons.js';
+import { swalConfirm } from '../core/swal.js';
 import draggable from 'vuedraggable';
 
 const gameStore = useGameStore();
@@ -212,8 +213,9 @@ const moveDown = (layerId) => {
   gameStore.moveLayerDown(layerId);
 };
 
-const resetOrder = () => {
-  if (confirm('確定要重置所有物件的層級順序嗎？')) {
+const resetOrder = async () => {
+  const ok = await swalConfirm('確定要重置所有物件的層級順序嗎？', { title: '重置層級', icon: 'warning' });
+  if (ok) {
     gameStore.resetLayerOrder();
   }
 };
@@ -247,14 +249,15 @@ const toggleLayerVisibility = () => {
   closeContextMenu();
 };
 
-const deleteLayer = () => {
+const deleteLayer = async () => {
   if (!contextMenu.value.layer) return;
   const layer = contextMenu.value.layer;
   const name = layer.item?.displayName || '此物件';
-  if (confirm(`確定要從畫布上移除「${name}」嗎？`)) {
+  closeContextMenu();
+  const ok = await swalConfirm(`確定要從畫布上移除「${name}」嗎？`, { title: '移除物件', danger: true, icon: 'warning' });
+  if (ok) {
     gameStore.removeItem(layer.item);
   }
-  closeContextMenu();
 };
 
 const onLayerTouchStart = (layer, event) => {

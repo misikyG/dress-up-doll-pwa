@@ -1,6 +1,9 @@
 const DRIVE_DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const STORAGE_KEY = 'google_drive_auth';
+const IDB_NAME = 'dress-up-doll-auth';
+const IDB_STORE = 'auth';
+const IDB_KEY = 'google_drive_auth';
 const MAX_BACKUPS = 5;
 const FOLDER_NAME = 'dress-up-doll';
 
@@ -17,26 +20,85 @@ const ensureScriptsLoaded = () => {
   if (!window.gapi || !window.google) throw new Error('Google API scripts not loaded');
 };
 
-const saveAuthState = (token, expiry) => {
+// ---- IndexedDB 持久化（比 localStorage 在 iOS Safari/PWA 更持久）----
+
+function _openAuthDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _saveToIDB(data) {
   try {
-    const data = { hasAuth: true, ts: Date.now() };
-    if (token) {
-      data.access_token = token;
-      data.expiry = expiry;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const db = await _openAuthDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(data, IDB_KEY);
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    db.close();
   } catch { /* ignore */ }
+}
+
+async function _loadFromIDB() {
+  try {
+    const db = await _openAuthDB();
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+    const result = await new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+    db.close();
+    return result || null;
+  } catch { return null; }
+}
+
+async function _clearIDB() {
+  try {
+    const db = await _openAuthDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(IDB_KEY);
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    db.close();
+  } catch { /* ignore */ }
+}
+
+// ---- 雙重持久化：localStorage + IndexedDB ----
+
+const saveAuthState = (token, expiry) => {
+  const data = { hasAuth: true, ts: Date.now() };
+  if (token) {
+    data.access_token = token;
+    data.expiry = expiry;
+  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  _saveToIDB(data); // fire-and-forget async
 };
 
 const loadAuthState = () => {
+  // 同步讀取 localStorage（快速路徑）
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+};
+
+/** 非同步讀取：localStorage 失效時從 IndexedDB fallback */
+const loadAuthStateAsync = async () => {
+  const ls = loadAuthState();
+  if (ls) return ls;
+  // localStorage 被清了（iOS ITP），從 IndexedDB 恢復
+  const idb = await _loadFromIDB();
+  if (idb) {
+    // 順便寫回 localStorage
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(idb)); } catch { /* ignore */ }
+  }
+  return idb;
 };
 
 const clearAuthState = () => {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  _clearIDB(); // fire-and-forget async
   currentToken = null;
   tokenExpiry = 0;
   cachedFolderId = null;
@@ -79,44 +141,39 @@ export function hasPreviousAuth() {
   return !!state?.hasAuth;
 }
 
+/** 非同步版本：會查 IndexedDB fallback（iOS localStorage 被清時） */
+export async function hasPreviousAuthAsync() {
+  const state = await loadAuthStateAsync();
+  return !!state?.hasAuth;
+}
+
+/**
+ * 嘗試恢復 session — 純本地檢查，絕不觸發 Google OAuth 彈窗。
+ * 回傳 'remembered' → 之前有登入過，UI 顯示為已連線；操作時再靜默/互動取得 token
+ * 回傳 false → 從未登入
+ *
+ * 注意：不會嘗試刷新 token，避免頁面載入時彈出 Google 登入視窗。
+ */
 export async function tryRestoreSession(clientId) {
-  if (clientId) storedClientId = clientId; // 記住 clientId 供後續 ensureAccessToken 使用
-  const state = loadAuthState();
+  if (clientId) storedClientId = clientId;
+  const state = await loadAuthStateAsync();
   if (!state?.hasAuth) return false;
 
-  const tokenExpired = !state.access_token || !state.expiry || Date.now() >= state.expiry;
-
-  // token 已過期 → 不嘗試刷新（requestAccessToken 會彈出登入視窗）
-  // 保留 hasAuth 標記，讓 UI 知道曾經登入過，使用者操作時再靜默刷新
-  if (tokenExpired) {
-    currentToken = null;
-    tokenExpiry = 0;
-    return false;
-  }
-
+  // 嘗試初始化 gapi client（不會觸發 OAuth 彈窗）
   try {
     await ensureGoogleClient(clientId);
+  } catch { /* ignore */ }
 
-    // token 尚未過期，驗證是否仍有效
+  // 檢查是否有未過期的 token 可直接使用
+  if (state.access_token && state.expiry && Date.now() < state.expiry) {
     currentToken = state.access_token;
     tokenExpiry = state.expiry;
-    window.gapi.client.setToken({ access_token: currentToken });
-
-    const testResp = await fetch(
-      'https://www.googleapis.com/drive/v3/files?pageSize=1&fields=files(id)',
-      { headers: { Authorization: `Bearer ${currentToken}` } }
-    );
-    if (testResp.ok) return true;
-
-    // token 驗證失敗，但不觸發彈窗
-    currentToken = null;
-    tokenExpiry = 0;
-    return false;
-  } catch {
-    currentToken = null;
-    tokenExpiry = 0;
-    return false;
+    try { window.gapi?.client?.setToken({ access_token: currentToken }); } catch { /* ignore */ }
+    return 'remembered';
   }
+
+  // token 過期或不存在，但 hasAuth flag 在 → 使用者操作時再取 token
+  return 'remembered';
 }
 
 export async function ensureAccessToken() {
@@ -129,8 +186,13 @@ export async function ensureAccessToken() {
     return { access_token: currentToken };
   }
 
+  // 靜默請求新 token（prompt: '' 不彈窗）
   return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Token request timed out'));
+    }, 15000);
     tokenClient.callback = (resp) => {
+      clearTimeout(timeoutId);
       if (resp.error) return reject(resp);
       currentToken = resp.access_token;
       tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000 - 60000; // 提前 1 分鐘
@@ -140,6 +202,20 @@ export async function ensureAccessToken() {
     };
     tokenClient.requestAccessToken({ prompt: '' });
   });
+}
+
+/**
+ * 確保取得有效 token：先嘗試靜默刷新，失敗則自動 fallback 到互動式登入。
+ * 這是雲端操作應呼叫的主要方法 — 使用者不會因為 token 過期而「被登出」。
+ */
+export async function ensureAccessTokenOrInteractive(clientId) {
+  if (clientId) storedClientId = clientId;
+  try {
+    return await ensureAccessToken();
+  } catch {
+    // 靜默刷新失敗（Google session cookie 過期等）→ 互動式重新授權
+    return await interactiveSignIn(storedClientId);
+  }
 }
 
 export async function interactiveSignIn(clientId) {
