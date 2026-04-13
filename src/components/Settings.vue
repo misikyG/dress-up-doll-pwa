@@ -313,7 +313,7 @@ import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
 import DressingCore from '../core/index.js';
-import { ensureAccessTokenOrInteractive, uploadJsonFile, downloadLatestJson, signOut, hasPreviousAuth, hasPreviousAuthAsync, pruneOldBackups, tryRestoreSession, interactiveSignIn, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
+import { ensureAccessTokenOrInteractive, uploadJsonFile, downloadLatestJson, signOut, pruneOldBackups, tryRestoreSession, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 import { swalConfirm } from '../core/swal.js';
 
@@ -332,7 +332,7 @@ const nextAutoBackupText = ref('');
 let autoBackupTimer = null;
 let autoBackupCountdownTimer = null;
 let autoBackupNextTime = 0;
-const GOOGLE_CLIENT_ID = '1072091993433-7j096q60fvp6o68micf5hupocvtat2g6.apps.googleusercontent.com';
+// Google OAuth 由 Firebase Auth 管理，不再需要 clientId
 const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000; // 5 分鐘
 
 const showColorEditor = ref(false);
@@ -905,7 +905,7 @@ const connectGoogle = async () => {
   isCloudBusy.value = true;
   try {
     // 先嘗試靜默刷新，失敗則自動 fallback 到互動式登入
-    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
+    await ensureAccessTokenOrInteractive();
     isGoogleReady.value = true;
     gameStore.showNotification('已登入 Google', 'success');
     // 恢復自動備份設定
@@ -934,12 +934,9 @@ const disconnectGoogle = () => {
  */
 const restoreSession = async () => {
   if (isGoogleReady.value) return;
-  // 先同步檢查 localStorage，再非同步檢查 IndexedDB fallback
-  const hasAuth = hasPreviousAuth() || await hasPreviousAuthAsync();
-  if (!hasAuth) return;
   isCloudBusy.value = true;
   try {
-    const result = await tryRestoreSession(GOOGLE_CLIENT_ID);
+    const result = await tryRestoreSession();
     if (result === 'remembered') {
       isGoogleReady.value = true;
       // 恢復自動備份設定（token 會在操作時動態取得）
@@ -1025,7 +1022,7 @@ const updateCountdownText = () => {
 const performAutoBackup = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
+    await ensureAccessTokenOrInteractive();
     const { items, outfits } = await gameStore.getFullExportData();
     const appState = await gameStore.getAppStateForBackup();
     const payload = {
@@ -1077,7 +1074,7 @@ const pruneTimedBackups = async () => {
 const uploadToDrive = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
+    await ensureAccessTokenOrInteractive();
     const { items, outfits } = await gameStore.getFullExportData();
     const appState = await gameStore.getAppStateForBackup();
     const payload = {
@@ -1124,7 +1121,7 @@ const uploadToDrive = async () => {
 const syncFromDrive = async () => {
   isCloudBusy.value = true;
   try {
-    await ensureAccessTokenOrInteractive(GOOGLE_CLIENT_ID);
+    await ensureAccessTokenOrInteractive();
     const data = await downloadLatestJson({ name: BACKUP_FILENAME });
     if (!data) {
       gameStore.showNotification('雲端沒有備份檔', 'info');
