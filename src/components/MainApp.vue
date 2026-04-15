@@ -59,7 +59,7 @@
     <transition name="fade">
       <div v-if="gameStore.ui.showSearch || gameStore.ui.showSettings || showHelp || showContact" class="modal-overlay" @click="closeModals" @touchmove.self.prevent>
         <Search v-if="gameStore.ui.showSearch" @close="gameStore.toggleSearch" @click.stop />
-        <Settings v-if="gameStore.ui.showSettings" @close="gameStore.toggleSettings" @click.stop />
+        <Settings v-if="gameStore.ui.showSettings" @close="gameStore.toggleSettings" />
         <Help v-if="showHelp" @close="showHelp = false" @click.stop />
         <Contact v-if="showContact" @close="showContact = false" @click.stop />
       </div>

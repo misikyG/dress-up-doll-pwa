@@ -730,8 +730,6 @@ onUnmounted(() => {
   cursor: move;
 }
 
-.canvas-item.is-highlighted {}
-
 .highlight-border {
   position: absolute;
   inset: -4px;

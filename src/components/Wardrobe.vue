@@ -1748,6 +1748,7 @@ watch(characterOptions, (options) => {
   color: var(--color-text-primary); 
   line-height: 1.15; 
   display: -webkit-box; 
+  line-clamp: 1;
   -webkit-line-clamp: 1; 
   -webkit-box-orient: vertical; 
   overflow: hidden; 
@@ -2169,6 +2170,7 @@ watch(characterOptions, (options) => {
   max-width: 100%;
   text-align: center;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   line-height: 1.3;

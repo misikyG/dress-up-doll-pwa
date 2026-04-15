@@ -313,7 +313,7 @@ import { useGameStore, presetThemes } from '../store/index.js';
 import { icons } from '../icons.js';
 import Importer from './Importer.vue';
 import DressingCore from '../core/index.js';
-import { ensureAccessTokenOrInteractive, uploadJsonFile, downloadLatestJson, signOut, pruneOldBackups, tryRestoreSession, isTokenValid, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
+import { ensureAccessTokenOrInteractive, uploadJsonFile, downloadLatestJson, signOut, pruneOldBackups, tryRestoreSession, isAuthRequiredError, listBackupFiles, deleteFile as deleteGDriveFile } from '../core/googleDrive.js';
 import iro from '@jaames/iro';
 import { swalConfirm } from '../core/swal.js';
 
@@ -332,7 +332,7 @@ const nextAutoBackupText = ref('');
 let autoBackupTimer = null;
 let autoBackupCountdownTimer = null;
 let autoBackupNextTime = 0;
-// Google OAuth 由 Firebase Auth 管理，不再需要 clientId
+// Google OAuth 由 Cloudflare Worker + refresh_token 管理
 const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000; // 5 分鐘
 
 const showColorEditor = ref(false);
@@ -901,11 +901,30 @@ const downloadJson = (data, filename) => {
 
 const BACKUP_FILENAME = 'doll-backup.json';
 
+const handleCloudAuthRequired = (message = 'Google 授權已失效，請點「登入 Google」重新連線') => {
+  isGoogleReady.value = false;
+  stopAutoBackup();
+  gameStore.showNotification(message, 'warning');
+};
+
+const getLoginErrorMessage = (err) => {
+  const msg = String(err?.message || '');
+  const lower = msg.toLowerCase();
+  if (lower.includes('popup_closed')) return '登入視窗已關閉，請再試一次';
+  if (lower.includes('popup_blocked')) return '瀏覽器阻擋了登入視窗，請允許彈窗後重試';
+  if (lower.includes('login_timeout')) return '登入逾時，請再試一次';
+  if (lower.includes('access_denied')) return '你已取消授權，請重新登入';
+  if (lower.includes('server_config_error')) return `伺服器設定錯誤：${msg}`;
+  if (lower.includes('redirect_uri_mismatch')) return `redirect URI 不一致：${msg}`;
+  if (lower.includes('invalid_client')) return `Client 驗證失敗（密鑰可能有誤）：${msg}`;
+  return `Google 登入失敗：${msg}`;
+};
+
 const connectGoogle = async () => {
   isCloudBusy.value = true;
   try {
     // 先嘗試靜默刷新，失敗則自動 fallback 到互動式登入
-    await ensureAccessTokenOrInteractive();
+    await ensureAccessTokenOrInteractive({ allowInteractive: true });
     isGoogleReady.value = true;
     gameStore.showNotification('已登入 Google', 'success');
     // 恢復自動備份設定
@@ -915,7 +934,11 @@ const connectGoogle = async () => {
     } catch {}
   } catch (err) {
     console.error(err);
-    gameStore.showNotification('Google 登入失敗，請稍後再試', 'error');
+    if (isAuthRequiredError(err)) {
+      gameStore.showNotification('Google 登入未完成，請再試一次', 'warning');
+    } else {
+      gameStore.showNotification(getLoginErrorMessage(err), 'error');
+    }
   } finally {
     isCloudBusy.value = false;
   }
@@ -1052,6 +1075,10 @@ const performAutoBackup = async () => {
     gameStore.showNotification('自動備份完成', 'success');
   } catch (err) {
     console.error('自動備份失敗:', err);
+    if (isAuthRequiredError(err)) {
+      handleCloudAuthRequired();
+      return;
+    }
     // 不停止自動備份，下次會再嘗試（ensureAccessTokenOrInteractive 會處理 token 問題）
     gameStore.showNotification('自動備份失敗，將於下次重試', 'warning');
   } finally {
@@ -1106,6 +1133,10 @@ const uploadToDrive = async () => {
     gameStore.showNotification(`已上傳備份 ${backupName} 到 Google Drive${extra}`, 'success');
   } catch (err) {
     console.error('雲端上傳失敗:', err);
+    if (isAuthRequiredError(err)) {
+      handleCloudAuthRequired();
+      return;
+    }
     const detail = err?.message || '';
     const status = detail.match(/\((\d+)\)/)?.[1];
     if (status === '401' || status === '403') {
@@ -1155,6 +1186,10 @@ const syncFromDrive = async () => {
     gameStore.showNotification('已從雲端同步完成', 'success');
   } catch (err) {
     console.error('雲端同步失敗:', err);
+    if (isAuthRequiredError(err)) {
+      handleCloudAuthRequired();
+      return;
+    }
     const detail = err?.message || '';
     const status = detail.match(/\((\d+)\)/)?.[1];
     if (status === '401' || status === '403') {
@@ -1663,6 +1698,7 @@ const loadDefaultFilters = async () => {
 
 .rgb-input::-webkit-outer-spin-button,
 .rgb-input::-webkit-inner-spin-button {
+  appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }

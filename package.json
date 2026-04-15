@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@jaames/iro": "^5.5.2",
-    "firebase": "^12.12.0",
     "pinia": "^2.1.6",
     "sweetalert2": "^11.26.24",
     "vue": "^3.3.4",
