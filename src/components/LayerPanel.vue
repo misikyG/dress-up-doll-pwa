@@ -82,7 +82,7 @@
           <!-- 物件信息 -->
           <div class="layer-info">
             <span class="layer-name" :title="getLayerDisplayTitle(layer)">
-              {{ layer.item.displayName }}<span v-if="getVariantLabel(layer)" class="variant-label">{{ getVariantLabel(layer) }}</span>
+              {{ layer.item.displayName }}<span v-if="getLayerDuplicateSuffix(layer)" class="duplicate-suffix">{{ getLayerDuplicateSuffix(layer) }}</span><span v-if="getVariantLabel(layer)" class="variant-label">{{ getVariantLabel(layer) }}</span>
             </span>
             <span class="layer-category">
               {{ getCategoryName(layer.category) }}
@@ -130,17 +130,21 @@
       <div v-if="contextMenu.visible" class="layer-context-overlay" @click="closeContextMenu">
         <div class="layer-context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }" @click.stop>
           <div class="layer-context-header">
-            <span class="layer-context-title">{{ contextMenu.layer?.item?.displayName }}</span>
+            <span class="layer-context-title">{{ getLayerDisplayName(contextMenu.layer) }}</span>
             <button class="layer-context-close" @click="closeContextMenu">✕</button>
           </div>
           <div class="layer-context-content">
+            <button v-if="isDuplicatableLayer(contextMenu.layer)" class="layer-context-option" @click="duplicateLayerItem">
+              <span class="option-icon" v-html="icons.duplicate"></span>
+              <span class="option-name">物件增生</span>
+            </button>
             <button class="layer-context-option" @click="toggleLayerVisibility">
               <span class="option-icon" v-html="isLayerHidden(contextMenu.layer?.id) ? icons.eyeShow : icons.eyeHide"></span>
               <span class="option-name">{{ isLayerHidden(contextMenu.layer?.id) ? '顯示' : '隱藏' }}</span>
             </button>
             <button class="layer-context-option danger" @click="deleteLayer">
               <span class="option-icon" v-html="icons.trash"></span>
-              <span class="option-name">刪除</span>
+              <span class="option-name">移除</span>
             </button>
           </div>
         </div>
@@ -191,6 +195,46 @@ const getCategoryName = (category) => {
   return gameStore.getCategoryName(category);
 };
 
+const slotNameMap = { accessory: 'accessories', carry: 'carries', underwear: 'underwears', other: 'others' };
+const getSlotName = (category) => slotNameMap[category] || category;
+
+const parseLayerId = (layerId) => {
+  if (!layerId || typeof layerId !== 'string') return null;
+  const match = layerId.match(/^(.*)-([^-]+)-(\d+)$/);
+  if (!match) return null;
+  return {
+    itemId: match[1],
+    category: match[2],
+    index: Number(match[3]),
+  };
+};
+
+const getLayerDuplicateNumber = (layer) => {
+  if (!layer?.id) return 1;
+  const parsed = parseLayerId(layer.id);
+  if (!parsed) return 1;
+
+  const slot = getSlotName(parsed.category);
+  const slotItems = gameStore.currentOutfit?.[slot];
+  if (!Array.isArray(slotItems) || parsed.index < 0 || parsed.index >= slotItems.length) return 1;
+
+  let duplicateNumber = 0;
+  for (let i = 0; i <= parsed.index; i++) {
+    if (slotItems[i]?.id === parsed.itemId) duplicateNumber += 1;
+  }
+  return duplicateNumber || 1;
+};
+
+const getLayerDuplicateSuffix = (layer) => {
+  const duplicateNumber = getLayerDuplicateNumber(layer);
+  return duplicateNumber > 1 ? `(${duplicateNumber})` : '';
+};
+
+const getLayerDisplayName = (layer) => {
+  if (!layer?.item?.displayName) return '';
+  return `${layer.item.displayName}${getLayerDuplicateSuffix(layer)}`;
+};
+
 const getVariantLabel = (layer) => {
   const item = layer.item;
   if (!item?.hasVariant && !item?.variants?.length) return null;
@@ -201,8 +245,9 @@ const getVariantLabel = (layer) => {
 };
 
 const getLayerDisplayTitle = (layer) => {
+  const displayName = getLayerDisplayName(layer);
   const label = getVariantLabel(layer);
-  return label ? layer.item.displayName + label : layer.item.displayName;
+  return label ? displayName + label : displayName;
 };
 
 const moveUp = (layerId) => {
@@ -252,12 +297,24 @@ const toggleLayerVisibility = () => {
 const deleteLayer = async () => {
   if (!contextMenu.value.layer) return;
   const layer = contextMenu.value.layer;
-  const name = layer.item?.displayName || '此物件';
+  const name = getLayerDisplayName(layer) || '此物件';
+  const layerId = layer.id;
   closeContextMenu();
   const ok = await swalConfirm(`確定要從畫布上移除「${name}」嗎？`, { title: '移除物件', danger: true, icon: 'warning' });
   if (ok) {
-    gameStore.removeItem(layer.item);
+    gameStore.removeLayerInstance(layerId);
   }
+};
+
+/** 可增生的類別：配飾、攜帶品、其他 */
+const duplicatableCategories = new Set(['accessory', 'carry', 'other']);
+const isDuplicatableLayer = (layer) => layer && duplicatableCategories.has(layer.category);
+
+const duplicateLayerItem = async () => {
+  if (!contextMenu.value.layer) return;
+  const layer = contextMenu.value.layer;
+  closeContextMenu();
+  await gameStore.duplicateItem(layer.item);
 };
 
 const onLayerTouchStart = (layer, event) => {
@@ -679,10 +736,12 @@ const onDragEnd = () => {
   text-overflow: ellipsis;
 }
 
-.variant-label {
-  font-size: 0.7rem;
+.duplicate-suffix {
   color: var(--color-warning);
-  font-weight: 400;
+}
+
+.variant-label {
+  color: var(--color-warning);
 }
 
 .layer-category {

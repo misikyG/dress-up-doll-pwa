@@ -325,7 +325,7 @@
             
             <!-- 物件操作 -->
             <div class="context-menu-section">
-              <button class="context-menu-option" @click="duplicateItem(contextMenu.item)">
+              <button v-if="isDuplicatable(contextMenu.item)" class="context-menu-option" @click="duplicateItem(contextMenu.item)">
                 <span class="option-icon" v-html="icons.duplicate"></span>
                 <span class="option-name">物件增生</span>
               </button>
@@ -787,6 +787,10 @@ const duplicateItem = async (item) => {
   await gameStore.duplicateItem(item);
   hideContextMenu();
 };
+
+/** 可增生的類別：配飾、攜帶品、其他 */
+const duplicatableCategories = new Set(['accessory', 'carry', 'other']);
+const isDuplicatable = (item) => item && duplicatableCategories.has(item.category);
 
 const getItemDupCount = (item) => {
   return gameStore.getItemDuplicateCount(item);

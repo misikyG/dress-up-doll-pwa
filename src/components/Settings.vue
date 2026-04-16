@@ -989,7 +989,7 @@ const getTimestampedBackupName = () => {
 const toggleAutoBackup = async (event) => {
   if (event.target.checked) {
     const confirmed = await swalConfirm(
-      '⚠️ 注意：啟用自動備份後，系統將每 5 分鐘自動上傳備份至雲端。\n\n' +
+      '注意：啟用自動備份後，系統將每 5 分鐘自動上傳備份至雲端。\n\n' +
       '新的備份可能會覆蓋較舊的備份檔案（僅保留最新 5 筆）。\n' +
       '請確認您了解此機制，再決定是否啟用。',
       { title: '啟用自動備份', icon: 'info' }
@@ -1698,7 +1698,6 @@ const loadDefaultFilters = async () => {
 
 .rgb-input::-webkit-outer-spin-button,
 .rgb-input::-webkit-inner-spin-button {
-  appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }

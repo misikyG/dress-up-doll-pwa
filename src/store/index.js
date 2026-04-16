@@ -229,6 +229,7 @@ const defaultZIndexMap = {
 };
 
 const singleSlotCategories = new Set(['filter', 'background', 'character', 'expression']);
+const duplicatableCategories = new Set(['accessory', 'carry', 'other']);
 
 const hardcodedDefaultThemeCSS = `
 :root {
@@ -359,6 +360,17 @@ const buildLayers = (outfit, layerOrder, hiddenSet = new Set()) => {
     });
   });
   return layers.sort((a, b) => a.zIndex - b.zIndex);
+};
+
+const parseLayerId = (layerId) => {
+  if (!layerId || typeof layerId !== 'string') return null;
+  const match = layerId.match(/^(.*)-([^-]+)-(\d+)$/);
+  if (!match) return null;
+  return {
+    itemId: match[1],
+    category: match[2],
+    index: Number(match[3]),
+  };
 };
 
 export const useGameStore = defineStore('game', {
@@ -723,11 +735,11 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    /** 物件增生：在畫布上額外加一個同樣的物件 */
+    /** 物件增生：在畫布上額外加一個同樣的物件（僅限配飾、攜帶品、其他） */
     async duplicateItem(item, variantKey = null) {
       if (!item) return;
       const slot = getSlotName(item.category);
-      if (singleSlotCategories.has(item.category)) {
+      if (!duplicatableCategories.has(item.category)) {
         this.showNotification('此類別不支援增生', 'warning');
         return;
       }
@@ -764,7 +776,10 @@ export const useGameStore = defineStore('game', {
       const slot = getSlotName(item.category);
       const filtered = (this.currentOutfit[slot] || []).filter(i => i.id !== item.id);
       this.currentOutfit[slot] = filtered;
-      this.hiddenLayerIds = this.hiddenLayerIds.filter(id => !id.startsWith(`${item.id}-`));
+      this.hiddenLayerIds = this.hiddenLayerIds.filter((layerId) => {
+        const parsed = parseLayerId(layerId);
+        return !parsed || parsed.itemId !== item.id;
+      });
       imageCache.delete(item.id);
       if (item.currentVariant) imageCache.delete(`${item.id}:${item.currentVariant}`);
       if (item.category === 'character' && this.selectedCharacterId === item.id) {
@@ -774,6 +789,56 @@ export const useGameStore = defineStore('game', {
       if (!this.isRestoring) {
         this.recordHistory();
         this.showNotification(`已移除：${item.displayName}`, 'info');
+      }
+    },
+
+    /** 移除畫布上單一圖層實例（不影響同 id 的其他複本） */
+    removeLayerInstance(layerId) {
+      if (!layerId) return;
+      const parsedLayerId = parseLayerId(layerId);
+      if (!parsedLayerId) return;
+
+      const { itemId, category, index } = parsedLayerId;
+      const slot = getSlotName(category);
+      const items = this.currentOutfit[slot] || [];
+
+      // layerId 的 index 是 slot 內索引，不是同 id 第幾個
+      let removeIdx = -1;
+      if (Number.isInteger(index) && index >= 0 && index < items.length && items[index]?.id === itemId) {
+        removeIdx = index;
+      } else {
+        removeIdx = items.findIndex((entry, entryIdx) => (
+          entry?.id === itemId && `${entry.id}-${category}-${entryIdx}` === layerId
+        ));
+      }
+
+      if (removeIdx !== -1) {
+        const removedItem = items[removeIdx];
+        items.splice(removeIdx, 1);
+        this.currentOutfit[slot] = [...items];
+
+        this.hiddenLayerIds = this.hiddenLayerIds
+          .filter(id => id !== layerId)
+          .map((id) => {
+            const parsed = parseLayerId(id);
+            if (!parsed || parsed.category !== category || parsed.index <= removeIdx) return id;
+            return `${parsed.itemId}-${parsed.category}-${parsed.index - 1}`;
+          });
+
+        this.layerOrder = this.layerOrder
+          .filter(l => l.id !== layerId)
+          .map((l) => {
+            const parsed = parseLayerId(l.id);
+            if (!parsed || parsed.category !== category || parsed.index <= removeIdx) return l;
+            return { ...l, id: `${parsed.itemId}-${parsed.category}-${parsed.index - 1}` };
+          });
+
+        if (category === 'character' && this.selectedCharacterId === itemId) {
+          this.selectedCharacterId = items.find(i => i.id === itemId)?.id || items[0]?.id || null;
+        }
+        this.selectedItem = null;
+        this.recordHistory();
+        this.showNotification(`已移除：${removedItem?.displayName || '物件'}`, 'info');
       }
     },
 
@@ -1130,7 +1195,10 @@ export const useGameStore = defineStore('game', {
       Object.keys(this.currentOutfit).forEach(key => {
         this.currentOutfit[key] = (this.currentOutfit[key] || []).filter(i => validIds.has(i.id));
       });
-      this.hiddenLayerIds = this.hiddenLayerIds.filter(id => validIds.has(id.split('-')[0]));
+      this.hiddenLayerIds = this.hiddenLayerIds.filter((id) => {
+        const parsed = parseLayerId(id);
+        return parsed && validIds.has(parsed.itemId);
+      });
     },
 
     async clearAllData() {

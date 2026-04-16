@@ -25,6 +25,7 @@ const getThemedDefaults = () => {
   return {
     background: c.bgCard,
     color: c.textPrimary,
+    reverseButtons: true,
     confirmButtonColor: c.primary,
     cancelButtonColor: c.textSecondary,
     denyButtonColor: c.error,
@@ -59,7 +60,6 @@ export async function swalConfirm(text, options = {}) {
     confirmButtonText: options.confirmText || '確定',
     cancelButtonText: options.cancelText || '取消',
     confirmButtonColor: options.danger ? c.error : c.primary,
-    reverseButtons: true,
     ...options,
   });
   return result.isConfirmed;
@@ -82,7 +82,6 @@ export async function swalPrompt(text, defaultValue = '', options = {}) {
     showCancelButton: true,
     confirmButtonText: options.confirmText || '確定',
     cancelButtonText: options.cancelText || '取消',
-    reverseButtons: true,
     inputValidator: options.inputValidator || null,
     ...options,
   });

@@ -543,7 +543,7 @@ const handleKeyDown = (e) => {
       case '0': e.preventDefault(); gameStore.resetZoom(); break;
     }
   }
-  if (e.key === 'Delete' && gameStore.selectedItem) gameStore.removeItem(gameStore.selectedItem.item);
+  if (e.key === 'Delete' && gameStore.selectedItem?.id) gameStore.removeLayerInstance(gameStore.selectedItem.id);
   if (e.key === 'Escape') gameStore.clearSelection();
 };
 
